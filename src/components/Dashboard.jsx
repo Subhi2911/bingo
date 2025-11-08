@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import HomeScreen from './HomeScreen';
 import Video from 'react-native-video';
 import Shop from './Shop';
+import Leaderboard from './Leaderboard';
 
 const Dashboard = () => {
     const [loading, setLoading] = React.useState(true);
@@ -55,6 +56,10 @@ const Dashboard = () => {
                         {selected === "shop" &&
                             <>
                                 <Shop />
+                            </>}
+                        {selected === "leaderboard" &&
+                            <>
+                                <Leaderboard />
                             </>}
                         <>
                             <NavBar selectedScreen={selectedScreen} />

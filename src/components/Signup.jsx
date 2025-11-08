@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import { StyleSheet, Text, View, TextInput, TouchableHighlight, TouchableOpacity, Alert } from 'react-native'
 import React, { useState } from 'react'
-import { BACKEND_URL } from "../config";
+import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 

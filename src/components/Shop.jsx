@@ -8,7 +8,8 @@ import {
     TouchableOpacity,
     Image,
     ImageBackground,
-    FlatList
+    FlatList,
+    Alert
 } from 'react-native';
 
 
@@ -102,6 +103,7 @@ const items = [
 const Shop = () => {
     const buyItem = (name) => {
         console.log("Buying:", name);
+        Alert.alert("Purchase Successful", `You have purchased: ${name}`);
     };
 
     return (
@@ -109,13 +111,30 @@ const Shop = () => {
             source={require('../images/RegisterPage.png')}
             style={{ flex: 1 }}
         >
-            <View style={{ flex: 1, padding: 10 }}>
+            <View style={{ flex: 1, padding: 10, alignItems: 'center', width: '100%' }}>
                 <Text style={styles.heading}>Game Shop</Text>
 
+                {/* 2 Upper Cards */}
+                <View style={styles.customElementContainer}>
+                    <View style={[styles.fixedCard]}>
+                        <Image
+                            source={require('../images/BingoBoard (2).png')}
+                            style={styles.image} />
+                        <Text style={{ color: '#fff' }}>Bingo Board</Text>
+                    </View>
+                    <View style={styles.fixedCard}>
+                        <Image
+                            source={require('../images/daub (2).png')}
+                            style={styles.image} />
+                        <Text style={{ color: '#fff' }}>Daub</Text>
+                    </View>
+                </View>
+
+                {/* Shop Items */}
                 <FlatList
                     data={items}
                     renderItem={({ item }) => (
-                        <View style={styles.card}>
+                        <View style={styles.card} >
                             <Image source={item.img} style={styles.image} />
                             <Text style={styles.title}>{item.name}</Text>
                             <Text style={styles.desc}>{item.desc}</Text>
@@ -134,10 +153,11 @@ const Shop = () => {
                     numColumns={2}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContainer}
+                    style={{ marginTop: 10 }}
                 />
-
             </View>
         </ImageBackground>
+
     );
 };
 
@@ -151,14 +171,11 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginVertical: 10,
     },
-    scrollContainer: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        paddingBottom: 50,
-        alignItems: 'center',
-        gap: 10,
-        
+    customElementContainer: {
+        flexWrap: 'wrap',
+        display: "flex",
+        flexDirection: 'row'
+
     },
     card: {
         width: "48%", // 2 in a row
@@ -170,7 +187,18 @@ const styles = StyleSheet.create({
         borderColor: "#F8B55F",
         alignItems: "center",
         marginRight: 5,
-        
+
+    },
+    fixedCard:{
+        width: "48%", // 2 in a row
+        backgroundColor: "rgba(255,255,255,0.15)",
+        borderRadius: 14,
+        marginTop: 10,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: "#FFE1E0",
+        alignItems: "center",
+        marginRight: 5,
     },
     image: {
         width: 60,

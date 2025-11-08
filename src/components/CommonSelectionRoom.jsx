@@ -3,7 +3,39 @@ import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image } from
 import React from 'react'
 
 
-const CommonSelectionRoom = () => {
+const CommonSelectionRoom = (props) => {
+    console.log(props.matchedPlayers);
+    const playerPositions = {
+        1: [
+            { bottom: '2%', left: '11%' }
+        ],
+        2: [
+            { top: '27%', right: '8%' },
+            { bottom: '2%', left: '11%' }
+        ],
+        3: [
+            { top: '27%', left: '11%' },
+            { top: '27%', right: '8%' },
+            { bottom: '2%', left: '11%' },
+
+        ],
+        4: [
+            { top: '27%', left: '11%' },
+            { top: '27%', right: '8%' },
+            { bottom: '2%', right: '8%' },
+            { bottom: '2%', left: '11%' }
+        ],
+        5: [
+            { top: '27%', left: '11%' },
+            { top: '27%', right: '8%' },
+            { bottom: '2%', right: '8%' },
+            { bottom: '2%', left: '11%' },
+            { top: '63%', left: '43%' }
+        ]
+    };
+
+    const positions = playerPositions[props.players] || playerPositions[1];
+
     return (
         <View style={styles.container}>
             <ImageBackground
@@ -15,11 +47,29 @@ const CommonSelectionRoom = () => {
                         source={require('../images/userSelection.png')}
                         style={{ width: 400, height: 400, justifyContent: 'center', marginTop: -180, alignItems: 'center' }}
                     >
-                        <View />
+                        {positions.map((pos, index) => (
+                            <View key={index} style={[styles.player, pos]}>
+                                <View
+                                    style={[
+                                        styles.userAvatar,
+                                    ]}
+                                >
+                                    <Image
+                                        source={require('../avatars/daub.png')}
+                                        style={[styles.userAvatar,{objectFit:'contain'}]}
+                                    />
+                                </View>
+                                <Text style={styles.userText}>
+                                    {index === positions.length - 1
+                                        ? "Me"
+                                        : props.matchedPlayers[index]?.username || `P${index + 1}`}
+                                </Text>
+
+                            </View>
+                        ))}
+
                     </ImageBackground>
-                    <TouchableOpacity style={styles.claimBtn}>
-                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Start Game</Text>
-                    </TouchableOpacity>
+
 
                 </View>
             </ImageBackground>
@@ -30,21 +80,28 @@ const CommonSelectionRoom = () => {
 export default CommonSelectionRoom
 
 const styles = StyleSheet.create({
-    container:{
+    container: {
         flex: 1,
         height: '100%',
         width: '100%',
     },
-    claimBtn: {
-        marginTop: 10,
-        backgroundColor: "#F8B55F",
-        paddingHorizontal: 20,
-        paddingVertical: 5,
-        borderRadius: 10,
-        height: 40,
-        width: 120,
-        fontSize: 26,
-        justifyContent: 'center',
-        alignItems: 'center',
+    userAvatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#F8B55F',
+        borderWidth: 2,
+        borderColor: '#fff',
+
     },
+    userText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        marginTop: 5
+    },
+    player: {
+        position: 'absolute',
+        alignItems: 'center'
+    },
+
 })
