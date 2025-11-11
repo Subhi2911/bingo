@@ -3,14 +3,18 @@ import { BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-nat
 import React from 'react'
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import CommonSelectionRoom from './CommonSelectionRoom'
-import GameScreen from './GameScreen'
+import GameScreenFast from './GameScreenFast'
 import { useNavigation } from '@react-navigation/native';
+import { useSocket } from '../context/SocketContext';
 
 const Fast = () => {
+    const { current: socket } = useSocket();
     const [gameStarted, setGameStarted] = React.useState(false);
-    const [players, setPlayers] = React.useState(2);
+    const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
+    const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match
+    const [roomCode, setRoomCode] = React.useState(null);
     const navigation = useNavigation();
-    const [ready, setReady]=React.useState(false);
+    const [ready, setReady] = React.useState(false);
 
     // Disable back button
     React.useEffect(() => {
@@ -21,6 +25,34 @@ const Fast = () => {
         )
         return () => backHandler.remove()
     }, [])
+
+    const handleReady = () => {
+        if (!socket) {
+            console.log('jhuygy')
+            return
+        };
+        socket.emit("find_match", {
+            username: "Nikki", // replace later with real user
+            size: playerCount // 2,3,4,5 selected earlier
+        });
+    }
+
+    React.useEffect(() => {
+        if (!socket) return;
+        socket.on("match_found", ({ roomCode, players }) => {
+            setRoomCode(roomCode);
+            setMatchedPlayers(players);
+            setTimeout(() => {
+                setGameStarted(true);
+            }, 2000);
+
+        });
+
+
+        return () => socket.off("match_found");
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             {!gameStarted &&
@@ -32,19 +64,19 @@ const Fast = () => {
                         onPress={() => { navigation.goBack(); }}
                     />
                     <Text style={styles.FastText}> Fast </Text>
-                    <CommonSelectionRoom players={ready?players:1}/>
+                    <CommonSelectionRoom players={ready ? playerCount : 1} />
                     <View style={styles.playerSelection}>
                         <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
-                        <TouchableOpacity style={[styles.selectBtn, players === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayers(2) }}>
+                        <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>2P</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.selectBtn, players === 3 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayers(3) }}>
+                        <TouchableOpacity style={[styles.selectBtn, playerCount === 3 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(3) }}>
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>3P</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.selectBtn, players === 4 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayers(4) }}>
+                        <TouchableOpacity style={[styles.selectBtn, playerCount === 4 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(4) }}>
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>4P</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.selectBtn, players === 5 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayers(5) }}>
+                        <TouchableOpacity style={[styles.selectBtn, playerCount === 5 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(5) }}>
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>5P</Text>
                         </TouchableOpacity>
                     </View>
@@ -56,10 +88,13 @@ const Fast = () => {
                     </TouchableOpacity>
                 </>
                 )}
-            {gameStarted && ready && 
+            {gameStarted && ready &&
                 (
                     <>
-                        <GameScreen players={players} />
+                        <GameScreenFast players={playerCount}
+                            matchedPlayers={matchedPlayers}
+                            roomCode={roomCode}
+                            myId={socket.id} />
                     </>
                 )}
         </View>
@@ -84,7 +119,7 @@ const styles = StyleSheet.create({
         bottom: 180,
         alignSelf: 'center',
     },
-     readyBtn:{
+    readyBtn: {
         marginTop: 10,
         backgroundColor: "#EEEEEE",
         paddingHorizontal: 20,
@@ -98,7 +133,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 230,
         alignSelf: 'center',
-        
+
     },
     selectBtn: {
         backgroundColor: "#D9CFC7",

@@ -69,7 +69,7 @@ const Classic = () => {
 
 
                     <Text style={styles.classicText}> Classic </Text>
-                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} />
+                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready}/>
                     <View style={styles.playerSelection}>
                         <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
                         <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>

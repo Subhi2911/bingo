@@ -13,43 +13,47 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
-import WinningModal from './WinningModal';
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
     const { current: socket } = useSocket();
-    const [winModal, setWinModal] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
+    const [numbers, setNumbers] = useState([]);
     const [currentTurn, setCurrentTurn] = useState(null);
     const [pickedNumbers, setPickedNumbers] = useState([]);
     const [turnOrder, setTurnOrder] = useState([]);
     const [playerWins, setPlayerWins] = useState({});
-    const [playerBoards, setPlayerBoards] = useState({});
-    const [result, setResult] = useState('');
-    const otherPlayers = turnOrder.filter(p => p.id !== socket.id);
-    const letters = ['B', 'I', 'N', 'G', 'O'];
+    // Format: { playerId: { B: false, I: false, N: false, G: false, O: false } }
 
-    useEffect(() => {
-        socket.on("show_results", (finishedPlayers) => {
-            const rank = finishedPlayers.indexOf(socket.id) + 1;
-            setResult(rank <= 3 ? "win" : "lose");
-            setWinModal(true);
-        });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
+    // Join room
     useEffect(() => {
         if (!socket) return;
         socket.emit("join_room", { roomCode: props.roomCode, username: props.username });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
 
+    // Disable back button
     useEffect(() => {
         const backAction = () => true;
         const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
         return () => backHandler.remove();
     }, []);
 
+    // Generate random board numbers
+    useEffect(() => {
+        const arr = Array.from({ length: 25 }, (_, i) => i + 1);
+        shuffle(arr);
+        setNumbers(arr);
+    }, []);
+
+    const shuffle = (array) => {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    };
+
+    // Player avatar positions
     const playerPositions = {
         2: [{ top: '8%', right: '10%' }, { bottom: '10%', left: '10%' }],
         3: [{ top: '8%', left: '40%' }, { bottom: '8%', left: '15%' }, { bottom: '8%', right: '15%' }],
@@ -69,121 +73,117 @@ const GameScreen = (props) => {
     };
     const positions = playerPositions[props.players] || [];
 
+    //player wins
+    // Initialize playerWins when turnOrder changes
     useEffect(() => {
-        if (!turnOrder.length) return;
-        const boards = {};
         const wins = {};
         turnOrder.forEach(player => {
-            const arr = Array.from({ length: 25 }, (_, i) => i + 1);
-            shuffle(arr);
-            boards[player.id] = arr;
-            wins[player.id] = { B: false, I: false, N: false, G: false, O: false, claimedPatterns: [] };
+            wins[player.id] = { B: false, I: false, N: false, G: false, O: false };
         });
-        setPlayerBoards(boards);
         setPlayerWins(wins);
     }, [turnOrder]);
 
-    const shuffle = (array) => {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+    // Check bingo whenever pickedNumbers changes
+    useEffect(() => {
+        turnOrder.forEach(player => {
+            checkBingo(player.id, pickedNumbers);
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pickedNumbers, turnOrder]);
+
+
+
+    const checkBingo = (playerId, pickedNumbers) => {
+        if (!playerWins[playerId]) return; // safety check
+
+        const newWins = { ...playerWins };
+        const letters = ['B', 'I', 'N', 'G', 'O'];
+
+        // Define index patterns
+        const columns = [
+            [0, 5, 10, 15, 20],
+            [1, 6, 11, 16, 21],
+            [2, 7, 12, 17, 22],
+            [3, 8, 13, 18, 23],
+            [4, 9, 14, 19, 24]
+        ];
+
+        const rows = [
+            [0, 1, 2, 3, 4],
+            [5, 6, 7, 8, 9],
+            [10, 11, 12, 13, 14],
+            [15, 16, 17, 18, 19],
+            [20, 21, 22, 23, 24]
+        ];
+
+        const diagonals = [
+            [0, 6, 12, 18, 24],
+            [4, 8, 12, 16, 20]
+        ];
+
+        // Check columns
+        columns.forEach((col, i) => {
+            if (col.every(idx => pickedNumbers.includes(numbers[idx]))) {
+                newWins[playerId][letters[i]] = true;
+            }
+        });
+
+        // Check rows
+        rows.forEach((row) => {
+            if (row.every(idx => pickedNumbers.includes(numbers[idx]))) {
+                letters.forEach((letter, i) => {
+                    newWins[playerId][letter] = true;
+                });
+            }
+        });
+
+        // Check diagonals
+        diagonals.forEach(diag => {
+            if (diag.every(idx => pickedNumbers.includes(numbers[idx]))) {
+                letters.forEach(letter => {
+                    newWins[playerId][letter] = true;
+                });
+            }
+        });
+
+        setPlayerWins(newWins);
+
+        // Game end logic (first 3 winners or all but one)
+        const winners = Object.entries(newWins)
+            .filter(([_, lettersObj]) => Object.values(lettersObj).every(Boolean))
+            .map(([id]) => id);
+
+        if (winners.length >= Math.min(turnOrder.length - 1, 3)) {
+            socket.emit('game_end', { winners });
         }
     };
 
+
+
+    // Socket listeners
     useEffect(() => {
         if (!socket) return;
 
+        socket.on("turn_order", (order) => setTurnOrder(order));
         socket.on("current_turn", (player) => setCurrentTurn(player.id));
-        socket.on("number_picked", (numbers) => setPickedNumbers(numbers));
+        socket.on("number_picked", (numbers,) => setPickedNumbers(numbers));
 
         return () => {
+            socket.off("turn_order");
             socket.off("current_turn");
             socket.off("number_picked");
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
-
-    const [me, setMe] = useState(null);
 
     const handleNumberPress = (num) => {
         if (currentTurn !== socket.id) return;
         socket.emit("select_number", { roomCode: props.roomCode, number: num });
     };
 
-    useEffect(() => {
-        socket.on("turn_order", (order) => {
-            setTurnOrder(order);
-            setMe(order.find(p => p.id === socket.id));
-        });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (!turnOrder.length) return;
-        turnOrder.forEach(player => {
-            checkBingo(player.id);
-        });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pickedNumbers, turnOrder]);
-
-    const checkBingo = (playerId) => {
-        setPlayerWins(prev => {
-
-            if (!playerBoards[playerId] || !prev[playerId]) return prev;
-
-            const newWins = { ...prev };
-            const playerData = { ...newWins[playerId] };
-            const numbers = playerBoards[playerId];
-
-            const columns = [
-                [0, 5, 10, 15, 20],
-                [1, 6, 11, 16, 21],
-                [2, 7, 12, 17, 22],
-                [3, 8, 13, 18, 23],
-                [4, 9, 14, 19, 24]
-            ];
-
-            const rows = [
-                [0, 1, 2, 3, 4],
-                [5, 6, 7, 8, 9],
-                [10, 11, 12, 13, 14],
-                [15, 16, 17, 18, 19],
-                [20, 21, 22, 23, 24]
-            ];
-
-            const diagonals = [
-                [0, 6, 12, 18, 24],
-                [4, 8, 12, 16, 20]
-            ];
-
-            const daubLetter = () => {
-                const availableLetter = letters.find(l => !playerData[l]);
-                if (availableLetter) playerData[availableLetter] = true;
-            };
-
-            const checkPatterns = (patterns, type) => {
-                patterns.forEach((pattern, i) => {
-                    const patternId = `${type}${i}`;
-                    if (!playerData.claimedPatterns.includes(patternId) &&
-                        pattern.every(idx => pickedNumbers.includes(numbers[idx]))
-                    ) {
-                        daubLetter();
-                        playerData.claimedPatterns = [...playerData.claimedPatterns, patternId];
-                    }
-                });
-            };
-
-            checkPatterns(columns, 'col');
-            checkPatterns(rows, 'row');
-            checkPatterns(diagonals, 'diag');
-
-            newWins[playerId] = playerData;
-
-            return newWins;
-        });
-    };
-
     return (
         <View style={styles.container}>
+            {/* Exit icon */}
             <Icon
                 name="sign-out-alt"
                 size={30}
@@ -203,21 +203,17 @@ const GameScreen = (props) => {
                 source={require('../images/gameScreen.jpg')}
                 style={{ width: '100%', height: '100%' }}
             >
+                {/* Room code */}
                 <View style={{ position: 'absolute', top: '3%', left: '40%' }}>
                     <Text style={styles.roomCode}>{props.roomCode}</Text>
                 </View>
 
                 <View style={{ flex: 1 }}>
+                    {/* Players */}
+                    {console.log(turnOrder)}
                     {turnOrder.map((player, index) => {
-                        let pos = {};
-
-                        if (player.id === socket.id) {
-                            pos = { bottom: '10%', left: '10%' };
-                        } else {
-                            const idx = otherPlayers.findIndex(p => p.id === player.id);
-                            pos = positions[idx] || {};
-                        }
-
+                        const pos = positions[index] || {};
+                        const isMe = player.id === socket.id;
                         const isCurrentTurn = player.id === currentTurn;
 
                         return (
@@ -228,19 +224,19 @@ const GameScreen = (props) => {
                                         isCurrentTurn && { borderColor: '#0f0', borderWidth: 3 }
                                     ]}
                                 />
-                                <Text style={styles.userText}>
-                                    {player.id === socket.id ? 'Me' : player.username}
-                                </Text>
+                                <Text style={styles.userText}>{isMe ? 'Me' : player.username}</Text>
                             </View>
                         );
                     })}
 
+                    {/* Bingo Board */}
                     <ImageBackground
                         source={require('../images/BingoBoard (2).png')}
                         style={styles.board}
                     >
                         <View style={styles.grid}>
-                            {playerBoards[socket.id]?.map((num, index) => {
+                            {numbers.map((num, index) => {
+                                console.log(numbers);
                                 const isPicked = pickedNumbers.includes(num);
                                 const disabled = currentTurn !== socket.id || isPicked;
 
@@ -254,7 +250,7 @@ const GameScreen = (props) => {
                                         {isPicked && (
                                             <Image
                                                 source={require('../images/daub (2).png')}
-                                                style={{ width: 40, height: 40, position: "absolute", opacity: 0.5 }}
+                                                style={{ width: 40, height: 40, position: "absolute" }}
                                             />
                                         )}
                                         <Text style={styles.numberText}>{num}</Text>
@@ -263,34 +259,30 @@ const GameScreen = (props) => {
                             })}
                         </View>
                     </ImageBackground>
-
-                    {playerWins[socket.id] && (
-                        <View style={styles.bingowin}>
-                            {letters.map((letter, index) => {
-                                const daubed = playerWins[socket.id]?.[letter];
-                                return (
-                                    <View key={index} style={styles.bingoLetterContainer}>
-                                        <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
-                                            <Text style={[styles.letterText, daubed && styles.daubedText]}>
-                                                {letter}
-                                            </Text>
-                                        </View>
-                                        {daubed && (
-                                            <Image
-                                                source={require('../images/daub (2).png')}
-                                                style={styles.daubIcon}
-                                            />
-                                        )}
+                    <View style={styles.bingowin}>
+                        {['B', 'I', 'N', 'G', 'O'].map((letter, index) => {
+                            const daubed = playerWins[socket.id]?.[letter]; // current player
+                            return (
+                                <View key={index} style={styles.bingoLetterContainer}>
+                                    <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
+                                        <Text style={[styles.letterText, daubed && styles.daubedText]}>
+                                            {letter}
+                                        </Text>
                                     </View>
-                                );
-                            })}
-                        </View>
-                    )}
+                                    {daubed && (
+                                        <Image
+                                            source={require('../images/daub (2).png')}
+                                            style={styles.daubIcon}
+                                        />
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </View>
+                    
+
 
                 </View>
-
-                {result === 'win' &&
-                    <WinningModal result={result} matchedPlayers={props.matchedPlayers} winModal={winModal} />}
             </ImageBackground>
         </View>
     );
@@ -340,11 +332,11 @@ const styles = StyleSheet.create({
     },
     bingowin: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-around', // evenly space letters
         alignItems: 'center',
         position: 'absolute',
         bottom: "28%",
-        width: '70%',
+        width: '70%', // centered and responsive
         alignSelf: 'center'
     },
     bingoLetterContainer: {
@@ -359,24 +351,22 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     daubedLetter: {
-        backgroundColor: '#FFD700',
+        backgroundColor: '#FFD700', // highlight when daubed
         borderWidth: 2,
-        borderColor: '#000'
+        borderColor: '#F00'
     },
     letterText: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#F00',
-        borderColor: '#F00'
-    },
-    daubedText: {
         color: '#000'
     },
+    daubedText: {
+        color: '#F00'
+    },
     daubIcon: {
-        width: 30,
-        height: 30,
-        position: 'absolute',
-        opacity: 0.5
+        width: 20,
+        height: 20,
+        marginTop: 5
     },
     box: {
         width: '20%',
@@ -402,6 +392,5 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         alignSelf: 'center',
         marginTop: 20
-    },
-
+    }
 });

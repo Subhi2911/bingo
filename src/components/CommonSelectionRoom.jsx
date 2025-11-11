@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image } from 'react-native'
+import { StyleSheet, Text, View, ImageBackground,  Image } from 'react-native'
 import React from 'react'
 
 
@@ -42,6 +42,13 @@ const CommonSelectionRoom = (props) => {
                 source={require('../images/RegisterPage.png')}
                 style={{ flex: 1, width: '100%', height: '100%' }}
             >
+                {props.ready && (
+                    <>
+                        <View style={styles.searching}>
+                            <Text style={styles.searchingText}> Searching...</Text>
+                        </View>
+                    </>
+                )}
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ImageBackground
                         source={require('../images/userSelection.png')}
@@ -56,7 +63,7 @@ const CommonSelectionRoom = (props) => {
                                 >
                                     <Image
                                         source={require('../avatars/daub.png')}
-                                        style={[styles.userAvatar,{objectFit:'contain'}]}
+                                        style={[styles.userAvatar, { objectFit: 'contain' }]}
                                     />
                                 </View>
                                 <Text style={styles.userText}>
@@ -84,6 +91,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: '100%',
         width: '100%',
+
     },
     userAvatar: {
         width: 60,
@@ -103,5 +111,15 @@ const styles = StyleSheet.create({
         position: 'absolute',
         alignItems: 'center'
     },
-
+    searching: {
+        position: 'absolute',
+        top: '12%',
+        left:'35%'
+    },
+    searchingText: {
+        color: '#ffff',
+        fontWeight: 600,
+        fontSize: 22,
+        
+    }
 })
