@@ -8,6 +8,8 @@ import GameScreen from './GameScreen'
 import { useNavigation } from '@react-navigation/native';
 import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
+import { BACKEND_URL } from '../config/backend';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const Classic = () => {
@@ -18,6 +20,28 @@ const Classic = () => {
     const [roomCode, setRoomCode] = React.useState(null);
     const navigation = useNavigation();
     const [ready, setReady] = React.useState(false);
+    const [user, setUser] = React.useState(null);
+
+    React.useEffect(() => {
+        const getUser = async () => {
+            try {
+                const token = await AsyncStorage.getItem("authToken");
+                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                });
+                const json = await response.json();
+                setUser(json);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        getUser();
+    }, []);
+
 
     // Disable back button
     React.useEffect(() => {
@@ -34,27 +58,50 @@ const Classic = () => {
             console.log('jhuygy')
             return
         };
+        console.log(user)
         socket.emit("find_match", {
-            username: "Nikki", // replace later with real user
+            socketId: socket.id,
+            userId: user?._id,
+            username: user?.username, // replace later with real user
+            avatar: user?.avatar,
             size: playerCount // 2,3,4,5 selected earlier
         });
-    }
+    };
 
     React.useEffect(() => {
-        if (!socket) return;
-        socket.on("match_found", ({ roomCode, players }) => {
-            setRoomCode(roomCode);
+        if (!socket || !user) return; // wait for user
+
+        const handleMatchFound = ({ roomCode, players }) => {
+            // filter out self safely
+            //const filteredPlayers = players.filter(p => p.userId !== (user?._id || ""));
             setMatchedPlayers(players);
-            setTimeout(() => {
-                setGameStarted(true);
-            }, 2000);
+            console.log(players);
+            setRoomCode(roomCode);
 
-        });
+            setTimeout(() => setGameStarted(true), 2000);
+        };
 
+        socket.on("match_found", handleMatchFound);
 
-        return () => socket.off("match_found");
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        return () => socket.off("match_found", handleMatchFound);
+    }, [socket, user]);
+
+    // React.useEffect(() => {
+    //     console.log(user);
+    //     if (!socket) return;
+    //     socket.on("match_found", ({ roomCode, players }) => {
+    //         // filter out yourself
+    //         setMatchedPlayers(players.filter(p => p.userId !== user.id));
+    //         setRoomCode(roomCode);
+
+    //         setTimeout(() => {
+    //             setGameStarted(true);
+    //         }, 2000);
+    //     });
+
+    //     return () => socket.off("match_found");
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, []);
 
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -69,7 +116,7 @@ const Classic = () => {
 
 
                     <Text style={styles.classicText}> Classic </Text>
-                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready}/>
+                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} />
                     <View style={styles.playerSelection}>
                         <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
                         <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>
@@ -100,7 +147,8 @@ const Classic = () => {
                             players={playerCount}
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
-                            myId={socket.id} />
+                            myId={user._id}
+                            user={user} />
                     </>
 
                 )}

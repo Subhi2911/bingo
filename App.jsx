@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Home from './src/components/Home';
 import Dashboard from './src/components/Dashboard';
 import Signup from './src/components/Signup';
@@ -9,11 +9,23 @@ import { NavigationContainer } from '@react-navigation/native';
 import Fast from './src/components/Fast';
 import Power from './src/components/Power';
 import Private from './src/components/Private';
+import Profile from './src/components/Profile';
 import { SocketProvider } from "./src/context/SocketContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BACKEND_URL } from './src/config/backend';
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
+  useEffect(() => {
+    const token = AsyncStorage.getItem("token");
+    if (token) {
+      fetch(`${BACKEND_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    }
+  }, []);
+
 
 
   return (
@@ -27,6 +39,7 @@ const App = () => {
           <Stack.Screen name="Fast" component={Fast} />
           <Stack.Screen name="Power" component={Power} />
           <Stack.Screen name="Private" component={Private} />
+          <Stack.Screen name="Profile" component={Profile} />
         </Stack.Navigator>
       </NavigationContainer>
     </SocketProvider>

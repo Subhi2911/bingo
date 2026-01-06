@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 // WinningModal.js
 import React from "react";
 import {
@@ -7,7 +8,6 @@ import {
     Image,
     TouchableOpacity,
     Dimensions,
-    Modal,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -15,8 +15,7 @@ const { width } = Dimensions.get("window");
 export default function WinningModal({
     result = "win",
     matchedPlayers = [],
-    onClose = () => {},
-    winModal
+    onClose = () => { },
 }) {
     const isWin = result === "win";
 
@@ -37,84 +36,116 @@ export default function WinningModal({
         },
     }[isWin ? "win" : "lose"];
 
-    // pad to 5 max
-    const players = [...matchedPlayers];
-    while (players.length < 5) players.push({ name: "", avatar: null });
+    // Limit to max 5 players
+    const players = matchedPlayers.slice(0, 5);
+    const count = players.length;
 
-    const displayPlayers = players.slice(0, 5);
+    let top = [];
+    let bottom = [];
 
-    const top = displayPlayers.slice(0, 2);
-    const bottom = displayPlayers.slice(2);
+    if (count === 2) {
+        top = players;
+    } else if (count === 3) {
+        top = players.slice(0, 1);
+        bottom = players.slice(1);
+    } else if (count === 4) {
+        top = players.slice(0, 2);
+        bottom = players.slice(2);
+    } else {
+        top = players.slice(0, 2);
+        bottom = players.slice(2);
+    }
 
     return (
-        <Modal transparent visible={winModal?"visible":''}>
-            <View style={styles.overlay}>
-                <View style={[styles.card, { backgroundColor: theme.bg }]}>
-                    
-                    {/* Close */}
-                    <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                        <Text style={[styles.closeTxt, { color: theme.text }]}>✕</Text>
-                    </TouchableOpacity>
+        <View style={styles.overlay}>
+            <View style={[styles.card, { backgroundColor: theme.bg }]}>
 
-                    <Text style={[styles.mainText, { color: theme.header }]}>
-                        {isWin ? "WINNER" : "GAME OVER"}
-                    </Text>
+                {/* Close */}
+                <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                    <Text style={[styles.closeTxt, { color: theme.text }]}>✕</Text>
+                </TouchableOpacity>
 
-                    {/* Trophy */}
-                    <View style={[styles.trophyCircle, { backgroundColor: theme.circle }]}>
-                        <Image
-                            source={require("../images/trophy.png")}
-                            style={styles.trophy}
-                        />
-                    </View>
+                {/* Title */}
+                <Text style={[styles.mainText, { color: theme.header }]}>
+                    {isWin ? "WINNER" : "GAME OVER"}
+                </Text>
 
-                    {/* Top row */}
+                {/* Trophy */}
+                <View style={[styles.trophyCircle, { backgroundColor: theme.circle }]}>
+                    {isWin ? <Image
+                        source={require("../images/trophy.png")}
+                        style={styles.trophy}
+                    /> : <Image
+                        source={require("../images/brokenTrophy.png")}
+                        style={[styles.trophy, { height: 120, width: 120 }]}
+                    />}
+                </View>
+
+                {/* Top Row */}
+                {top.length > 0 && (
                     <View style={styles.rowTop}>
                         {top.map((p, i) => (
                             <View key={i} style={styles.playerBlock}>
                                 <View style={[styles.avatarWrap, { borderColor: theme.header }]}>
-                                    <Image
-                                        source={p.avatar}
-                                        style={styles.avatar}
-                                    />
+                                    {p.avatar && (
+                                        <Image source={p.avatar} style={styles.avatar} />
+                                    )}
                                 </View>
-                                <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
-                                    {p.name || "—"}
+                                <Text
+                                    style={[styles.name, { color: theme.text }]}
+                                    numberOfLines={1}
+                                >
+                                    {p.name}
                                 </Text>
                             </View>
                         ))}
                     </View>
+                )}
 
-                    {/* Bottom row */}
+                {/* Bottom Row */}
+                {bottom.length > 0 && (
                     <View style={styles.rowBottom}>
                         {bottom.map((p, i) => (
                             <View key={i} style={styles.playerBlockSmall}>
-                                <View style={[styles.avatarWrapSmall, { borderColor: theme.header }]}>
-                                    <Image
-                                        source={p.avatar}
-                                        style={styles.avatarSmall}
-                                    />
+                                <View
+                                    style={[
+                                        styles.avatarWrapSmall,
+                                        { borderColor: theme.header },
+                                    ]}
+                                >
+                                    {p.avatar && (
+                                        <Image source={p.avatar} style={styles.avatarSmall} />
+                                    )}
                                 </View>
-                                <Text style={[styles.nameSmall, { color: theme.text }]} numberOfLines={1}>
-                                    {p.name || "—"}
+                                <Text
+                                    style={[styles.nameSmall, { color: theme.text }]}
+                                    numberOfLines={1}
+                                >
+                                    {p.name}
                                 </Text>
                             </View>
                         ))}
                     </View>
+                )}
 
-                    {/* Info Boxes */}
-                    <View style={styles.boxRow}>
-                        {displayPlayers.map((p, i) => (
-                            <View key={i} style={[styles.infoBox, { borderColor: theme.header }]}>
-                                <Text style={[styles.infoTxt, { color: theme.text }]}>
-                                    {p.name || ""}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
+                {/* Info Boxes */}
+                <View style={styles.boxRow}>
+                    {players.map((p, i) => (
+                        <View key={i} style={[styles.infoBox, { borderColor: theme.header }]}>
+                            <Text style={[styles.infoTxt, { color: theme.text }]}>
+                                {p.name}
+                            </Text>
+                        </View>
+                    ))}
                 </View>
+
+                {/* Close Button */}
+                <TouchableOpacity onPress={onClose} style={[styles.closetxt, { backgroundColor: theme.accent }]}>
+                    <Text style={{ fontWeight: "700" }}>Close</Text>
+                </TouchableOpacity>
+
             </View>
-        </Modal>
+        </View>
     );
 }
 
@@ -123,11 +154,11 @@ const AVATAR_SMALL = Math.round(width * 0.12);
 
 const styles = StyleSheet.create({
     overlay: {
-        flex: 1,
         backgroundColor: "rgba(0,0,0,0.6)",
         justifyContent: "center",
         alignItems: "center",
         paddingHorizontal: 20,
+        height: "100%",
     },
     card: {
         width: "100%",
@@ -147,7 +178,6 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 16,
         right: 18,
-        zIndex: 10,
         padding: 8,
     },
     closeTxt: {
@@ -181,11 +211,11 @@ const styles = StyleSheet.create({
     },
     playerBlock: {
         alignItems: "center",
-        width: "30%",
+        width: "40%",
     },
     playerBlockSmall: {
         alignItems: "center",
-        width: "28%",
+        width: "30%",
     },
     avatarWrap: {
         width: AVATAR + 6,
@@ -232,20 +262,26 @@ const styles = StyleSheet.create({
     boxRow: {
         width: "100%",
         flexDirection: "row",
-        justifyContent: "space-between",
         marginTop: 20,
     },
     infoBox: {
-        width: "18%",
+        flex: 1,
+        marginHorizontal: 4,
         borderWidth: 2,
         borderRadius: 10,
         paddingVertical: 8,
-        justifyContent: "center",
         alignItems: "center",
         backgroundColor: "rgba(255,255,255,0.25)",
     },
     infoTxt: {
         fontSize: 12,
         fontWeight: "700",
+    },
+    closetxt: {
+        marginTop: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 30,
+        borderRadius: 20,
+        elevation: 5,
     },
 });

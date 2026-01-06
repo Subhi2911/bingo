@@ -63,7 +63,6 @@ const Signup = () => {
             });
 
             const data = await res.json();
-
             if (res.ok) {
                 setStep(3);
             } else {

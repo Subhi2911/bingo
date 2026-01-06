@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Image, Pressable, TextInput, ImageBackground } 
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Signup from './Signup';
+import Login from './Login';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Intro from './Intro';
@@ -37,7 +38,7 @@ const Home = () => {
     }, []);
 
     return (
-        <SafeAreaView >
+        <View >
             {<>
                 {loading &&
                     <Intro/>
@@ -63,12 +64,7 @@ const Home = () => {
                                         {view === 1 &&
                                             <Signup />}
                                         {view === 2 &&
-                                            <View style={{ width: '100%', marginTop: 20, gap: 10 }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500', color: '#FFFFFF' }}>Email</Text>
-                                                <TextInput style={{ width: 300, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, paddingLeft: 10, marginBottom: 10 }} placeholder='Enter your email' />
-                                                <Text style={{ fontSize: 16, fontWeight: '500', color: '#FFFFFF' }}>Password</Text>
-                                                <TextInput style={{ width: 300, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, paddingLeft: 10, marginBottom: 10 }} placeholder='Enter your password' secureTextEntry={true} />
-                                            </View>}
+                                            <Login />}
                                     </View>
                                 </View>
                             </View>
@@ -84,7 +80,7 @@ const Home = () => {
                     )
                 }
             </>}
-        </SafeAreaView>
+        </View>
     )
 }
 
