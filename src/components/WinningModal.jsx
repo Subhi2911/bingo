@@ -9,16 +9,35 @@ import {
     TouchableOpacity,
     Dimensions,
 } from "react-native";
+import WinConfetti from "./WinConfetti";
+import { playWinSound, playLoseSound } from '../utils/gameSounds';
 
 const { width } = Dimensions.get("window");
-
 export default function WinningModal({
+
     result = "win",
     matchedPlayers = [],
     onClose = () => { },
 }) {
     const isWin = result === "win";
 
+    React.useEffect(() => {
+        soundPlayedRef.current = false;
+    }, []);
+    const soundPlayedRef = React.useRef(false);
+    React.useEffect(() => {
+        if (soundPlayedRef.current) return;
+
+        if (result === 'win') {
+            playWinSound();
+            soundPlayedRef.current = true;
+        }
+
+        if (result === 'lose') {
+            playLoseSound();
+            soundPlayedRef.current = true;
+        }
+    }, [result]);
     const theme = {
         win: {
             bg: "rgba(255, 240, 200, 0.97)",
@@ -58,6 +77,8 @@ export default function WinningModal({
 
     return (
         <View style={styles.overlay}>
+            {result === 'win' && <WinConfetti />}
+
             <View style={[styles.card, { backgroundColor: theme.bg }]}>
 
                 {/* Close */}
@@ -159,6 +180,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 20,
         height: "100%",
+        zIndex: 10,
     },
     card: {
         width: "100%",

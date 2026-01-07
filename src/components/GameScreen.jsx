@@ -30,13 +30,17 @@ const GameScreen = (props) => {
     const [playerWins, setPlayerWins] = useState({});
     const [playerBoards, setPlayerBoards] = useState({});
     const [result, setResult] = useState('');
-    const otherPlayers = turnOrder.filter(p => p.userId !== props?.user?._id);
+    const otherPlayers = turnOrder?.filter(p => p.userId !== props?.user?._id);
     const TURN_TIME = 15; // seconds per turn
     const turnTimers = {}; // roomCode -> timeoutId
     const letters = ['B', 'I', 'N', 'G', 'O'];
     const [timer, setTimer] = useState(TURN_TIME);
     const [floatingNumbers, setFloatingNumbers] = useState([]);
-
+    const avatarImages = {
+        daub: require('../avatars/daub.png'),
+        user: require('../avatars/user.jpg'),
+    };
+    const gameEndedRef = React.useRef(false);
 
 
     useEffect(() => {
@@ -63,6 +67,7 @@ const GameScreen = (props) => {
     useEffect(() => {
 
         const handleResults = (finishedPlayers) => {
+            if (!finishedPlayers?.length) return;
             console.log("received:", finishedPlayers);
 
             const index = finishedPlayers.indexOf(props?.user?._id);
@@ -121,13 +126,13 @@ const GameScreen = (props) => {
     }, []);
 
     const playerPositions = {
-        2: [{ top: '8%', right: '10%' }, { bottom: '10%', left: '10%' }],
-        3: [{ top: '8%', left: '40%' }, { bottom: '8%', left: '15%' }, { bottom: '8%', right: '15%' }],
+        2: [{ top: '15%', right: '10%' }, { bottom: '15%', left: '10%' }],
+        3: [{ top: '15%', left: '40%' }, { bottom: '15%', left: '15%' }, { bottom: '15%', right: '15%' }],
         4: [
-            { top: '12%', left: '8%' },
-            { top: '12%', right: '8%' },
-            { bottom: '10%', left: '8%' },
-            { bottom: '10%', right: '8%' }
+            { top: '15%', left: '8%' },
+            { top: '15%', right: '8%' },
+            { bottom: '15%', left: '8%' },
+            { bottom: '15%', right: '8%' }
         ],
         5: [
             { left: '8%', top: '22%' },
@@ -138,13 +143,13 @@ const GameScreen = (props) => {
         ]
     };
     const positions = playerPositions[props.players] || [];
-    console.log(positions);
+
 
     useEffect(() => {
-        if (!turnOrder.length) return;
+        if (!turnOrder?.length) return;
         const boards = {};
         const wins = {};
-        turnOrder.forEach(player => {
+        turnOrder?.forEach(player => {
             const arr = Array.from({ length: 25 }, (_, i) => i + 1);
             shuffle(arr);
             boards[player?.userId] = arr;
@@ -155,7 +160,7 @@ const GameScreen = (props) => {
     }, [turnOrder]);
 
     const shuffle = (array) => {
-        for (let i = array.length - 1; i > 0; i--) {
+        for (let i = array?.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
@@ -178,13 +183,16 @@ const GameScreen = (props) => {
     const handleNumberPress = (num) => {
         if (currentTurn !== props?.user?._id) return;
 
+        const myBoard = playerBoards[props?.user?._id];
+        if (!myBoard) return; // <<< ADD THIS GUARD
+
         setFloatingNumbers(prev => [...prev, num]);
         socket.emit("select_number", { roomCode: props.roomCode, number: num });
     };
 
     // remove after animation
     useEffect(() => {
-        if (!floatingNumbers.length) return;
+        if (!floatingNumbers?.length) return;
 
         const timer = setTimeout(() => {
             setFloatingNumbers(prev => prev.slice(1));
@@ -201,8 +209,8 @@ const GameScreen = (props) => {
 
     useEffect(() => {
         console.log(turnOrder);
-        if (!turnOrder.length) return;
-        turnOrder.forEach(player => {
+        if (!turnOrder?.length) return;
+        turnOrder?.forEach(player => {
             checkBingo(player?.userId);
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,9 +274,11 @@ const GameScreen = (props) => {
                 playerData.completed = true;
 
                 socket.emit("game_end", {
-                    roomCode: props.roomCode
+                    roomCode: props.roomCode,
+                    userId: playerId,
                 });
             }
+
 
 
 
@@ -303,7 +313,7 @@ const GameScreen = (props) => {
                 </View>
 
                 <View style={{ flex: 1 }}>
-                    {turnOrder.map((player, index) => {
+                    {turnOrder?.map((player, index) => {
                         let pos = {};
                         if (player?.userId === props?.user?._id) {
                             pos = { bottom: '10%', left: '10%' };
@@ -319,22 +329,28 @@ const GameScreen = (props) => {
                                 <View style={{ position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
                                     {isCurrentTurn && (
                                         <AvatarTimer
+                                            key={currentTurn}
                                             size={55}
                                             duration={TURN_TIME}
                                             onComplete={() => {
-                                                // auto-pick random number when timer ends
-                                                const availableNumbers = playerBoards[props.user._id]?.filter(n => !pickedNumbers.includes(n));
-                                                const randomNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+                                                const availableNumbers = playerBoards[props?.user?._id]?.filter(
+                                                    n => !pickedNumbers.includes(n)
+                                                );
+                                                if (!availableNumbers?.length) return;
+                                                const randomNumber =
+                                                    availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
                                                 handleNumberPress(randomNumber);
                                             }}
                                         />
                                     )}
+
                                     <View
-                                        style={[
-                                            styles.userAvatar,
-                                            isCurrentTurn && { borderColor: '#0f0', borderWidth: 3 }
-                                        ]}
-                                    />
+                                        style={styles.userAvatar}>
+                                        <Image
+                                            source={avatarImages[player?.avatar] || require('../avatars/user.jpg')}
+                                            style={styles.userAvatarImage}
+                                        />
+                                    </View>
                                 </View>
                                 <Text style={styles.userText}>
                                     {player?.userId === props?.user?._id ? 'Me' : player.username}
@@ -343,10 +359,11 @@ const GameScreen = (props) => {
                         );
                     })}
 
-
-                    {floatingNumbers.map((num, i) => (
-                        <FloatingNumber key={i} number={num} />
-                    ))}
+                    <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
+                        {floatingNumbers.map((num, i) => (
+                            <FloatingNumber key={i} number={num} />
+                        ))}
+                    </View>
 
                     <ImageBackground
                         source={require('../images/BingoBoard (2).png')}
@@ -354,6 +371,7 @@ const GameScreen = (props) => {
                     >
                         <View style={styles.grid}>
                             {playerBoards[props?.user?._id]?.map((num, index) => {
+                                if (!num) return null; // <<< guard
                                 const isPicked = pickedNumbers.includes(num);
                                 const disabled = currentTurn !== props?.user?._id || isPicked;
 
@@ -374,6 +392,7 @@ const GameScreen = (props) => {
                                     </TouchableOpacity>
                                 );
                             })}
+
                         </View>
                     </ImageBackground>
 
@@ -402,20 +421,18 @@ const GameScreen = (props) => {
 
                 </View>
                 {console.log(winModal)}
-                <Modal
-                    transparent
-                    visible={winModal}
-                    animationType="fade"
-                >
-                    <WinningModal
-                        result={result}
-                        matchedPlayers={props.matchedPlayers}
-                        onClose={() => setWinModal(false)}
-                    />
-                </Modal>
-
-
             </ImageBackground>
+            <Modal
+                transparent
+                visible={winModal}
+                animationType="fade"
+            >
+                <WinningModal
+                    result={result}
+                    matchedPlayers={props.matchedPlayers}
+                    onClose={() => setWinModal(false)}
+                />
+            </Modal>
         </View>
     );
 };
@@ -436,14 +453,21 @@ const styles = StyleSheet.create({
         width: 55,
         height: 55,
         borderRadius: 30,
-        backgroundColor: '#F8B55F',
+        //backgroundColor: '#F8B55F',
         borderWidth: 2,
-        borderColor: '#fff'
+        borderColor: '#fff',
+        padding: 1
+    },
+    userAvatarImage: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        borderRadius: 30
     },
     userText: {
         color: '#fff',
         fontWeight: 'bold',
-        marginTop: 5
+        marginTop: 60
     },
     board: {
         position: 'absolute',
