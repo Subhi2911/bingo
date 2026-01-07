@@ -43,6 +43,7 @@ const GameScreen = (props) => {
     const gameEndedRef = React.useRef(false);
 
 
+
     useEffect(() => {
         if (currentTurn !== props?.user?._id) return;
 
@@ -65,32 +66,18 @@ const GameScreen = (props) => {
 
 
     useEffect(() => {
-
-        const handleResults = (finishedPlayers) => {
-            if (!finishedPlayers?.length) return;
-            console.log("received:", finishedPlayers);
-
-            const index = finishedPlayers.indexOf(props?.user?._id);
-
-            if (index === -1) {
-                setResult("lose");   //  not in finished list
-            } else {
-                setResult(index < 3 ? "win" : "lose");
-            }
-
+        const handleResults = ({ winnerId }) => {
+            setResult(winnerId === props?.user?._id ? "win" : "lose");
             setWinModal(true);
-
         };
 
         socket.on("show_results", handleResults);
-
-        return () => {
-            socket.off("show_results", handleResults);
-        };
+        return () => socket.off("show_results", handleResults);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
+
         console.log("winModal:", winModal, "result:", result);
     }, [winModal, result]);
 
@@ -100,6 +87,7 @@ const GameScreen = (props) => {
 
         const handleTurnOrder = (order) => {
             console.log("TURN ORDER RECEIVED:", order);
+
             setTurnOrder(order);
             setMe(order.find(p => p.userId === props?.user?._id));
         };
@@ -217,6 +205,7 @@ const GameScreen = (props) => {
     }, [pickedNumbers, turnOrder]);
 
     const checkBingo = (playerId) => {
+        if (gameEndedRef.current) return;
         setPlayerWins(prev => {
 
             if (!playerBoards[playerId] || !prev[playerId]) return prev;
@@ -270,18 +259,15 @@ const GameScreen = (props) => {
             newWins[playerId] = playerData;
             const hasCompletedBingo = letters.every(l => playerData[l]);
 
-            if (hasCompletedBingo && !playerData.completed) {
+            if (hasCompletedBingo && !playerData.completed && !gameEndedRef.current) {
+                gameEndedRef.current = true;
                 playerData.completed = true;
 
                 socket.emit("game_end", {
                     roomCode: props.roomCode,
-                    userId: playerId,
+                    winnerId: props?.user?._id
                 });
             }
-
-
-
-
             return newWins;
         });
     };
@@ -358,10 +344,15 @@ const GameScreen = (props) => {
                             </View>
                         );
                     })}
-
-                    <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
+                    <View style={{ position: 'absolute', top: '50%', left: '12%' }}>
                         {floatingNumbers.map((num, i) => (
                             <FloatingNumber key={i} number={num} />
+                        ))}
+                    </View>
+
+                    <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
+                        {playerBoards[props?.user?._id]?.map((num, index) => (
+                            <FloatingNumber key={index} number={num} />
                         ))}
                     </View>
 

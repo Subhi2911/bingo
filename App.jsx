@@ -13,6 +13,7 @@ import Profile from './src/components/Profile';
 import { SocketProvider } from "./src/context/SocketContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from './src/config/backend';
+import HomeScreen from './src/components/HomeScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +41,7 @@ const App = () => {
           <Stack.Screen name="Power" component={Power} />
           <Stack.Screen name="Private" component={Private} />
           <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen name="HomeScreen" component={HomeScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SocketProvider>

@@ -9,7 +9,7 @@ const WinConfetti = () => {
             count={250}
             origin={{ x: -10, y: 0 }}
             fadeOut
-            style={{ position: 'absolute', top: 0, zIndex: 999 }}
+            style={{ position: 'absolute', top: 0, zIndex: 1000 }}
         />
     );
 };

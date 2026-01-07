@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import WinConfetti from "./WinConfetti";
 import { playWinSound, playLoseSound } from '../utils/gameSounds';
+import { useNavigation } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 export default function WinningModal({
@@ -20,6 +21,7 @@ export default function WinningModal({
     onClose = () => { },
 }) {
     const isWin = result === "win";
+    const navigation = useNavigation();
 
     React.useEffect(() => {
         soundPlayedRef.current = false;
@@ -161,7 +163,7 @@ export default function WinningModal({
                 </View>
 
                 {/* Close Button */}
-                <TouchableOpacity onPress={onClose} style={[styles.closetxt, { backgroundColor: theme.accent }]}>
+                <TouchableOpacity onPress={()=>{navigation.navigate("Home")}} style={[styles.closetxt, { backgroundColor: theme.accent }]}>
                     <Text style={{ fontWeight: "700" }}>Close</Text>
                 </TouchableOpacity>
 

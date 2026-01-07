@@ -33,7 +33,7 @@ const Dashboard = () => {
         const token = AsyncStorage.getItem("authToken");
         if (!token) {
             setLoading(false);
-            navigation.navigate("home");
+            navigation.navigate("Home");
         }
         const timer = setTimeout(() => setLoading(false), 3000);
         return () => clearTimeout(timer);
