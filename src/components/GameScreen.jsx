@@ -15,6 +15,9 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
 import WinningModal from './WinningModal';
+import CircularTimer from './CircularTimer';
+import FloatingNumber from './FloatingNumber';
+import AvatarTimer from './AvatarTimer';
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
@@ -27,8 +30,33 @@ const GameScreen = (props) => {
     const [playerWins, setPlayerWins] = useState({});
     const [playerBoards, setPlayerBoards] = useState({});
     const [result, setResult] = useState('');
-    const otherPlayers = turnOrder.filter(p => p.id !== props?.user?._id);
+    const otherPlayers = turnOrder.filter(p => p.userId !== props?.user?._id);
+    const TURN_TIME = 15; // seconds per turn
+    const turnTimers = {}; // roomCode -> timeoutId
     const letters = ['B', 'I', 'N', 'G', 'O'];
+    const [timer, setTimer] = useState(TURN_TIME);
+    const [floatingNumbers, setFloatingNumbers] = useState([]);
+
+
+
+    useEffect(() => {
+        if (currentTurn !== props?.user?._id) return;
+
+        setTimer(TURN_TIME);
+        const interval = setInterval(() => {
+            setTimer(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentTurn]);
+
 
 
 
@@ -68,7 +96,7 @@ const GameScreen = (props) => {
         const handleTurnOrder = (order) => {
             console.log("TURN ORDER RECEIVED:", order);
             setTurnOrder(order);
-            setMe(order.find(p => p.id === props?.user?._id));
+            setMe(order.find(p => p.userId === props?.user?._id));
         };
 
         socket.on("turn_order", handleTurnOrder);
@@ -119,8 +147,8 @@ const GameScreen = (props) => {
         turnOrder.forEach(player => {
             const arr = Array.from({ length: 25 }, (_, i) => i + 1);
             shuffle(arr);
-            boards[player.id] = arr;
-            wins[player.id] = { B: false, I: false, N: false, G: false, O: false, claimedPatterns: [], completed: false };
+            boards[player?.userId] = arr;
+            wins[player?.userId] = { B: false, I: false, N: false, G: false, O: false, claimedPatterns: [], completed: false };
         });
         setPlayerBoards(boards);
         setPlayerWins(wins);
@@ -136,7 +164,7 @@ const GameScreen = (props) => {
     useEffect(() => {
         if (!socket) return;
 
-        socket.on("current_turn", (player) => setCurrentTurn(player.id));
+        socket.on("current_turn", (player) => setCurrentTurn(player?.userId));
         socket.on("number_picked", (numbers) => setPickedNumbers(numbers));
 
         return () => {
@@ -150,16 +178,22 @@ const GameScreen = (props) => {
     const handleNumberPress = (num) => {
         if (currentTurn !== props?.user?._id) return;
 
+        setFloatingNumbers(prev => [...prev, num]);
         socket.emit("select_number", { roomCode: props.roomCode, number: num });
     };
 
+    // remove after animation
     useEffect(() => {
-        socket.on("turn_order", (order) => {
-            setTurnOrder(order);
-            setMe(order.find(p => p.id === props?.user?._id));
-        });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        if (!floatingNumbers.length) return;
+
+        const timer = setTimeout(() => {
+            setFloatingNumbers(prev => prev.slice(1));
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [floatingNumbers]);
+
+
     useEffect(() => {
         console.log("TURN ORDER STATE:", turnOrder);
     }, [turnOrder]);
@@ -169,7 +203,7 @@ const GameScreen = (props) => {
         console.log(turnOrder);
         if (!turnOrder.length) return;
         turnOrder.forEach(player => {
-            checkBingo(player.id);
+            checkBingo(player?.userId);
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pickedNumbers, turnOrder]);
@@ -271,30 +305,48 @@ const GameScreen = (props) => {
                 <View style={{ flex: 1 }}>
                     {turnOrder.map((player, index) => {
                         let pos = {};
-
-                        if (player.id === props?.user?._id) {
+                        if (player?.userId === props?.user?._id) {
                             pos = { bottom: '10%', left: '10%' };
                         } else {
-                            const idx = otherPlayers.findIndex(p => p.id === player.id);
+                            const idx = otherPlayers.findIndex(p => p.userId === player?.userId);
                             pos = positions[idx] || {};
                         }
 
-                        const isCurrentTurn = player.id === currentTurn;
+                        const isCurrentTurn = player?.userId === currentTurn;
 
                         return (
-                            <View key={player.id} style={[styles.player, pos]}>
-                                <View
-                                    style={[
-                                        styles.userAvatar,
-                                        isCurrentTurn && { borderColor: '#0f0', borderWidth: 3 }
-                                    ]}
-                                />
+                            <View key={player?.userId} style={[styles.player, pos]}>
+                                <View style={{ position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
+                                    {isCurrentTurn && (
+                                        <AvatarTimer
+                                            size={55}
+                                            duration={TURN_TIME}
+                                            onComplete={() => {
+                                                // auto-pick random number when timer ends
+                                                const availableNumbers = playerBoards[props.user._id]?.filter(n => !pickedNumbers.includes(n));
+                                                const randomNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+                                                handleNumberPress(randomNumber);
+                                            }}
+                                        />
+                                    )}
+                                    <View
+                                        style={[
+                                            styles.userAvatar,
+                                            isCurrentTurn && { borderColor: '#0f0', borderWidth: 3 }
+                                        ]}
+                                    />
+                                </View>
                                 <Text style={styles.userText}>
-                                    {player.id === props?.user?._id ? 'Me' : player.username}
+                                    {player?.userId === props?.user?._id ? 'Me' : player.username}
                                 </Text>
                             </View>
                         );
                     })}
+
+
+                    {floatingNumbers.map((num, i) => (
+                        <FloatingNumber key={i} number={num} />
+                    ))}
 
                     <ImageBackground
                         source={require('../images/BingoBoard (2).png')}
@@ -361,6 +413,7 @@ const GameScreen = (props) => {
                         onClose={() => setWinModal(false)}
                     />
                 </Modal>
+
 
             </ImageBackground>
         </View>
