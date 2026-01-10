@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         position: 'absolute',
-        bottom: 230,
+        bottom: 180,
         alignSelf: 'center',
 
     },
@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         marginTop: 20,
         position: 'absolute',
-        bottom: 300,
-        width: '70%',
+        bottom: 250,
+        width: '75%',
     },
     exitIcon: {
         position: 'absolute',

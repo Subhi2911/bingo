@@ -28,27 +28,27 @@ const CommonSelectionRoom = (props) => {
     }, []);
 
     const playerPositions = {
-        1: [{ bottom: '3%', left: '11%' }],
+        1: [{ bottom: '2%', left: '10%' }],
         2: [
-            { top: '27%', right: '9%' },
-            { bottom: '3%', left: '11%' }
+            { top: '26%', right: '8%' },
+            { bottom: '2%', left: '10%' }
         ],
         3: [
-            { top: '27%', left: '11%' },
-            { top: '27%', right: '9%' },
-            { bottom: '3%', left: '11%' }
+            { top: '26%', left: '10%' },
+            { top: '26%', right: '8%' },
+            { bottom: '2%', left: '10%' }
         ],
         4: [
-            { top: '27%', left: '11%' },
-            { top: '27%', right: '9%' },
-            { bottom: '3%', right: '9%' },
-            { bottom: '3%', left: '11%' }
+            { top: '26%', left: '10%' },
+            { top: '26%', right: '8%' },
+            { bottom: '2%', right: '8%' },
+            { bottom: '2%', left: '10%' }
         ],
         5: [
-            { top: '27%', left: '11%' },
-            { top: '27%', right: '9%' },
-            { bottom: '3%', right: '9%' },
-            { bottom: '3%', left: '11%' },
+            { top: '26%', left: '10%' },
+            { top: '26%', right: '8%' },
+            { bottom: '2%', right: '8%' },
+            { bottom: '2%', left: '10%' },
             { top: '63%', left: '43%' }
         ]
     };
@@ -82,8 +82,8 @@ const CommonSelectionRoom = (props) => {
                     <ImageBackground
                         source={require('../images/userSelection.png')}
                         style={{
-                            width: 400,
-                            height: 400,
+                            width: 450,
+                            height: 450,
                             justifyContent: 'center',
                             marginTop: -180,
                             alignItems: 'center'
@@ -100,13 +100,16 @@ const CommonSelectionRoom = (props) => {
                             return (
                                 <View key={index} style={[styles.player, pos]}>
                                     <View style={styles.userAvatar}>
-                                        <Image
-                                            source={
-                                                userAvatars[player?.avatar] ||
-                                                require('../avatars/user.jpg')
-                                            }
-                                            style={[styles.userAvatar, { resizeMode: 'contain' }]}
-                                        />
+                                        <View style={styles.avatarWrap}>
+                                            <Image
+                                                source={
+                                                    userAvatars[player?.avatar] ||
+                                                    require('../avatars/user.jpg')
+                                                }
+                                                style={styles.avatarImage}
+                                            />
+                                        </View>
+
                                     </View>
 
                                     <Text style={styles.userText}>
@@ -131,14 +134,23 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
     },
-    userAvatar: {
-        width: 55,
-        height: 55,
-        borderRadius: 30,
-        backgroundColor: '#F8B55F',
+    avatarWrap: {
+        width: 72,
+        height: 72,
+        borderRadius: 35,
         borderWidth: 2,
         borderColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
+
+    avatarImage: {
+        width: 55,
+        height: 55,
+        borderRadius: 27,
+        resizeMode: 'contain',
+    },
+
     userText: {
         color: '#fff',
         fontWeight: 'bold',

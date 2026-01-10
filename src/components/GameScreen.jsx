@@ -18,6 +18,9 @@ import WinningModal from './WinningModal';
 import CircularTimer from './CircularTimer';
 import FloatingNumber from './FloatingNumber';
 import AvatarTimer from './AvatarTimer';
+import FloatingBingoGhost from './FloatingBingoGhost';
+import BingoPopUp from './BingoPopUp';
+import WinConfetti from './WinConfetti';
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
@@ -30,12 +33,14 @@ const GameScreen = (props) => {
     const [playerWins, setPlayerWins] = useState({});
     const [playerBoards, setPlayerBoards] = useState({});
     const [result, setResult] = useState('');
+    const [winnerPlayerId, setWinnerPlayerId] = useState(null);
     const otherPlayers = turnOrder?.filter(p => p.userId !== props?.user?._id);
     const TURN_TIME = 15; // seconds per turn
     const turnTimers = {}; // roomCode -> timeoutId
     const letters = ['B', 'I', 'N', 'G', 'O'];
     const [timer, setTimer] = useState(TURN_TIME);
     const [floatingNumbers, setFloatingNumbers] = useState([]);
+    const [bingopop, setBingopop] = useState(false);
     const avatarImages = {
         daub: require('../avatars/daub.png'),
         user: require('../avatars/user.jpg'),
@@ -67,8 +72,12 @@ const GameScreen = (props) => {
 
     useEffect(() => {
         const handleResults = ({ winnerId }) => {
-            setResult(winnerId === props?.user?._id ? "win" : "lose");
-            setWinModal(true);
+            // Only handle LOSE here
+            if (winnerId !== props?.user?._id) {
+                setResult("lose");
+                setWinnerPlayerId(winnerId);
+                setBingopop(true);
+            }
         };
 
         socket.on("show_results", handleResults);
@@ -204,6 +213,39 @@ const GameScreen = (props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pickedNumbers, turnOrder]);
 
+    const [readyPlayers, setReadyPlayers] = useState({});
+    const resetGameState = () => {
+        setPickedNumbers([]);
+        setPlayerBoards({});
+        setPlayerWins({});
+        setCurrentTurn(null);
+        setResult("");
+        setWinnerPlayerId(null);
+        gameEndedRef.current = false;
+    };
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleReadyUpdate = ({ readyPlayers }) => setReadyPlayers(readyPlayers);
+        const handleRestartGame = () => {
+            resetGameState();
+            setWinModal(false);
+        };
+
+        socket.on("ready_update", handleReadyUpdate);
+        socket.on("restart_game", handleRestartGame);
+
+        return () => {
+            socket.off("ready_update", handleReadyUpdate);
+            socket.off("restart_game", handleRestartGame);
+        };
+    }, [socket]);
+
+    const playAgain = () => {
+        socket.emit("player_ready", { roomCode: props.roomCode, userId: props.user._id });
+    };
+
+
     const checkBingo = (playerId) => {
         if (gameEndedRef.current) return;
         setPlayerWins(prev => {
@@ -263,11 +305,18 @@ const GameScreen = (props) => {
                 gameEndedRef.current = true;
                 playerData.completed = true;
 
+                // 🔥 SHOW BINGO IMMEDIATELY (same as lose)
+                setResult("win");
+                setWinnerPlayerId(props?.user?._id);
+                setBingopop(true);
+
+                // 🔄 Sync with server (background)
                 socket.emit("game_end", {
                     roomCode: props.roomCode,
                     winnerId: props?.user?._id
                 });
             }
+
             return newWins;
         });
     };
@@ -351,7 +400,7 @@ const GameScreen = (props) => {
                     </View>
 
                     <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
-                        {playerBoards[props?.user?._id]?.map((num, index) => (
+                        {pickedNumbers.map((num, index) => (
                             <FloatingNumber key={index} number={num} />
                         ))}
                     </View>
@@ -391,38 +440,61 @@ const GameScreen = (props) => {
                         <View style={styles.bingowin}>
                             {letters.map((letter, index) => {
                                 const daubed = playerWins[props?.user?._id]?.[letter];
+
                                 return (
                                     <View key={index} style={styles.bingoLetterContainer}>
+                                        {/* STATIC letter */}
                                         <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
                                             <Text style={[styles.letterText, daubed && styles.daubedText]}>
                                                 {letter}
                                             </Text>
                                         </View>
-                                        {daubed && (
-                                            <Image
-                                                source={require('../images/daub (2).png')}
-                                                style={styles.daubIcon}
-                                            />
-                                        )}
+
+                                        {/* FLOATING ghost */}
+                                        <FloatingBingoGhost letter={letter} trigger={daubed} />
                                     </View>
                                 );
                             })}
                         </View>
+
+
                     )}
 
                 </View>
                 {console.log(winModal)}
+                {bingopop && (
+                    <>
+                        {result === 'win' && <WinConfetti />}
+                        <BingoPopUp
+                            delay={bingopop ? 200 : null}
+                            onAnimationEnd={() => {
+                                setTimeout(() => {
+                                    setWinModal(true);
+                                    setBingopop(false);
+                                }, 300);
+                            }}
+                        />
+                    </>
+
+                )}
             </ImageBackground>
             <Modal
                 transparent
                 visible={winModal}
                 animationType="fade"
             >
+
                 <WinningModal
                     result={result}
                     matchedPlayers={props.matchedPlayers}
                     onClose={() => setWinModal(false)}
+                    winnerPlayerId={winnerPlayerId}
+                    playAgain={playAgain}
+                    readyPlayers={readyPlayers}
+                    user={props.user}
                 />
+
+
             </Modal>
         </View>
     );
@@ -487,7 +559,11 @@ const styles = StyleSheet.create({
         alignSelf: 'center'
     },
     bingoLetterContainer: {
-        alignItems: 'center'
+        width: 50,
+        height: 50,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
     },
     bingoLetter: {
         width: 50,
