@@ -9,18 +9,18 @@ import {
     Image,
     Modal
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
 import WinningModal from './WinningModal';
-import CircularTimer from './CircularTimer';
 import FloatingNumber from './FloatingNumber';
 import AvatarTimer from './AvatarTimer';
 import FloatingBingoGhost from './FloatingBingoGhost';
 import BingoPopUp from './BingoPopUp';
 import WinConfetti from './WinConfetti';
+import ProfileModal from './ProfileModal';
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
@@ -41,6 +41,12 @@ const GameScreen = (props) => {
     const [timer, setTimer] = useState(TURN_TIME);
     const [floatingNumbers, setFloatingNumbers] = useState([]);
     const [bingopop, setBingopop] = useState(false);
+    const avatarRef = useRef(null);
+    const [anchor, setAnchor] = useState(null);
+    const [profileVisible, setProfileVisible] = useState(false);
+    const [profileDetails, setProfileDetails] = useState(null);
+    
+
     const avatarImages = {
         daub: require('../avatars/daub.png'),
         user: require('../avatars/user.jpg'),
@@ -321,6 +327,15 @@ const GameScreen = (props) => {
         });
     };
 
+    const openProfile = (player) => {
+        avatarRef.current?.measureInWindow((x, y, width, height) => {
+            setAnchor({ x, y, width, height });
+            setProfileDetails(player);
+            setProfileVisible(true);
+        });
+    };
+
+
 
     return (
         <View style={styles.container}>
@@ -334,7 +349,7 @@ const GameScreen = (props) => {
             <CustomAlert
                 visible={showAlert}
                 title="Exit Game"
-                message="Are you sure you want to leave?\nIt will charge you 40 coins."
+                message="Are you sure you want to leave? It will charge you 40 coins."
                 onCancel={() => setShowAlert(false)}
                 onConfirm={() => navigation.goBack()}
             />
@@ -361,10 +376,19 @@ const GameScreen = (props) => {
 
                         return (
                             <View key={player?.userId} style={[styles.player, pos]}>
-                                <View style={{ position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
+                                <View
+
+                                    style={{
+                                        position: 'absolute',
+                                        width: 70,
+                                        height: 70,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                    }}
+                                >
                                     {isCurrentTurn && (
                                         <AvatarTimer
-                                            key={currentTurn}
+                                            key={`${player.userId}-${currentTurn}`}
                                             size={55}
                                             duration={TURN_TIME}
                                             onComplete={() => {
@@ -379,13 +403,17 @@ const GameScreen = (props) => {
                                         />
                                     )}
 
-                                    <View
-                                        style={styles.userAvatar}>
+                                    <TouchableOpacity
+                                        ref={avatarRef}
+                                        style={styles.userAvatar}
+                                        onPress={() => openProfile(player)}
+                                    >
                                         <Image
-                                            source={avatarImages[player?.avatar] || require('../avatars/user.jpg')}
+                                            source={avatarImages[player.avatar]|| require('../images/user.jpg')}
                                             style={styles.userAvatarImage}
                                         />
-                                    </View>
+                                    </TouchableOpacity>
+
                                 </View>
                                 <Text style={styles.userText}>
                                     {player?.userId === props?.user?._id ? 'Me' : player.username}
@@ -496,6 +524,21 @@ const GameScreen = (props) => {
 
 
             </Modal>
+            {profileDetails && profileVisible && (
+                <Modal
+                    visible={profileVisible}
+                    transparent
+                    animationType="fade"
+                    statusBarTranslucent
+                >
+                    <ProfileModal
+                        visible={profileVisible}
+                        anchor={anchor}
+                        user={profileDetails}
+                        onClose={() => setProfileVisible(false)} />
+                </Modal>
+            )}
+
         </View>
     );
 };
@@ -530,7 +573,7 @@ const styles = StyleSheet.create({
     userText: {
         color: '#fff',
         fontWeight: 'bold',
-        marginTop: 60
+        marginTop: 70
     },
     board: {
         position: 'absolute',

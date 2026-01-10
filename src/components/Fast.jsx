@@ -1,11 +1,16 @@
 /* eslint-disable react-native/no-inline-styles */
-import { BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image, BackHandler } from 'react-native'
 import React from 'react'
-import Icon from 'react-native-vector-icons/FontAwesome5';
+import { SafeAreaView } from 'react-native-safe-area-context'
 import CommonSelectionRoom from './CommonSelectionRoom'
-import GameScreenFast from './GameScreenFast'
+import Icon from 'react-native-vector-icons/FontAwesome5';
+import GameScreen from './GameScreen'
 import { useNavigation } from '@react-navigation/native';
+import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
+import { BACKEND_URL } from '../config/backend';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const Fast = () => {
     const { current: socket } = useSocket();
@@ -15,6 +20,28 @@ const Fast = () => {
     const [roomCode, setRoomCode] = React.useState(null);
     const navigation = useNavigation();
     const [ready, setReady] = React.useState(false);
+    const [user, setUser] = React.useState(null);
+
+    React.useEffect(() => {
+        const getUser = async () => {
+            try {
+                const token = await AsyncStorage.getItem("authToken");
+                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                });
+                const json = await response.json();
+                setUser(json);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        getUser();
+    }, []);
+
 
     // Disable back button
     React.useEffect(() => {
@@ -31,28 +58,35 @@ const Fast = () => {
             console.log('jhuygy')
             return
         };
+        console.log(user)
         socket.emit("find_match", {
-            username: "Nikki", // replace later with real user
+            socketId: socket.id,
+            userId: user?._id,
+            username: user?.username, // replace later with real user
+            avatar: user?.avatar,
             size: playerCount // 2,3,4,5 selected earlier
         });
-    }
+    };
 
     React.useEffect(() => {
-        if (!socket) return;
-        socket.on("match_found", ({ roomCode, players }) => {
-            setRoomCode(roomCode);
+        if (!socket || !user) return; // wait for user
+
+        const handleMatchFound = ({ roomCode, players }) => {
+            // filter out self safely
+            //const filteredPlayers = players.filter(p => p.userId !== (user?._id || ""));
             setMatchedPlayers(players);
-            setTimeout(() => {
-                setGameStarted(true);
-            }, 2000);
+            console.log(players);
+            setRoomCode(roomCode);
 
-        });
+            setTimeout(() => setGameStarted(true), 2000);
+        };
 
+        socket.on("match_found", handleMatchFound);
 
-        return () => socket.off("match_found");
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        return () => socket.off("match_found", handleMatchFound);
+    }, [socket, user]);
 
+   
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             {!gameStarted &&
@@ -63,8 +97,10 @@ const Fast = () => {
                         style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
                         onPress={() => { navigation.goBack(); }}
                     />
-                    <Text style={styles.FastText}> Fast </Text>
-                    <CommonSelectionRoom players={ready ? playerCount : 1} />
+
+
+                    <Text style={styles.classicText}> Fast </Text>
+                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} gameType="fast" />
                     <View style={styles.playerSelection}>
                         <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
                         <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>
@@ -76,27 +112,31 @@ const Fast = () => {
                         <TouchableOpacity style={[styles.selectBtn, playerCount === 4 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(4) }}>
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>4P</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.selectBtn, playerCount === 5 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(5) }}>
+                        {/* <TouchableOpacity style={[styles.selectBtn, players === 5 ? { backgroundColor: "#F8B55F" } : {}]} onPress={() => { setPlayers(5) }}>
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>5P</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                     </View>
-                    <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true) }} disabled={ready}>
+                    <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} disabled={!socket || ready}>
                         <Text style={{ color: "#000", fontWeight: "bold" }} >Ready</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.startBtn} onPress={() => setGameStarted(true)}>
+                    {/* <TouchableOpacity style={styles.startBtn} onPress={() => setGameStarted(true)}>
                         <Text style={{ color: "#fff", fontWeight: "bold" }}>Start Game</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </>
                 )}
             {gameStarted && ready &&
                 (
                     <>
-                        <GameScreenFast players={playerCount}
+                        <GameScreen
+                            players={playerCount}
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
-                            myId={socket.id} />
+                            myId={user._id}
+                            user={user} />
                     </>
+
                 )}
+
         </View>
     )
 }
@@ -131,7 +171,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         position: 'absolute',
-        bottom: 230,
+        bottom: 180,
         alignSelf: 'center',
 
     },
@@ -151,8 +191,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         marginTop: 20,
         position: 'absolute',
-        bottom: 300,
-        width: '70%',
+        bottom: 250,
+        width: '75%',
     },
     exitIcon: {
         position: 'absolute',
@@ -161,7 +201,7 @@ const styles = StyleSheet.create({
         color: '#F8B55F',
         zIndex: 10,
     },
-    FastText: {
+    classicText: {
         position: 'absolute',
         top: 50,
         fontSize: 24,

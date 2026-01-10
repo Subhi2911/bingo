@@ -6,6 +6,7 @@ import { BACKEND_URL } from '../config/backend';
 
 const CommonSelectionRoom = (props) => {
     const [user, setUser] = React.useState(null);
+    const [positions, setPositions] = React.useState([]);
 
     React.useEffect(() => {
         const getUser = async () => {
@@ -27,7 +28,7 @@ const CommonSelectionRoom = (props) => {
         getUser();
     }, []);
 
-    const playerPositions = {
+    const playerPositionsClassic = {
         1: [{ bottom: '2%', left: '10%' }],
         2: [
             { top: '26%', right: '8%' },
@@ -52,8 +53,40 @@ const CommonSelectionRoom = (props) => {
             { top: '63%', left: '43%' }
         ]
     };
+    const playerPositionsFast = {
+        1: [{ bottom: '1%', left: '8.5%' }],
+        2: [
+            { top: '26%', right: '8%' },
+            { bottom: '1%', left: '8.5%' }
+        ],
+        3: [
+            { top: '24.5%', left: '10%' },
+            { top: '24.5%', right: '9.5%' },
+            { bottom: '1%', left: '8.5%' }
+        ],
+        4: [
+            { top: '26%', left: '8.5%' },
+            { top: '26%', right: '8%' },
+            { bottom: '1%', right: '8%' },
+            { bottom: '1%', left: '8.5%' }
+        ],
+        5: [
+            { top: '26%', left: '8.5%' },
+            { top: '26%', right: '8%' },
+            { bottom: '1%', right: '8%' },
+            { bottom: '1%', left: '8.5%' },
+            { top: '63%', left: '43%' }
+        ]
+    };
 
-    const positions = playerPositions[props.players] || playerPositions[1];
+    React.useEffect(() => {
+        if (props.gameType === "classic") {
+            setPositions(playerPositionsClassic[props.players] || playerPositionsClassic[1]);
+        } else if (props.gameType === "fast") {
+            setPositions(playerPositionsFast[props.players] || playerPositionsFast[1]);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.gameType, props.players]);
 
     const userAvatars = {
         daub: require('../avatars/daub.png'),
@@ -64,6 +97,11 @@ const CommonSelectionRoom = (props) => {
     const opponents = (props.matchedPlayers || []).filter(
         p => p && p.userId !== meId
     );
+
+    const imageSelection = {
+        classic: require('../images/userSelection.png'),
+        fast: require('../images/userSelectionFast.png'),
+    }
 
 
     return (
@@ -80,7 +118,7 @@ const CommonSelectionRoom = (props) => {
 
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ImageBackground
-                        source={require('../images/userSelection.png')}
+                        source={imageSelection[props.gameType] || require('../images/userSelection.png')}
                         style={{
                             width: 450,
                             height: 450,

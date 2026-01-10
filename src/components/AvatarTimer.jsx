@@ -1,4 +1,4 @@
-/* eslint-disable react-native/no-inline-styles */
+///* eslint-disable react-native/no-inline-styles */
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -77,4 +77,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default AvatarTimer;
+export default React.memo(AvatarTimer);

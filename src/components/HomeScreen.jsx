@@ -142,7 +142,7 @@ const HomeScreen = () => {
             <View style={styles.actionsRow}>
                 <Action icon="tasks" label="Missions" />
                 <Action icon="shopping-cart" label="Shop" />
-                <Action icon="trophy" label="Rank" />
+                <Action icon="user-friends" label="Friends" onPress={()=>{navigation.navigate("Friends")}}/>
             </View>
 
             {/* MODAL */}
