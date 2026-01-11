@@ -140,8 +140,8 @@ const HomeScreen = () => {
 
             {/* ACTIONS */}
             <View style={styles.actionsRow}>
-                <Action icon="tasks" label="Missions" />
-                <Action icon="shopping-cart" label="Shop" />
+                <Action icon="tasks" label="Missions" onPress={()=>{navigation.navigate("Missions")}}/>
+                <Action icon="medal" label="Ranking" onPress={()=>{navigation.navigate("Ranking")}}/>
                 <Action icon="user-friends" label="Friends" onPress={()=>{navigation.navigate("Friends")}}/>
             </View>
 
@@ -197,8 +197,8 @@ const PlayCard = ({ icon, label, onPress }) => (
     </TouchableOpacity>
 );
 
-const Action = ({ icon, label }) => (
-    <TouchableOpacity style={styles.actionBox}>
+const Action = ({ icon, label, onPress }) => (
+    <TouchableOpacity style={styles.actionBox} onPress={onPress}>
         <Icon name={icon} size={24} color="#FFD67A" />
         <Text style={styles.actionText}>{label}</Text>
     </TouchableOpacity>

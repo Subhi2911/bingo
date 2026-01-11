@@ -3,7 +3,7 @@ import { FlatList, ImageBackground, StyleSheet, Text, TouchableOpacity, View } f
 import React from 'react'
 import { Image } from 'expo-image'
 
-const Play = () => {
+const LeaderBoard = () => {
     const [selectedMode, setSelectedMode] = React.useState("world");
     const dummyData = [
         { "id": 1, "name": "Aarav", "level": 12, "xp": 11523 },
@@ -80,7 +80,7 @@ const Play = () => {
     )
 }
 
-export default Play
+export default LeaderBoard
 
 const styles = StyleSheet.create({
     container: {

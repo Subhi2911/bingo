@@ -56,17 +56,17 @@ const CommonSelectionRoom = (props) => {
     const playerPositionsFast = {
         1: [{ bottom: '1%', left: '8.5%' }],
         2: [
-            { top: '26%', right: '8%' },
+            { top: '24.5%', right: '9.5%' },
             { bottom: '1%', left: '8.5%' }
         ],
         3: [
-            { top: '24.5%', left: '10%' },
+            { top: '24.5%', left: '9.5%' },
             { top: '24.5%', right: '9.5%' },
             { bottom: '1%', left: '8.5%' }
         ],
         4: [
-            { top: '26%', left: '8.5%' },
-            { top: '26%', right: '8%' },
+            { top: '24.5%', left: '9.5%' },
+            { top: '24.5%', right: '9.5%' },
             { bottom: '1%', right: '8%' },
             { bottom: '1%', left: '8.5%' }
         ],

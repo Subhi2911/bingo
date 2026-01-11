@@ -15,6 +15,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from './src/config/backend';
 import HomeScreen from './src/components/HomeScreen';
 import Freinds from './src/components/Friends';
+import Ranking from './src/components/Ranking'
+import Missions from './src/components/Missions'
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +46,8 @@ const App = () => {
           <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="HomeScreen" component={HomeScreen} />
           <Stack.Screen name="Friends" component={Freinds} />
+          <Stack.Screen name="Ranking" component={Ranking} />
+          <Stack.Screen name="Missions" component={Missions}/>
         </Stack.Navigator>
       </NavigationContainer>
     </SocketProvider>

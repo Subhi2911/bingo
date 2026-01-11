@@ -64,7 +64,8 @@ const Classic = () => {
             userId: user?._id,
             username: user?.username, // replace later with real user
             avatar: user?.avatar,
-            size: playerCount // 2,3,4,5 selected earlier
+            size: playerCount, // 2,3,4,5 selected earlier
+            gameType:'classic'
         });
     };
 
@@ -148,7 +149,8 @@ const Classic = () => {
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
                             myId={user._id}
-                            user={user} />
+                            user={user} 
+                            gameType="classic"/>
                     </>
 
                 )}

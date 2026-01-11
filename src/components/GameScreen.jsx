@@ -40,12 +40,18 @@ const GameScreen = (props) => {
     const letters = ['B', 'I', 'N', 'G', 'O'];
     const [timer, setTimer] = useState(TURN_TIME);
     const [floatingNumbers, setFloatingNumbers] = useState([]);
+
     const [bingopop, setBingopop] = useState(false);
+    const [hasShownResult, setHasShownResult] = useState(false);
+
+    const didWinRef = useRef(false);
+
+
     const avatarRef = useRef(null);
     const [anchor, setAnchor] = useState(null);
     const [profileVisible, setProfileVisible] = useState(false);
     const [profileDetails, setProfileDetails] = useState(null);
-    
+
 
     const avatarImages = {
         daub: require('../avatars/daub.png'),
@@ -101,7 +107,6 @@ const GameScreen = (props) => {
         if (!socket) return;
 
         const handleTurnOrder = (order) => {
-            console.log("TURN ORDER RECEIVED:", order);
 
             setTurnOrder(order);
             setMe(order.find(p => p.userId === props?.user?._id));
@@ -205,17 +210,12 @@ const GameScreen = (props) => {
     }, [floatingNumbers]);
 
 
-    useEffect(() => {
-        console.log("TURN ORDER STATE:", turnOrder);
-    }, [turnOrder]);
-
 
     useEffect(() => {
         console.log(turnOrder);
         if (!turnOrder?.length) return;
-        turnOrder?.forEach(player => {
-            checkBingo(player?.userId);
-        });
+        checkBingo(props.user._id);
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pickedNumbers, turnOrder]);
 
@@ -254,8 +254,8 @@ const GameScreen = (props) => {
 
     const checkBingo = (playerId) => {
         if (gameEndedRef.current) return;
-        setPlayerWins(prev => {
 
+        setPlayerWins(prev => {
             if (!playerBoards[playerId] || !prev[playerId]) return prev;
 
             const newWins = { ...prev };
@@ -269,7 +269,6 @@ const GameScreen = (props) => {
                 [3, 8, 13, 18, 23],
                 [4, 9, 14, 19, 24]
             ];
-
             const rows = [
                 [0, 1, 2, 3, 4],
                 [5, 6, 7, 8, 9],
@@ -277,7 +276,6 @@ const GameScreen = (props) => {
                 [15, 16, 17, 18, 19],
                 [20, 21, 22, 23, 24]
             ];
-
             const diagonals = [
                 [0, 6, 12, 18, 24],
                 [4, 8, 12, 16, 20]
@@ -304,28 +302,35 @@ const GameScreen = (props) => {
             checkPatterns(rows, 'row');
             checkPatterns(diagonals, 'diag');
 
-            newWins[playerId] = playerData;
-            const hasCompletedBingo = letters.every(l => playerData[l]);
+            let hasCompletedBingo = false;
+
+            if (props.gameType === 'classic') {
+                hasCompletedBingo = letters.every(l => playerData[l]);
+            } else if (props.gameType === 'fast') {
+                const daubedCount = letters.filter(l => playerData[l]).length;
+                hasCompletedBingo = daubedCount >= 3;
+            }
 
             if (hasCompletedBingo && !playerData.completed && !gameEndedRef.current) {
+                // ✅ WIN detected
                 gameEndedRef.current = true;
                 playerData.completed = true;
-
-                // 🔥 SHOW BINGO IMMEDIATELY (same as lose)
-                setResult("win");
-                setWinnerPlayerId(props?.user?._id);
+                setResult(playerId === props.user._id ? "win" : "lose");
+                setWinnerPlayerId(playerId === props.user._id ? props.user._id : null);
                 setBingopop(true);
 
-                // 🔄 Sync with server (background)
+                // Sync with server
                 socket.emit("game_end", {
                     roomCode: props.roomCode,
-                    winnerId: props?.user?._id
+                    winnerId: playerId
                 });
             }
 
+            newWins[playerId] = playerData;
             return newWins;
         });
     };
+
 
     const openProfile = (player) => {
         avatarRef.current?.measureInWindow((x, y, width, height) => {
@@ -409,7 +414,7 @@ const GameScreen = (props) => {
                                         onPress={() => openProfile(player)}
                                     >
                                         <Image
-                                            source={avatarImages[player.avatar]|| require('../images/user.jpg')}
+                                            source={avatarImages[player.avatar] || require('../images/user.jpg')}
                                             style={styles.userAvatarImage}
                                         />
                                     </TouchableOpacity>
@@ -496,10 +501,8 @@ const GameScreen = (props) => {
                         <BingoPopUp
                             delay={bingopop ? 200 : null}
                             onAnimationEnd={() => {
-                                setTimeout(() => {
-                                    setWinModal(true);
-                                    setBingopop(false);
-                                }, 300);
+                                setWinModal(true);
+                                setBingopop(false);
                             }}
                         />
                     </>

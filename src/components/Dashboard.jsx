@@ -18,6 +18,7 @@ import HomeScreen from "./HomeScreen";
 import Shop from "./Shop";
 import Leaderboard from "./Leaderboard";
 import Profile from "./Profile";
+import Play from "./Play"
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -104,6 +105,7 @@ const Dashboard = () => {
                     {selected === "shop" && <Shop />}
                     {selected === "leaderboard" && <Leaderboard />}
                     {selected === "profile" && <Profile />}
+                    {selected==='play'&& <Play />}
 
                     <NavBar selectedScreen={setSelected} />
                 </ImageBackground>
