@@ -8,8 +8,10 @@ import {
     TouchableOpacity,
     Modal,
     Pressable,
+    TextInput,
 } from "react-native";
 import React from "react";
+import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Intro from "./Intro";
 import NavBar from "./NavBar";
@@ -22,6 +24,9 @@ import Play from "./Play"
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import Search from "./Search";
+
+
 
 const Dashboard = () => {
     const [loading, setLoading] = React.useState(true);
@@ -29,6 +34,46 @@ const Dashboard = () => {
     const [user, setUser] = React.useState(null);
     const [profileModalVisible, setProfileModalVisible] = React.useState(false);
     const navigation = useNavigation();
+    const [searchResults, setSearchResults] = React.useState([]);
+    const [query, setQuery] = React.useState("");
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (query.length >= 2) {
+                searchUser(query);
+            } else {
+                setSearchResults([]);
+            }
+        }, 400);
+
+        return () => clearTimeout(timeout);
+    }, [query]);
+
+    const searchUser = async (query) => {
+        try {
+            const token = await AsyncStorage.getItem("authToken");
+            setSelected('search');
+
+            const res = await fetch(
+                `${BACKEND_URL}/api/auth/search-user?q=${encodeURIComponent(query)}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                }
+            );
+
+            if (!res.ok) return;
+
+            const data = await res.json();
+            setSearchResults(data);
+
+        } catch (error) {
+            console.error("Search error:", error);
+        }
+    };
 
     React.useEffect(() => {
         const token = AsyncStorage.getItem("authToken");
@@ -40,6 +85,10 @@ const Dashboard = () => {
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const openProfile = (item) => {
+        navigation.navigate("OtherProfile", { userId: item._id });
+    }
 
     React.useEffect(() => {
         const getUser = async () => {
@@ -97,6 +146,18 @@ const Dashboard = () => {
                                         />
                                     </View>
                                 </View>
+
+                                {/*Search Bar */}
+                                {selected === 'home' &&
+                                    <View style={styles.searchBar}>
+                                        <Icon name="search" size={18} color="#23203C" />
+                                        <TextInput
+                                            placeholder="Search by Player ID"
+                                            value={query}
+                                            onChangeText={setQuery}
+                                            style={styles.searchInput}
+                                        />
+                                    </View>}
                             </>}
 
                     </SafeAreaView>
@@ -105,7 +166,8 @@ const Dashboard = () => {
                     {selected === "shop" && <Shop />}
                     {selected === "leaderboard" && <Leaderboard />}
                     {selected === "profile" && <Profile />}
-                    {selected==='play'&& <Play />}
+                    {selected === 'play' && <Play />}
+                    {selected === 'search' && <Search searchResults={searchResults} onUserPress={(user) => openProfile(user)} />}
 
                     <NavBar selectedScreen={setSelected} />
                 </ImageBackground>
@@ -195,6 +257,22 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         padding: 16,
         elevation: 10,
+    },
+    searchBar: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#eed6f4",
+        padding: 10,
+        borderRadius: 10,
+        marginHorizontal: 25,
+        marginTop: 10,
+        gap: 5,
+    },
+    searchInput: {
+        marginLeft: 12,
+        color: "#23203C",
+        fontSize: 16,
+        fontWeight: 600,
     },
     popupAvatar: {
         width: 60,

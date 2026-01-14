@@ -538,7 +538,8 @@ const GameScreen = (props) => {
                         visible={profileVisible}
                         anchor={anchor}
                         user={profileDetails}
-                        onClose={() => setProfileVisible(false)} />
+                        onClose={() => setProfileVisible(false)} 
+                        myId={props.user._id} />
                 </Modal>
             )}
 

@@ -7,81 +7,236 @@ import {
     View,
     FlatList,
     Image,
-    ActivityIndicator
+    ActivityIndicator,
+    TouchableOpacity
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BACKEND_URL } from "../config/backend";
 
 const Friends = () => {
     const navigation = useNavigation();
+    const [screen, setScreen] = useState('friends');
+    const [friends, setFriends] = useState([]);
+    const [requests, setRequests] = useState([]);
+    const [userData, setUserData] = useState(null);
 
-    // Full dataset (you can replace this with API)
-    const allUsers = [
-        { username: "bingoAce", avatar: "daub", wins: 12, xp: 1450, level: 5, coins: 820 },
-        { username: "luckyStar", avatar: "daub", wins: 8, xp: 980, level: 4, coins: 540 },
-        { username: "numberNinja", avatar: "daub", wins: 20, xp: 2400, level: 7, coins: 1500 },
-        { username: "fastDauber", avatar: "daub", wins: 5, xp: 620, level: 3, coins: 310 },
-        { username: "bingoQueen", avatar: "daub", wins: 18, xp: 2100, level: 6, coins: 1320 },
-        { username: "cardMaster", avatar: "daub", wins: 9, xp: 1100, level: 4, coins: 670 },
-        { username: "goldenBall", avatar: "daub", wins: 14, xp: 1650, level: 5, coins: 900 },
-        { username: "rapidTap", avatar: "daub", wins: 3, xp: 400, level: 2, coins: 180 },
-        { username: "bingoWolf", avatar: "daub", wins: 16, xp: 1900, level: 6, coins: 1200 },
-        { username: "finalCall", avatar: "daub", wins: 19, xp: 2300, level: 7, coins: 1600 },
-        { username: "extra1", avatar: "daub", wins: 2, xp: 300, level: 1, coins: 100 },
-        { username: "extra2", avatar: "daub", wins: 4, xp: 450, level: 2, coins: 200 },
-        { username: "extra3", avatar: "daub", wins: 6, xp: 700, level: 3, coins: 350 },
-        { username: "extra4", avatar: "daub", wins: 7, xp: 800, level: 3, coins: 400 },
-        { username: "extra5", avatar: "daub", wins: 10, xp: 1000, level: 4, coins: 600 },
-        { username: "extra6", avatar: "daub", wins: 11, xp: 1200, level: 4, coins: 650 },
-        { username: "extra7", avatar: "daub", wins: 13, xp: 1400, level: 5, coins: 750 },
-        { username: "extra8", avatar: "daub", wins: 15, xp: 1700, level: 5, coins: 900 },
-        { username: "extra9", avatar: "daub", wins: 17, xp: 2000, level: 6, coins: 1100 },
-        { username: "extra10", avatar: "daub", wins: 18, xp: 2100, level: 6, coins: 1250 },
-    ];
+    useEffect(() => {
+        const getMyUserData = async () => {
+            try {
+                const token = await AsyncStorage.getItem("authToken");
+                console.log("Auth Token:", token);
+                const response = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                });
+                const json = await response.json();
+                setUserData(json);
+                console.log("My user data:", json);
+            } catch (error) {
+                console.error("Error fetching my user data:", error);
+            }
+        };
+        getMyUserData();
+    }, []);
+
+    useEffect(() => {
+        const fetchFriendsData = async () => {
+            const token = await AsyncStorage.getItem("authToken");
+            console.log("Auth Token:", token);
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/friends`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                });
+                const json = await response.json();
+                setFriends(json);
+                console.log("Friends data:", json);
+            } catch (error) {
+                console.error("Error fetching friends:", error);
+            }
+        };
+        fetchFriendsData();
+    }, []);
+
+    useEffect(() => {
+        const fetchRequestsData = async () => {
+            const token = await AsyncStorage.getItem("authToken");
+            console.log("Auth Token:", token);
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/pending-requests`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                });
+                if (response.ok) {
+                    const json = await response.json();
+                    setRequests(json);
+                    console.log("Requests data:", json);
+                }
+
+            } catch (error) {
+                console.error("Error fetching requests:", error);
+            }
+        };
+        fetchRequestsData();
+    }, []);
+
+    const [acceptedRequests, setAcceptedRequests] = useState([]);
+
+    const handleAccept = async (userId) => {
+        try {
+            console.log('haggue')
+            const token = await AsyncStorage.getItem("authToken");
+            const res = await fetch(`${BACKEND_URL}/api/auth/accept-request/${userId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "auth-token": token,
+                },
+            });
+            console.log(res);
+            if (res.ok) {
+                const data = await res.json();
+                setAcceptedRequests([...acceptedRequests, userId]);
+                setRequests(requests.filter(r => r._id !== userId));
+                setFriends([...friends, data.safeUser]);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleReject = async (userId) => {
+        try {
+            console.log('bibhu nalla')
+            const token = await AsyncStorage.getItem("authToken");
+            const res = await fetch(`${BACKEND_URL}/api/auth/reject-request/${userId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "auth-token": token,
+                },
+            });
+            await res.json();
+            setRequests(requests.filter(r => r._id !== userId));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const removeFriend = async (userId) => {
+        try {
+            const token = await AsyncStorage.getItem("authToken");
+            const res = await fetch(`${BACKEND_URL}/api/auth/remove-friend/${userId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "auth-token": token,
+                },
+            });
+            await res.json();
+            setFriends(friends.filter(f => f._id !== userId));
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const BATCH_SIZE = 8; // how many users to load per scroll
 
-    const [users, setUsers] = useState(allUsers.slice(0, BATCH_SIZE));
+    const [users, setUsers] = useState(screen === 'friends' ? friends?.slice(0, BATCH_SIZE) : requests?.slice(0, BATCH_SIZE));
+    console.log(users);
     const [loadingMore, setLoadingMore] = useState(false);
 
     const loadMoreUsers = () => {
-        if (users.length >= allUsers.length || loadingMore) return; // all loaded or already loading
+        if (loadingMore) return;
+
+        const source = screen === 'friends' ? friends : requests;
+
+        if (users.length >= source.length) return; // all loaded
 
         setLoadingMore(true);
 
-        // simulate API delay
         setTimeout(() => {
-            const nextUsers = allUsers.slice(users.length, users.length + BATCH_SIZE);
+            const nextUsers = source.slice(users.length, users.length + BATCH_SIZE);
             setUsers([...users, ...nextUsers]);
             setLoadingMore(false);
-        }, 1000);
+        }, 500); // smaller delay for smoother UI
     };
 
-    const renderItem = ({ item }) => (
+    const userAvatars = {
+        daub: require("../images/daub.png"),
+    }
+
+
+    const renderItemFriends = ({ item }) => (
         <View style={styles.card}>
             <Image
-                source={require("../images/daub.png")}
+                source={userAvatars[item.avatar] || require("../images/user.jpg")}
                 style={styles.avatar}
             />
 
             <View style={{ flex: 1 }}>
                 <Text style={styles.username}>{item.username}</Text>
+                <Text>{item.bio}</Text>
                 <Text style={styles.subText}>
-                    Wins: {item.wins} · Level {item.level}
+                    Wins: {item.wins} · Level {item.level} ·XP: {item.xp}
                 </Text>
             </View>
 
             <View style={styles.coinRemoveContainer}>
-                <View style={styles.removeUser}>
+                <TouchableOpacity style={styles.removeUser} onPress={() => { removeFriend(item?._id) }}>
                     <Icon name='user-minus' size={20} color='#000' />
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.coinRow}>
                     <Icon name="coins" size={16} color="#F8B55F" />
-                    <Text style={styles.coinText}>{item.coins}</Text>
+                    <Text style={styles.coinText}>{item.money}</Text>
                 </View>
+            </View>
+        </View>
+    );
+
+    const renderItemRequests = ({ item }) => (
+        <View style={styles.card}>
+            <Image
+                source={userAvatars[item.avatar] || require("../images/user.jpg")}
+                style={styles.avatar}
+            />
+
+            <View style={{ flex: 1 }}>
+                <Text style={styles.username}>{item.username}</Text>
+                <Text>{item.bio}</Text>
+                <Text style={styles.subText}>
+                    Wins: {item.wins} · Level {item.level} ·XP: {item.xp}
+                </Text>
+            </View>
+
+            <View style={styles.choiceContainer}>
+                {acceptedRequests.includes(item._id) || userData?.friends?.includes(item._id) ? (
+                    <Icon name='check' size={25} color='#02ac4f' />
+                ) : (<>
+                    <TouchableOpacity style={styles.removeUser} onPress={() => handleAccept(item._id)}>
+                        <Icon name='check-circle' size={25} color='#02ac4f' />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.coinRow} onPress={() => handleReject(item._id)}>
+                        <Icon name="times-circle" size={25} color="#f70505" />
+                        {/* <Text style={styles.coinText}>{item.coins}</Text> */}
+                    </TouchableOpacity>
+                </>)}
+
             </View>
         </View>
     );
@@ -94,6 +249,13 @@ const Friends = () => {
             </View>
         );
     };
+    useEffect(() => {
+        if (screen === 'friends') {
+            setUsers(friends.slice(0, BATCH_SIZE));
+        } else if (screen === 'requests') {
+            setUsers(requests.slice(0, BATCH_SIZE));
+        }
+    }, [screen, friends, requests]);
 
     return (
         <View style={{ flex: 1 }}>
@@ -111,20 +273,54 @@ const Friends = () => {
                             onPress={() => navigation.goBack()}
                         />
                         <Text style={styles.friendsText}>Friends</Text>
-                    </View>
+                        <View style={styles.dot}>
+                            <Text>{friends.length}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => { setScreen(screen === 'requests' ? 'friends' : 'requests'); }} style={styles.requestButton}>
+                            <Text style={{ color: "#3D365C", fontWeight: "bold", fontSize: 18 }}>{screen === 'requests' ? 'Friends' : 'Requests'}</Text>
+                        </TouchableOpacity>
+                        {screen === 'friends' && requests.length > 0 && (
+                            <View style={styles.dot}>
+                                <Text style={styles.dotText}>{requests.length}</Text>
+                            </View>
+                        )}
 
-                    {/* FlatList */}
-                    <FlatList
-                        data={users}
-                        keyExtractor={(item) => item.username}
-                        renderItem={renderItem}
-                        contentContainerStyle={{ padding: 16, paddingTop: 30 }}
-                        showsVerticalScrollIndicator={true}
-                        scrollEnabled={true}
-                        onEndReached={loadMoreUsers}
-                        onEndReachedThreshold={0.5}
-                        ListFooterComponent={renderFooter}
-                    />
+                    </View>
+                    {screen === 'requests' && requests.length === 0 && (
+                        <View style={{ flex: 1, alignItems: "center", marginTop: 50 }}>
+                            <Text style={{ fontSize: 15, color: "#ffffff" }}>No requests found.</Text>
+                        </View>
+                    )}
+                    {screen === 'friends' && friends.length === 0 && (
+                        <View style={{ flex: 1, alignItems: "center", marginTop: 50 }}>
+                            <Text style={{ fontSize: 15, color: "#ffffff" }}>No friends found.</Text>
+                        </View>
+                    )}
+
+                    {screen === 'friends' && friends.length !== 0 &&
+                        <FlatList
+                            data={users}
+                            keyExtractor={(item) => item.username}
+                            renderItem={renderItemFriends}
+                            contentContainerStyle={{ padding: 16, paddingTop: 30 }}
+                            showsVerticalScrollIndicator={true}
+                            scrollEnabled={true}
+                            onEndReached={loadMoreUsers}
+                            onEndReachedThreshold={0.5}
+                            ListFooterComponent={renderFooter}
+                        />}
+                    {screen === 'requests' && requests.length !== 0 &&
+                        <FlatList
+                            data={users}
+                            keyExtractor={(item) => item.username}
+                            renderItem={renderItemRequests}
+                            contentContainerStyle={{ padding: 16, paddingTop: 30 }}
+                            showsVerticalScrollIndicator={true}
+                            scrollEnabled={true}
+                            onEndReached={loadMoreUsers}
+                            onEndReachedThreshold={0.5}
+                            ListFooterComponent={renderFooter}
+                        />}
                 </SafeAreaView>
             </ImageBackground>
         </View>
@@ -145,6 +341,16 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         marginLeft: 16,
         color: "#000",
+    },
+    dot: {
+        backgroundColor: "#FFD700",
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        marginLeft: 8,
+    },
+    requestButton: {
+        marginLeft: "auto",
     },
     card: {
         flexDirection: "row",
@@ -186,5 +392,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         width: "30%",
+    },
+    choiceContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "20%",
     },
 });

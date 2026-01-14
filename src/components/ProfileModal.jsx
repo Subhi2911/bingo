@@ -1,5 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
   View,
@@ -11,6 +12,10 @@ import {
   ImageBackground,
   Dimensions,
 } from "react-native";
+import Icon from 'react-native-vector-icons/FontAwesome5';
+import { BACKEND_URL } from "../config/backend";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -18,14 +23,83 @@ const MODAL_WIDTH = 260;
 const MODAL_HEIGHT = 240;
 const MARGIN = 8;
 
+
+
 const avatarImages = {
   daub: require("../avatars/daub.png"),
 };
 
-const ProfileModal = ({ visible, anchor, user, onClose }) => {
-  if (!visible || !anchor || !user) return null;
 
-  // 📐 Position calculation
+
+const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
+  const [otherUser, setOtherUser] = React.useState(null);
+
+  useEffect(() => {
+    console.log("Fetching other user data for:", user);
+
+    const getOtherUserData = async () => {
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/api/auth/user/${user.userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Fetched other user:", data);
+          setOtherUser(data);
+          console.log("Other user data set:", otherUser);
+        } else {
+          console.log("Response not ok");
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    };
+
+    getOtherUserData();
+    console.log("User changed:", otherUser);
+  }, [user]);
+
+  const [sent, setSent] = React.useState(false);
+
+  const sendFriendRequest = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      console.log(token);
+      const response = await fetch(`${BACKEND_URL}/api/auth/send-request/${user?.userId}`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "auth-token": token,
+        },
+        //body: JSON.stringify({ toUserId: otherUser._id }),
+      });
+      console.log(response);
+      if (response.ok) {
+        const json = await response.json();
+        setSent(true);
+        console.log("Friend request response:", json);
+      }
+    } catch (error) {
+      console.error("Friend request error:", error);
+    }
+  };
+
+  useEffect(() => {
+    setSent(false);
+  }, [user?.userId]);
+
+
+
+  if (!visible || !anchor || !user || !otherUser) return null;
+
+  //  Position calculation
   let left = anchor.x + anchor.width / 2 - MODAL_WIDTH / 2;
   let top = anchor.y + anchor.height + 30;
 
@@ -39,6 +113,8 @@ const ProfileModal = ({ visible, anchor, user, onClose }) => {
   if (top + MODAL_HEIGHT > SCREEN_HEIGHT - MARGIN) {
     top = anchor.y - MODAL_HEIGHT - 10;
   }
+
+
 
   return (
     <Modal transparent animationType="fade">
@@ -76,19 +152,44 @@ const ProfileModal = ({ visible, anchor, user, onClose }) => {
                   style={styles.avatar}
                 />
                 <View>
-                  <Text style={styles.name}>{user.username}</Text>
-                  <Text style={styles.sub}>Level {user.level}</Text>
+                  <Text style={styles.name}>{otherUser.username}</Text>
+                  <Text style={styles.sub}>Level {otherUser.level}</Text>
+                </View>
+                <View
+                  style={{
+                    display: 'flex',
+                    marginLeft: 10,
+                    justifyContent: 'space-around',
+                    alignItems: 'center',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Add friend */}
+                  {sent || otherUser?.pendingRequests?.includes(myId) ? (
+                    <Icon name="clock" size={20} color="#f4a261" />) :
+                    <Icon name="user-plus" size={20} color="#1aa705" onPress={sendFriendRequest} />}
+
+
+
+                  {/* Warning */}
+                  <Icon
+                    name="exclamation-triangle"
+                    size={20}
+                    color="red"
+                    style={{ position: 'absolute', top: 0, right: -40 }}
+                  />
                 </View>
               </View>
 
+
               {/* Stats */}
               <View style={styles.statsRow}>
-                <Stat label="XP" value={user.points} />
-                <Stat label="Wins" value={user.wins} />
-                <Stat label="Coins" value={user.coins} />
+                <Stat label="XP" value={otherUser.xp} />
+                <Stat label="Wins" value={otherUser.wins} />
+                <Stat label="Coins" value={otherUser.money} />
               </View>
 
-              <Text style={styles.rank}>Rank #{user.rank}</Text>
+              <Text style={styles.rank}>Rank #{otherUser.rank}</Text>
 
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                 <Text style={{ color: "#fff", fontWeight: "600" }}>

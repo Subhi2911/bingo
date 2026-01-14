@@ -17,6 +17,7 @@ import HomeScreen from './src/components/HomeScreen';
 import Freinds from './src/components/Friends';
 import Ranking from './src/components/Ranking'
 import Missions from './src/components/Missions'
+import OtherProfile from './src/components/otherProfile.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +49,7 @@ const App = () => {
           <Stack.Screen name="Friends" component={Freinds} />
           <Stack.Screen name="Ranking" component={Ranking} />
           <Stack.Screen name="Missions" component={Missions}/>
+          <Stack.Screen name="OtherProfile" component={OtherProfile} />
         </Stack.Navigator>
       </NavigationContainer>
     </SocketProvider>

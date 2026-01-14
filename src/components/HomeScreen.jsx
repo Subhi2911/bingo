@@ -9,17 +9,24 @@ import {
     Modal,
     Pressable,
     ImageBackground,
+    TextInput,
 } from "react-native";
+import { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const HomeScreen = () => {
+const HomeScreen = ({setSelected, setSearchResults}) => {
     const navigation = useNavigation();
 
     const [showRewardsModal, setShowRewardsModal] = React.useState(false);
     const [user, setUser] = React.useState(null);
+    const [query, setQuery] = React.useState("");
+
+    //const [searchResults, setSearchResults] = useState([]);
+
+    
 
     const launchGame = (mode) => {
         navigation.navigate(mode);
@@ -44,6 +51,9 @@ const HomeScreen = () => {
         };
         getUser();
     }, []);
+
+   
+
 
     const dailyReward = {
         1: "100 coins",
@@ -76,6 +86,8 @@ const HomeScreen = () => {
 
     return (
         <View style={styles.container}>
+           
+
             {/* DAILY REWARD CARD */}
             <Pressable
                 style={styles.rewardCard}
@@ -140,9 +152,9 @@ const HomeScreen = () => {
 
             {/* ACTIONS */}
             <View style={styles.actionsRow}>
-                <Action icon="tasks" label="Missions" onPress={()=>{navigation.navigate("Missions")}}/>
-                <Action icon="medal" label="Ranking" onPress={()=>{navigation.navigate("Ranking")}}/>
-                <Action icon="user-friends" label="Friends" onPress={()=>{navigation.navigate("Friends")}}/>
+                <Action icon="tasks" label="Missions" onPress={() => { navigation.navigate("Missions") }} />
+                <Action icon="medal" label="Ranking" onPress={() => { navigation.navigate("Ranking") }} />
+                <Action icon="user-friends" label="Friends" onPress={() => { navigation.navigate("Friends") }} />
             </View>
 
             {/* MODAL */}
@@ -160,13 +172,13 @@ const HomeScreen = () => {
                     {/* Modal Box */}
                     <Pressable
                         style={styles.modalBox}
-                        onPress={() => {}}   // prevents closing
+                        onPress={() => { }}   // prevents closing
                     >
                         {/* Title */}
                         <Text style={styles.modalTitle}>Daily Rewards</Text>
 
                         {/* Reward Image */}
-                        <ImageBackground 
+                        <ImageBackground
                             source={require("../images/dailyclaims-bg.png")}
                             style={styles.rewardImage}
                             contentFit="contain"
@@ -210,7 +222,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        paddingTop: 40,
+        paddingTop: 10,
     },
     rewardCard: {
         backgroundColor: "#3D365C",
@@ -239,6 +251,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
     },
+    
     username: {
         color: "#fff",
         fontSize: 18,
