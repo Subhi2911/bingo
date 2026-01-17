@@ -139,7 +139,9 @@ const Dashboard = () => {
 
 
                                     <View style={styles.iconContainer2}>
-                                        <Icon name="paper-plane" size={28} color="#F8B55F" />
+                                        <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
+                                            <Icon name="paper-plane" size={28} color="#F8B55F" />
+                                        </TouchableOpacity>
                                         <Image
                                             source={require("../images/LuckySpin.png")}
                                             style={{ width: 45, height: 45 }}
@@ -148,9 +150,9 @@ const Dashboard = () => {
                                 </View>
 
                                 {/*Search Bar */}
-                                {selected === 'home' &&
+                                {(selected === 'home' || selected==='search') && 
                                     <View style={styles.searchBar}>
-                                        <Icon name="search" size={18} color="#23203C" />
+                                        <Icon name="search" size={18} color="#bab8cc" />
                                         <TextInput
                                             placeholder="Search by Player ID"
                                             value={query}
@@ -261,7 +263,7 @@ const styles = StyleSheet.create({
     searchBar: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#eed6f4",
+        backgroundColor: "#3d365cb6",
         padding: 10,
         borderRadius: 10,
         marginHorizontal: 25,
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         marginLeft: 12,
-        color: "#23203C",
+        color: "#b8b6c9",
         fontSize: 16,
         fontWeight: 600,
     },

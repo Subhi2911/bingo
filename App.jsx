@@ -18,6 +18,8 @@ import Freinds from './src/components/Friends';
 import Ranking from './src/components/Ranking'
 import Missions from './src/components/Missions'
 import OtherProfile from './src/components/otherProfile.jsx';
+import Messaging from './src/components/Messaging.jsx';
+import Chat from './src/components/Chat.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -50,6 +52,8 @@ const App = () => {
           <Stack.Screen name="Ranking" component={Ranking} />
           <Stack.Screen name="Missions" component={Missions}/>
           <Stack.Screen name="OtherProfile" component={OtherProfile} />
+          <Stack.Screen name="Messaging" component={Messaging} />
+          <Stack.Screen name="Chat" component={Chat} />
         </Stack.Navigator>
       </NavigationContainer>
     </SocketProvider>

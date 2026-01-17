@@ -8,7 +8,8 @@ import {
     FlatList,
     Image,
     ActivityIndicator,
-    TouchableOpacity
+    TouchableOpacity,
+    Touchable
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -153,6 +154,28 @@ const Friends = () => {
         }
     };
 
+    const openChat = async (otherUserId, otherUsername) => {
+        console.log(userData);
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/chat/findOrCreate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId1: userData._id,   // your logged-in user
+                    userId2: otherUserId,      // user clicked on
+                    chatName: otherUsername,
+                }),
+            });
+            const chat = await response.json();
+            console.log(userData._id, otherUserId, chat);
+            // Navigate to Chat screen with the chatId
+            navigation.navigate("Chat", { chatId: chat._id });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+
     const BATCH_SIZE = 8; // how many users to load per scroll
 
     const [users, setUsers] = useState(screen === 'friends' ? friends?.slice(0, BATCH_SIZE) : requests?.slice(0, BATCH_SIZE));
@@ -194,12 +217,15 @@ const Friends = () => {
                     Wins: {item.wins} · Level {item.level} ·XP: {item.xp}
                 </Text>
             </View>
-
-            <View style={styles.coinRemoveContainer}>
+            <View style={styles.removeChatContainer}>
                 <TouchableOpacity style={styles.removeUser} onPress={() => { removeFriend(item?._id) }}>
-                    <Icon name='user-minus' size={20} color='#000' />
+                    <Icon name='user-minus' size={18} color='#000' />
                 </TouchableOpacity>
-
+                <TouchableOpacity onPress={() => openChat(item?._id, item?.username)}>
+                    <Icon name="comment-dots" size={18} color="#000" />
+                </TouchableOpacity>
+            </View>
+            <View style={styles.coinRemoveContainer}>
                 <View style={styles.coinRow}>
                     <Icon name="coins" size={16} color="#F8B55F" />
                     <Text style={styles.coinText}>{item.money}</Text>
@@ -391,11 +417,24 @@ const styles = StyleSheet.create({
     coinRemoveContainer: {
         flexDirection: "row",
         justifyContent: "space-between",
-        width: "30%",
+        width: "15%",
     },
     choiceContainer: {
         flexDirection: "row",
         justifyContent: "space-between",
         width: "20%",
+    },
+    removeChatContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "15%",
+        position: "absolute",
+        right: 20,
+        top: 10,
+        alignItems: "center",
+    },
+    dotText: {
+        color: "#000",
+        fontWeight: "bold",
     },
 });
