@@ -139,13 +139,12 @@ const CommonSelectionRoom = (props) => {
                                 <View key={index} style={[styles.player, pos]}>
                                     <View style={styles.userAvatar}>
                                         <View style={styles.avatarWrap}>
-                                            <Image
-                                                source={
-                                                    userAvatars[player?.avatar] ||
-                                                    require('../avatars/user.jpg')
-                                                }
-                                                style={styles.avatarImage}
-                                            />
+                                            
+                                                <Text style={{fontSize:50}}>
+                                                    {player?.avatar|| '🐟'}
+                                                </Text>
+                                                
+                                            
                                         </View>
 
                                     </View>
@@ -180,13 +179,7 @@ const styles = StyleSheet.create({
         borderColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-
-    avatarImage: {
-        width: 55,
-        height: 55,
-        borderRadius: 27,
-        resizeMode: 'contain',
+        backgroundColor:'#000'
     },
 
     userText: {

@@ -102,7 +102,7 @@ const Signup = () => {
 
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
-                navigation.navigate("Dashboard");
+                navigation.navigate("AvatarSelection");
                 Alert.alert("Success", "Account created!");
                 setLoading(false);
             } else {

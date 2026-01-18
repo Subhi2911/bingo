@@ -110,10 +110,7 @@ const Dashboard = () => {
         getUser();
     }, []);
 
-    const avatarMap = {
-        daub: require("../images/daub.png"),
-    };
-
+   
     return (
         <View style={{ flex: 1 }}>
             {loading ? (
@@ -131,10 +128,9 @@ const Dashboard = () => {
                                         style={styles.avatarContainer}
                                         onPress={() => setProfileModalVisible(true)}
                                     >
-                                        <Image
-                                            source={avatarMap[user?.avatar] || require("../images/user.jpg")}
-                                            style={styles.avatar}
-                                        />
+                                        <View style={[styles.avatar,{backgroundColor:'#000'}]}>
+                                            <Text style={{fontSize:30}}>{user?.avatar}</Text>
+                                        </View>
                                     </TouchableOpacity>
 
 
@@ -150,7 +146,7 @@ const Dashboard = () => {
                                 </View>
 
                                 {/*Search Bar */}
-                                {(selected === 'home' || selected==='search') && 
+                                {(selected === 'home' || selected === 'search') &&
                                     <View style={styles.searchBar}>
                                         <Icon name="search" size={18} color="#bab8cc" />
                                         <TextInput
@@ -187,10 +183,11 @@ const Dashboard = () => {
                     onPress={() => setProfileModalVisible(false)}
                 >
                     <View style={styles.popup}>
-                        <ImageBackground
-                            source={avatarMap[user?.avatar] || require("../images/user.jpg")}
-                            style={styles.popupAvatar}
-                        />
+                        <View style={[styles.popupAvatar,{backgroundColor:'#000'}]}>
+                            <Text style={{fontSize:40}}>
+                                {user?.avatar}
+                            </Text>
+                            </View>
                         <Text style={styles.name}>{user?.username}</Text>
                         <Text style={styles.email}>{user?.email}</Text>
 
@@ -211,6 +208,16 @@ const Dashboard = () => {
                         >
                             <Text style={styles.logoutText}>Logout</Text>
                         </TouchableOpacity>
+                        {/* <TouchableOpacity
+                            style={[styles.btn, styles.logout]}
+                            onPress={async () => {
+                                
+                                navigation.navigate("AvatarSelection");
+                                setProfileModalVisible(false);
+                            }}
+                        >
+                            <Text style={styles.logoutText}>avatar</Text>
+                        </TouchableOpacity> */}
                     </View>
                 </Pressable>
             </Modal>

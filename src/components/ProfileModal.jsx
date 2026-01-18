@@ -25,9 +25,7 @@ const MARGIN = 8;
 
 
 
-const avatarImages = {
-  daub: require("../avatars/daub.png"),
-};
+
 
 
 
@@ -144,13 +142,9 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
             >
               {/* Header */}
               <View style={styles.header}>
-                <Image
-                  source={
-                    avatarImages[user.avatar] ||
-                    require("../images/user.jpg")
-                  }
-                  style={styles.avatar}
-                />
+                <View style={styles.avatar}>
+                  <Text style={{fontSize:30}}>{otherUser?.avatar}</Text>
+                </View>
                 <View>
                   <Text style={styles.name}>{otherUser.username}</Text>
                   <Text style={styles.sub}>Level {otherUser.level}</Text>
@@ -243,6 +237,10 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     borderWidth: 2,
     borderColor: "#fff",
+    display:'flex',
+    justifyContent:'center',
+    alignItems:'center',
+    backgroundColor:'#000'
   },
   name: {
     color: "#fff",

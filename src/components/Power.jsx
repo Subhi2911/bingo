@@ -66,7 +66,7 @@ const Power = () => {
             username: user?.username, // replace later with real user
             avatar: user?.avatar,
             size: playerCount, // 2,3,4,5 selected earlier
-            gameType:'classic'
+            gameType:'power'
         });
     };
 
@@ -157,7 +157,7 @@ const Power = () => {
                             roomCode={roomCode}
                             myId={user._id}
                             user={user} 
-                            gameType="classic"/>
+                            gameType="power"/>
                     </>
 
                 )}

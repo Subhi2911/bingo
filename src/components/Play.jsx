@@ -46,9 +46,7 @@ const Play = () => {
   useEffect(() => {
     fetchGameHistory();
   }, []);
-  const userAvatars = {
-    daub: require('../avatars/daub.png'),
-  }
+  
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
@@ -63,10 +61,9 @@ const Play = () => {
             Winner:
           </Text>
 
-          <Image
-            source={userAvatars[item?.winner?.avatar] || require('../images/user.jpg')}
-            style={styles.userAvatar}
-          />
+          <View style={styles.userAvatar}>
+            <Text style={{ fontSize: 25 }}>{item.avatar || '🐟'}</Text>
+          </View>
           <Text style={styles.winnerName}>{item?.winner?.username || 'undefined'}</Text>
 
 
@@ -142,17 +139,17 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap:6
+    gap: 6
   },
   userAvatar: {
     height: 20,
     width: 20,
     borderRadius: 10,
-    borderWidth:2,
-    borderColor:'#F8B55F'
+    borderWidth: 2,
+    borderColor: '#F8B55F'
   },
-  winnerName:{
-    color:'#F8B55F',
-    fontWeight:700
+  winnerName: {
+    color: '#F8B55F',
+    fontWeight: 700
   }
 });

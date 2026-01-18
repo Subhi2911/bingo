@@ -16,19 +16,13 @@ const Messaging = () => {
     const [userData, setUserData] = useState(null);
     const [loadingChats, setLoadingChats] = useState(true);
     const { socket, onlineUsers } = useSocket();
-    const [isOnline, setIsOnline] = useState(false);
+    //const [isOnline, setIsOnline] = useState(false);
 
-    // Determine if the other user in the chat is online
-    const otherUser = chats.length > 0 ? chats[0].participants.find(p => p._id !== userData?._id) : null;
-
-    const isOtherUserOnline = otherUser ? onlineUsers?.includes(otherUser._id) : false;
-
-
-useEffect(() => {
-    if (userData?._id && socket) {
-        socket.emit("userOnline", userData._id);
-    }
-}, [userData, socket]);
+    useEffect(() => {
+        if (userData?._id && socket) {
+            socket.emit("userOnline", userData._id);
+        }
+    }, [userData, socket]);
 
     
     useEffect(() => {
@@ -77,10 +71,6 @@ useEffect(() => {
 
         fetchChats();
     }, [userData]);
-
-    const [online, setOnline] = useState(false);
-
-
 
 
     const users = [
@@ -305,25 +295,62 @@ useEffect(() => {
             seen: true
         }
     ];
-    const renderusers = ({ item }) => (
-        
-        <TouchableOpacity style={styles.userContainer} onPress={() => { navigation.navigate("Chat", { chatId: item._id }) }}>
-            <>
-                <Text style={{ fontSize: 32, marginRight: 16 }}>🦉</Text>
+    const renderusers = ({ item }) => {
+        const otherUser = item.participants.find(
+            (p) => p._id.toString() !== userData?._id?.toString()
+        );
+
+        const isOtherUserOnline = otherUser
+            ? onlineUsers?.includes(otherUser._id)
+            : false;
+
+        return (
+            <TouchableOpacity
+                style={styles.userContainer}
+                onPress={() =>
+                    navigation.navigate("Chat", { chatId: item._id })
+                }
+            >
+                <Text style={{ fontSize: 32, marginRight: 16 }}>
+                    {otherUser?.avatar}
+                </Text>
+
                 <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#000' }}>{item.chatName}</Text>
-                        <Text style={{ color: isOtherUserOnline ? 'green' : 'gray', fontSize: 12,marginLeft: 8 }}>
-                            {isOtherUserOnline ? 'Online' : 'Offline'}
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text style={{ fontSize: 18, fontWeight: "bold", color: "#000" }}>
+                            {otherUser?.username}
+                        </Text>
+
+                        <Text
+                            style={{
+                                color: isOtherUserOnline ? "green" : "gray",
+                                fontSize: 12,
+                                marginLeft: 8,
+                            }}
+                        >
+                            {isOtherUserOnline ? "Online" : "Offline"}
                         </Text>
                     </View>
 
-                    <Text style={{ color: '#555' }}>{item?.lastMessage?.text || "No messages yet"}</Text>
+                    <Text style={{ color: "#555" }}>
+                        {item?.lastMessage?.text || "No messages yet"}
+                    </Text>
                 </View>
-                {!item.seen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red' }} />}
-            </>
-        </TouchableOpacity >
-    );
+
+                {!item.seen && (
+                    <View
+                        style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 5,
+                            backgroundColor: "red",
+                        }}
+                    />
+                )}
+            </TouchableOpacity>
+        );
+    };
+
 
 
 

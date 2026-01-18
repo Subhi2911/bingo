@@ -53,10 +53,7 @@ const GameScreen = (props) => {
     const [profileDetails, setProfileDetails] = useState(null);
 
 
-    const avatarImages = {
-        daub: require('../avatars/daub.png'),
-        user: require('../avatars/user.jpg'),
-    };
+    
     const gameEndedRef = React.useRef(false);
 
 
@@ -118,7 +115,8 @@ const GameScreen = (props) => {
             roomCode: props.roomCode,
             userId: props?.user?._id,
             username: props?.user?.username,
-            avatar: props?.user?.avatar
+            avatar: props?.user?.avatar,
+            gameType: props.gameType
         });
 
         return () => {
@@ -413,10 +411,9 @@ const GameScreen = (props) => {
                                         style={styles.userAvatar}
                                         onPress={() => openProfile(player)}
                                     >
-                                        <Image
-                                            source={avatarImages[player.avatar] || require('../images/user.jpg')}
-                                            style={styles.userAvatarImage}
-                                        />
+                                        <View style={[styles.userAvatarImage, {backgroundColor:'#000'}]}>
+                                            <Text style={{ fontSize: 35 }}>{player?.avatar || '🐟'}</Text>
+                                        </View>
                                     </TouchableOpacity>
 
                                 </View>
@@ -538,7 +535,7 @@ const GameScreen = (props) => {
                         visible={profileVisible}
                         anchor={anchor}
                         user={profileDetails}
-                        onClose={() => setProfileVisible(false)} 
+                        onClose={() => setProfileVisible(false)}
                         myId={props.user._id} />
                 </Modal>
             )}
@@ -572,7 +569,11 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         objectFit: 'contain',
-        borderRadius: 30
+        borderRadius: 50,
+        display:'flex',
+        justifyContent:'center',
+        alignItems:'center',
+
     },
     userText: {
         color: '#fff',

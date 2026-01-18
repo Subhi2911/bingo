@@ -20,6 +20,7 @@ import Missions from './src/components/Missions'
 import OtherProfile from './src/components/otherProfile.jsx';
 import Messaging from './src/components/Messaging.jsx';
 import Chat from './src/components/Chat.jsx';
+import AvatarSelection from './src/components/AvatarSelection.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +55,7 @@ const App = () => {
           <Stack.Screen name="OtherProfile" component={OtherProfile} />
           <Stack.Screen name="Messaging" component={Messaging} />
           <Stack.Screen name="Chat" component={Chat} />
+          <Stack.Screen name="AvatarSelection" component={AvatarSelection} />
         </Stack.Navigator>
       </NavigationContainer>
     </SocketProvider>

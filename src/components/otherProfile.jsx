@@ -133,10 +133,9 @@ const OtherProfile = () => {
                     </View>
 
                     {/* AVATAR */}
-                    <Image
-                        source={avatarMap[user.avatar] || require('../images/user.jpg')}
-                        style={styles.avatar}
-                    />
+                    <View style={styles.avatar}>
+                        <Text style={{ fontSize: 115 }}>{user.avatar || '🐟'}</Text>
+                    </View>
 
                     {/* USER INFO */}
                     <Text style={styles.username}>{user.username}</Text>
@@ -206,7 +205,7 @@ const Stat = ({ label, value, icon, emoji, style }) => (
     <View style={[styles.statBox, style]}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {icon && <Icon name={icon} size={80} color="#FFD67A" />}
-            
+
         </View>
         <Text style={styles.statValue}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
@@ -250,7 +249,11 @@ const styles = StyleSheet.create({
         height: 220,
         borderRadius: 110,
         marginTop: 20,
-        backgroundColor: "#ebdede",
+        //backgroundColor: "#ebdede",
+        display:'flex',
+        justifyContent:'center',
+        alignItems:'center',
+        backgroundColor:'#000'
     },
     username: {
         color: "#fff",

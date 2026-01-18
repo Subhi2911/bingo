@@ -7,7 +7,7 @@ import { BACKEND_URL } from '../config/backend';
 
 const Profile = () => {
     const [user, setUser] = React.useState(null);
-    
+
     React.useEffect(() => {
         const getUser = async () => {
             try {
@@ -28,24 +28,20 @@ const Profile = () => {
         getUser();
     }, []);
 
-    const avatarMap = {
-        daub: require("../images/daub.png"),
-    };
+    
     return (
         <SafeAreaView>
             <View style={styles.container}>
                 <View style={styles.avatarContainer}>
-                    {user && user.avatar ? ( 
-                        <Image source={avatarMap[user.avatar]} style={styles.avatar} />
-                    ) : (
-                        <Image source= {require("../images/user.jpg")} style={styles.avatar} />
-                    )}
+                    {user && user.avatar &&
+                        <Text style={{ fontSize: 135 }}>{user.avatar || '🐟'}</Text>
+                    }
                 </View>
                 <View>
                     {user && (
                         <>
-                        <Text style={styles.name}>Name: {user.username}</Text>
-                        <Text style={styles.email}>Email: {user.email}</Text>
+                            <Text style={styles.name}>Name: {user.username}</Text>
+                            <Text style={styles.email}>Email: {user.email}</Text>
                         </>
                     )}
                 </View>
@@ -70,7 +66,11 @@ const styles = StyleSheet.create({
         borderRadius: 100,
         borderWidth: 2,
         borderColor: "#F8B55F",
-        overflow: "hidden",
+        //overflow: "hidden",
+        backgroundColor:'#000',
+        display:'flex',
+        justifyContent:'center',
+        alignItems:'center'
     },
     avatar: {
         width: "100%",

@@ -11,9 +11,7 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 
 
 const Search = ({ searchResults, onUserPress }) => {
-    const avatarMap={
-        daub:require('../avatars/daub.png'),
-    }
+
 
     if (!searchResults || searchResults.length === 0) {
         return (
@@ -34,10 +32,9 @@ const Search = ({ searchResults, onUserPress }) => {
                     style={styles.userRow}
                     onPress={() => onUserPress?.(item)}
                 >
-                    <Image
-                        source={ avatarMap[item.avatar] || require('../images/user.jpg') }
-                        style={styles.avatar}
-                    />
+                    <View style={styles.avatar}>
+                        <Text style={{ fontSize: 30 }}>{item.avatar || '🐟'}</Text>
+                    </View>
 
                     <View style={styles.info}>
                         <Text style={styles.username}>{item.username}</Text>
@@ -58,8 +55,8 @@ export default Search;
 const styles = StyleSheet.create({
     list: {
         paddingVertical: 10,
-        margin:5,
-        marginHorizontal:15,
+        margin: 5,
+        marginHorizontal: 15,
     },
     userRow: {
         flexDirection: 'row',

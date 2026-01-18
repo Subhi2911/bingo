@@ -10,6 +10,7 @@ import {
     Platform,
     Animated,
     FlatList,
+    TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/FontAwesome5';
@@ -17,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import MessageBubble from './MessageBubble';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { socket } from "../socket";
+import { useSocket } from '../context/SocketContext';
 
 const Chat = ({ route }) => {
     const navigation = useNavigation();
@@ -29,7 +30,53 @@ const Chat = ({ route }) => {
     const [otherUser, setOtherUser] = useState(null);
     const [messages, setMessages] = useState([]);
     const flatListRef = React.useRef();
+    const { socket } = useSocket();
+    const [isSocketReady, setIsSocketReady] = useState(false);
+
     //const [text, setText] = useState("");
+
+    useEffect(() => {
+        if (flatListRef.current && messages.length) {
+            // Scroll to the **last item**
+            flatListRef.current.scrollToEnd({ animated: false });
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        if (flatListRef.current) {
+            flatListRef.current.scrollToEnd({ animated: true });
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        // Connect only if not connected
+        if (!socket?.connected) socket?.connect();
+
+        const handleConnect = () => {
+            console.log("Socket connected:", socket.id);
+            setIsSocketReady(true);
+            socket.emit("joinChat", chatId);
+        };
+
+        if (socket?.connected) {
+            setIsSocketReady(true);
+            socket.emit("joinChat", chatId);
+        } else {
+            socket?.on("connect", () => {
+                setIsSocketReady(true);
+                socket.emit("joinChat", chatId);
+            });
+        }
+
+
+        return () => {
+            socket.off("connect", handleConnect);
+        };
+    }, [socket, chatId]);
+
+
 
     useEffect(() => {
         const getMyUserData = async () => {
@@ -132,22 +179,48 @@ const Chat = ({ route }) => {
     }, [chatId]);
 
     useEffect(() => {
-        socket.emit("joinChat", chatId);
+        if (!socket) return;
 
-        socket.on("receiveMessage", (newMessage) => {
-            setMessages((prev) => [...prev, newMessage]);
-        });
+        const joinChat = () => {
+            console.log("Socket connected:", socket.id);
+            socket.emit("joinChat", chatId);
+            setIsSocketReady(true);
+        };
+
+        if (socket.connected) {
+            joinChat();
+        } else {
+            socket.once("connect", joinChat);
+        }
 
         return () => {
-            socket.off("receiveMessage");
+            socket.off("connect", joinChat);
         };
-    }, [chatId]);
+    }, [socket, chatId]);
+
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleReceive = (message) => {
+            console.log("Received via socket:", message);
+            setMessages(prev => [...prev, message]);
+        };
+
+        socket.on("receiveMessage", handleReceive);
+
+        return () => {
+            socket.off("receiveMessage", handleReceive);
+        };
+    }, [socket]);
 
 
     // send message
     const sendMessage = async () => {
-        if (!typedMessage.trim()) return;
-
+        if (!typedMessage.trim() || !isSocketReady || !socket?.connected) {
+            console.log("Socket not ready or empty message");
+            return;
+        }
         try {
             console.log("Sending message:", typedMessage);
 
@@ -197,23 +270,34 @@ const Chat = ({ route }) => {
                             color="#000"
                             onPress={() => navigation.goBack()}
                         />
-                        <Text style={styles.avatar}>🐼</Text>
+                        <Text style={styles.avatar}>{otherUser?.avatar || '🐟'}</Text>
                         <Text style={styles.username}>{otherUser?.username}</Text>
                     </View>
 
                     {/* MESSAGES */}
-                    {messages && <FlatList
-                        data={messages}
-                        keyExtractor={(item) => item?._id}
-                        renderItem={({ item }) => (
-                            <MessageBubble
-                                message={item?.text || ''}
-                                isMe={item?.sender?._id === userData?._id}
-                                seen={item.seenBy?.includes(otherUser?._id)}
-                            />
-                        )}
-                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                    />}
+                    <View style={{ flex: 1 }}>
+                        {messages &&
+                            <FlatList
+                                ref={flatListRef}
+                                data={messages}
+                                keyExtractor={(item) => item?._id}
+                                renderItem={({ item }) => (
+                                    <MessageBubble
+                                        message={item?.text || ''}
+                                        isMe={item?.sender?._id === userData?._id}
+                                        seen={item.seenBy?.includes(otherUser?._id)}
+                                    />
+                                )}
+
+                                contentContainerStyle={{ paddingVertical: 10 }}
+                                // optional for smooth auto-scroll on new messages
+                                onContentSizeChange={() =>
+                                    flatListRef.current?.scrollToOffset({ offset: 0, animated: true })
+                                }
+
+                            />}
+                    </View>
+
                     {messages && messages.length === 0 && (
                         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                             <Text style={{ color: '#555' }}>No messages yet. Start the conversation!</Text>
@@ -240,19 +324,17 @@ const Chat = ({ route }) => {
                             }}
 
                         />
-                        <View>
-                            {typedMessage.length > 0 &&
-                                <Icon
-                                    name="paper-plane"
-                                    size={24}
-                                    color="#ffffff"
-                                    onPress={() => {
-                                        sendMessage();
-                                        //setTypedMessage('');
-                                    }}
-                                    style={styles.sendIcon}
-                                />}
-                        </View>
+                        <TouchableOpacity
+                            onPress={sendMessage}
+                            disabled={typedMessage.trim().length === 0}
+                        >
+                            <Icon
+                                name="paper-plane"
+                                size={24}
+                                color="#ffffff"
+                                style={styles.sendIcon}
+                            />
+                        </TouchableOpacity>
                         <Icon name="gift" size={24} color="#f708d7" />
                     </Animated.View>
 

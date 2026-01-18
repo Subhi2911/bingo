@@ -52,10 +52,7 @@ export default function WinningModal({
     soundPlayedRef.current = true;
   }, [isWin]);
 
-  const userAvatar = {
-    daub: require("../avatars/daub.png"),
-  };
-
+  
 
 
   /* ------------------ THEME ------------------ */
@@ -133,13 +130,9 @@ export default function WinningModal({
                     { borderColor: theme.header, borderWidth: 4 },
                   ]}
                 >
-                  <Image
-                    source={
-                      userAvatar[winnerPlayer.avatar] ||
-                      require("../avatars/user.jpg")
-                    }
-                    style={styles.avatar}
-                  />
+                  <View style={styles.avatar}>
+                    <Text style={{ fontSize: 45 }}>{winnerPlayer.avatar || '🐟'}</Text>
+                  </View>
                   {readyPlayers[winnerPlayer.userId] && (
                     <Icon
                       name="thumbs-up"
@@ -178,12 +171,9 @@ export default function WinningModal({
                       { borderColor: theme.header },
                     ]}
                   >
-                    <Image
-                      source={
-                        userAvatar[p.avatar] || require("../avatars/user.jpg")
-                      }
-                      style={styles.avatarSmall}
-                    />
+                    <View style={styles.avatarSmall}>
+                      <Text style={{ fontSize: 35 }}>{p.avatar || '🐟'}</Text>
+                    </View>
                     {readyPlayers[p.userId] && (
                       <Icon
                         name="thumbs-up"
@@ -320,16 +310,17 @@ const styles = StyleSheet.create({
     width: AVATAR + 6,
     height: AVATAR + 6,
     borderRadius: (AVATAR + 6) / 2,
-    backgroundColor: "#fff",
+    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
     elevation: 6,
+
   },
   avatarWrapSmall: {
     width: AVATAR_SMALL + 6,
     height: AVATAR_SMALL + 6,
     borderRadius: (AVATAR_SMALL + 6) / 2,
-    backgroundColor: "#fff",
+    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,
@@ -339,12 +330,20 @@ const styles = StyleSheet.create({
     height: AVATAR,
     borderRadius: AVATAR / 2,
     resizeMode: "contain",
+    display:'flex',
+    justifyContent:'center',
+    alignItems:'center',
+    backgroundColor:'#0000'
   },
   avatarSmall: {
     width: AVATAR_SMALL,
     height: AVATAR_SMALL,
     borderRadius: AVATAR_SMALL / 2,
     resizeMode: "contain",
+    display:'flex',
+    justifyContent:'center',
+    alignItems:'center',
+    backgroundColor:'#0000'
   },
   name: {
     marginTop: 8,

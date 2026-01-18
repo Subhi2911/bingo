@@ -198,17 +198,13 @@ const Friends = () => {
         }, 500); // smaller delay for smoother UI
     };
 
-    const userAvatars = {
-        daub: require("../images/daub.png"),
-    }
-
+    
 
     const renderItemFriends = ({ item }) => (
         <View style={styles.card}>
-            <Image
-                source={userAvatars[item.avatar] || require("../images/user.jpg")}
-                style={styles.avatar}
-            />
+            <View style={styles.avatar}>
+                <Text style={{ fontSize: 25 }}>{item.avatar || '🐟'}</Text>
+            </View>
 
             <View style={{ flex: 1 }}>
                 <Text style={styles.username}>{item.username}</Text>
@@ -236,10 +232,9 @@ const Friends = () => {
 
     const renderItemRequests = ({ item }) => (
         <View style={styles.card}>
-            <Image
-                source={userAvatars[item.avatar] || require("../images/user.jpg")}
-                style={styles.avatar}
-            />
+            <View style={styles.avatar}>
+                <Text style={{ fontSize: 25 }}>{item.avatar || '🐟'}</Text>
+            </View>
 
             <View style={{ flex: 1 }}>
                 <Text style={styles.username}>{item.username}</Text>
