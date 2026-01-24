@@ -24,7 +24,8 @@ import ProfileModal from './ProfileModal';
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
-    const { current: socket } = useSocket();
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
     const [winModal, setWinModal] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
     const [currentTurn, setCurrentTurn] = useState(null);
@@ -53,7 +54,7 @@ const GameScreen = (props) => {
     const [profileDetails, setProfileDetails] = useState(null);
 
 
-    
+
     const gameEndedRef = React.useRef(false);
 
 
@@ -411,7 +412,7 @@ const GameScreen = (props) => {
                                         style={styles.userAvatar}
                                         onPress={() => openProfile(player)}
                                     >
-                                        <View style={[styles.userAvatarImage, {backgroundColor:'#000'}]}>
+                                        <View style={[styles.userAvatarImage, { backgroundColor: '#000' }]}>
                                             <Text style={{ fontSize: 35 }}>{player?.avatar || '🐟'}</Text>
                                         </View>
                                     </TouchableOpacity>
@@ -570,9 +571,9 @@ const styles = StyleSheet.create({
         height: '100%',
         objectFit: 'contain',
         borderRadius: 50,
-        display:'flex',
-        justifyContent:'center',
-        alignItems:'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
 
     },
     userText: {

@@ -13,7 +13,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const Classic = () => {
-    const { current: socket } = useSocket();
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
     const [gameStarted, setGameStarted] = React.useState(false);
     const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
     const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match
@@ -65,7 +66,7 @@ const Classic = () => {
             username: user?.username, // replace later with real user
             avatar: user?.avatar,
             size: playerCount, // 2,3,4,5 selected earlier
-            gameType:'classic'
+            gameType: 'classic'
         });
     };
 
@@ -117,7 +118,7 @@ const Classic = () => {
 
 
                     <Text style={styles.classicText}> Classic </Text>
-                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} gameType="classic"/>
+                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} gameType="classic" />
                     <View style={styles.playerSelection}>
                         <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
                         <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>
@@ -149,8 +150,8 @@ const Classic = () => {
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
                             myId={user._id}
-                            user={user} 
-                            gameType="classic"/>
+                            user={user}
+                            gameType="classic" />
                     </>
 
                 )}

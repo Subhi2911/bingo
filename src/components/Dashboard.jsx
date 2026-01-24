@@ -9,6 +9,7 @@ import {
     Modal,
     Pressable,
     TextInput,
+    Alert,
 } from "react-native";
 import React from "react";
 import { useEffect } from "react";
@@ -25,6 +26,7 @@ import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import Search from "./Search";
+import { useSocket } from "../context/SocketContext";
 
 
 
@@ -36,6 +38,38 @@ const Dashboard = () => {
     const navigation = useNavigation();
     const [searchResults, setSearchResults] = React.useState([]);
     const [query, setQuery] = React.useState("");
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
+
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on("private_room_invite", ({ roomCode, fromUser }) => {
+            Alert.alert(
+                "Game Invite 🎮",
+                `${fromUser.username} invited you to a private room`,
+                [
+                    { text: "Decline", style: "cancel" },
+                    {
+                        text: "Join",
+                        onPress: () => {
+                            socket.emit("join_private_room", {
+                                roomCode,
+                                userId: user._id,
+                                username: user.username,
+                                avatar: user.avatar || "🐟",
+                            });
+                        },
+                    },
+                ]
+            );
+        });
+
+        return () => {
+            socket.off("private_room_invite");
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket]);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -110,7 +144,7 @@ const Dashboard = () => {
         getUser();
     }, []);
 
-   
+
     return (
         <View style={{ flex: 1 }}>
             {loading ? (
@@ -128,8 +162,8 @@ const Dashboard = () => {
                                         style={styles.avatarContainer}
                                         onPress={() => setProfileModalVisible(true)}
                                     >
-                                        <View style={[styles.avatar,{backgroundColor:'#000'}]}>
-                                            <Text style={{fontSize:30}}>{user?.avatar}</Text>
+                                        <View style={[styles.avatar, { backgroundColor: '#000' }]}>
+                                            <Text style={{ fontSize: 30 }}>{user?.avatar}</Text>
                                         </View>
                                     </TouchableOpacity>
 
@@ -183,11 +217,11 @@ const Dashboard = () => {
                     onPress={() => setProfileModalVisible(false)}
                 >
                     <View style={styles.popup}>
-                        <View style={[styles.popupAvatar,{backgroundColor:'#000'}]}>
-                            <Text style={{fontSize:40}}>
+                        <View style={[styles.popupAvatar, { backgroundColor: '#000' }]}>
+                            <Text style={{ fontSize: 40 }}>
                                 {user?.avatar}
                             </Text>
-                            </View>
+                        </View>
                         <Text style={styles.name}>{user?.username}</Text>
                         <Text style={styles.email}>{user?.email}</Text>
 
@@ -211,7 +245,7 @@ const Dashboard = () => {
                         <TouchableOpacity
                             style={[styles.btn, styles.logout]}
                             onPress={async () => {
-                                
+
                                 navigation.navigate("AvatarSelection");
                                 setProfileModalVisible(false);
                             }}

@@ -13,7 +13,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const Fast = () => {
-    const { current: socket } = useSocket();
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
     const [gameStarted, setGameStarted] = React.useState(false);
     const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
     const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match
@@ -41,7 +42,7 @@ const Fast = () => {
             }
         };
         getUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 
@@ -67,7 +68,7 @@ const Fast = () => {
             username: user?.username, // replace later with real user
             avatar: user?.avatar,
             size: playerCount, // 2,3,4,5 selected earlier
-            gameType:'fast'
+            gameType: 'fast'
         });
     };
 
@@ -89,7 +90,7 @@ const Fast = () => {
         return () => socket.off("match_found", handleMatchFound);
     }, [socket, user]);
 
-   
+
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             {!gameStarted &&
@@ -135,8 +136,8 @@ const Fast = () => {
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
                             myId={user._id}
-                            user={user} 
-                            gameType="fast"/>
+                            user={user}
+                            gameType="fast" />
                     </>
 
                 )}

@@ -10,10 +10,11 @@ import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { Alert } from "react-native";
 
 const Power = () => {
-    const { current: socket } = useSocket();
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
     const [gameStarted, setGameStarted] = React.useState(false);
     const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
     const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match
@@ -22,6 +23,155 @@ const Power = () => {
     const [ready, setReady] = React.useState(false);
     const [user, setUser] = React.useState(null);
     const [powerSelected, setPowerSelected] = React.useState(1);
+    const avatarPowers = {
+        "🐵": [
+            "Swift Dash",
+            "Tree Leap",
+            "Mischief Steal",
+            "Evasion Roll"
+        ],
+        "🐶": [
+            "Loyal Guard",
+            "Tracker Sense",
+            "Pack Howl",
+            "Last Stand"
+        ],
+        "🐱": [
+            "Shadow Step",
+            "Silent Claws",
+            "Nine Lives",
+            "Reflex Dodge"
+        ],
+        "🦁": [
+            "King’s Roar",
+            "Dominance",
+            "Fear Aura",
+            "Savage Strike"
+        ],
+        "🐯": [
+            "Ambush Pounce",
+            "Blood Frenzy",
+            "Predator Focus",
+            "Claw Rush"
+        ],
+        "🦊": [
+            "Illusion Clone",
+            "Trick Swap",
+            "Mind Games",
+            "Phase Shift"
+        ],
+        "🐮": [
+            "Iron Hide",
+            "Ground Slam",
+            "Steadfast",
+            "Rally Moo"
+        ],
+        "🐭": [
+            "Quick Escape",
+            "Tiny Target",
+            "Sneak Bite",
+            "Speed Burst"
+        ],
+        "🐴": [
+            "Charge Run",
+            "Endurance",
+            "Hoof Strike",
+            "Wind Rider"
+        ],
+        "🐸": [
+            "Mega Jump",
+            "Sticky Tongue",
+            "Poison Skin",
+            "Swamp Camouflage"
+        ],
+        "🐔": [
+            "Panic Flap",
+            "Egg Bomb",
+            "Feather Shield",
+            "Second Wind"
+        ],
+        "🐍": [
+            "Venom Bite",
+            "Coil Trap",
+            "Heat Sense",
+            "Shed Skin"
+        ]
+    };
+    const powerDetails = {
+        "Swift Dash": "Temporarily increases movement speed, allowing quick repositioning.",
+        "Tree Leap": "Jump over obstacles or enemies to reach a safe or strategic spot.",
+        "Mischief Steal": "Steals a random item or bonus from the opponent.",
+        "Evasion Roll": "Dodges the next incoming attack completely.",
+
+        "Loyal Guard": "Reduces incoming damage for a short duration.",
+        "Tracker Sense": "Reveals the enemy’s position for a limited time.",
+        "Pack Howl": "Boosts attack and defense of nearby allies.",
+        "Last Stand": "Prevents death once and leaves the player at very low health.",
+
+        "Shadow Step": "Instantly teleport a short distance to evade danger.",
+        "Silent Claws": "Increases critical hit chance for a brief period.",
+        "Nine Lives": "Revives the player once after being defeated.",
+        "Reflex Dodge": "Automatically avoids one attack when triggered.",
+
+        "King’s Roar": "Stuns nearby enemies for a short duration.",
+        "Dominance": "Temporarily increases attack power.",
+        "Fear Aura": "Weakens enemies by reducing their attack strength.",
+        "Savage Strike": "Delivers a powerful high-damage attack.",
+
+        "Ambush Pounce": "Leap onto an enemy to deal bonus surprise damage.",
+        "Blood Frenzy": "Increases attack speed after dealing damage.",
+        "Predator Focus": "Improves accuracy and damage against a single target.",
+        "Claw Rush": "Strikes the enemy multiple times rapidly.",
+
+        "Illusion Clone": "Creates a fake clone to confuse enemies.",
+        "Trick Swap": "Switch positions with an enemy or ally.",
+        "Mind Games": "Causes enemies to miss or misfire attacks.",
+        "Phase Shift": "Become invisible and untargetable briefly.",
+
+        "Iron Hide": "Greatly increases defense and reduces damage taken.",
+        "Ground Slam": "Slams the ground, damaging nearby enemies.",
+        "Steadfast": "Grants immunity to knockback and stuns.",
+        "Rally Moo": "Gradually restores health to nearby allies.",
+
+        "Quick Escape": "Instantly dash away from danger.",
+        "Tiny Target": "Reduces chance of being hit by enemies.",
+        "Sneak Bite": "Applies poison damage over time.",
+        "Speed Burst": "Briefly increases movement speed significantly.",
+
+        "Charge Run": "Rush forward at high speed, knocking enemies back.",
+        "Endurance": "Increases stamina and reduces exhaustion.",
+        "Hoof Strike": "Powerful kick that pushes enemies away.",
+        "Wind Rider": "Grants a movement speed boost aura.",
+
+        "Mega Jump": "Allows a very high jump to reach elevated areas.",
+        "Sticky Tongue": "Pulls an enemy closer or grabs objects.",
+        "Poison Skin": "Damages enemies on contact.",
+        "Swamp Camouflage": "Blend into the environment to avoid detection.",
+
+        "Panic Flap": "Move erratically to avoid enemy attacks.",
+        "Egg Bomb": "Throws an explosive egg that deals area damage.",
+        "Feather Shield": "Absorbs incoming damage for a short time.",
+        "Second Wind": "Resets cooldowns or restores stamina.",
+
+        "Venom Bite": "Injects venom that deals damage over time.",
+        "Coil Trap": "Immobilizes an enemy by wrapping around them.",
+        "Heat Sense": "Detects hidden or invisible enemies.",
+        "Shed Skin": "Removes all negative effects instantly."
+    };
+    const avatarEmojiVariants = {
+        "🐵": ["🐵", "🙈", "🙉", "🙊"],
+        "🐶": ["🐶", "🐕", "🦮", "🐕‍🦺"],
+        "🐱": ["🐱", "🐈", "🐈‍⬛", "😺"],
+        "🦁": ["🦁", "😺", "🐯", "👑"], // lion-styled vibe
+        "🐯": ["🐯", "🐅", "😼", "😾"],
+        "🦊": ["🦊", "😼", "🐕", "🧠"],
+        "🐮": ["🐮", "🐄", "🐂", "🐃"],
+        "🐭": ["🐭", "🐁", "🐀", "🐹"],
+        "🐴": ["🐴", "🐎", "🦄", "🏇"],
+        "🐸": ["🐸", "🐸‍⬛", "🐸", "🐸"],
+        "🐔": ["🐔", "🐓", "🐣", "🐥"],
+        "🐍": ["🐍", "🦎", "🐉", "🐲"]
+    };
 
     React.useEffect(() => {
         const getUser = async () => {
@@ -66,7 +216,7 @@ const Power = () => {
             username: user?.username, // replace later with real user
             avatar: user?.avatar,
             size: playerCount, // 2,3,4,5 selected earlier
-            gameType:'power'
+            gameType: 'power'
         });
     };
 
@@ -118,7 +268,7 @@ const Power = () => {
 
 
                     <Text style={styles.PowerText}> Power </Text>
-                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} gameType="classic"/>
+                    <CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} gameType="classic" />
                     <View style={styles.playerSelection}>
                         <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
                         <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>
@@ -134,11 +284,32 @@ const Power = () => {
                             <Text style={{ color: "#fff", fontWeight: "bold" }}>5P</Text>
                         </TouchableOpacity> */}
                     </View>
+
+
                     <View style={styles.powerSelection}>
-                        <TouchableOpacity style={[styles.power, powerSelected === 1 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => {setPowerSelected(1)}}/>
-                        <TouchableOpacity style={[styles.power, powerSelected === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => {setPowerSelected(2)}}/>
-                        <TouchableOpacity style={[styles.power, powerSelected === 3 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => {setPowerSelected(3)}}/>
-                        <TouchableOpacity style={[styles.power, powerSelected === 4 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => {setPowerSelected(4)}}/>
+                        {avatarPowers[user?.avatar]?.map((powerName, index) => (
+                            <View key={index} style={{ width: 50 }}>
+                                <TouchableOpacity
+                                    key={powerName}
+                                    style={[
+                                        styles.power,
+                                        powerSelected === index && { backgroundColor: "#F8B55F" }
+                                    ]}
+                                    disabled={ready}
+                                    onPress={() => setPowerSelected(index)}
+                                    onLongPress={() =>
+                                        Alert.alert(powerName, powerDetails[powerName])
+                                    }
+                                >
+                                    <Text style={styles.powerEmoji}>
+                                        {avatarEmojiVariants[user.avatar][index]}
+                                    </Text>
+
+
+                                </TouchableOpacity>
+                                <Text style={styles.powerText}>{powerName}</Text>
+                            </View>
+                        ))}
                     </View>
                     <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} disabled={!socket || ready}>
                         <Text style={{ color: "#000", fontWeight: "bold" }} >Ready</Text>
@@ -156,8 +327,8 @@ const Power = () => {
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
                             myId={user._id}
-                            user={user} 
-                            gameType="power"/>
+                            user={user}
+                            gameType="power" />
                     </>
 
                 )}
@@ -196,12 +367,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         position: 'absolute',
-        bottom: 120,
+        bottom: 100,
         alignSelf: 'center',
 
     },
     selectBtn: {
-        backgroundColor: "#D9CFC7",
+        backgroundColor: "#353432",
         paddingHorizontal: 15,
         paddingVertical: 5,
         borderRadius: 10,
@@ -234,18 +405,46 @@ const styles = StyleSheet.create({
         color: '#F8B55F',
         zIndex: 10,
     },
-    power:{
+    power: {
         width: 50,
         height: 50,
         backgroundColor: '#353432',
         borderRadius: 25,
+        alignItems: "center",
+        justifyContent: "center",
     },
-    powerSelection:{
+    powerSelection: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         marginTop: 20,
         position: 'absolute',
-        bottom: 180,
+        bottom: 160,
         width: '75%',
+    },
+
+    //   powerSelection: {
+    //     flexDirection: "row",
+    //     flexWrap: "wrap",
+    //     justifyContent: "space-between",
+    //     marginTop: 16,
+    //   },
+    //   power: {
+    //     width: 80,
+    //     height: 100,
+    //     borderRadius: 40,
+    //     backgroundColor: "#eee",
+    //     alignItems: "center",
+    //     justifyContent: "center",
+    //     marginBottom: 12,
+    //     padding: 6,
+    //   },
+    powerEmoji: {
+        fontSize: 28,
+    },
+    powerText: {
+        fontSize: 10,
+        textAlign: "center",
+        marginTop: 4,
+        color: "#fff",
     },
 })

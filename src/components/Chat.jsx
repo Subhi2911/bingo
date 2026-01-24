@@ -11,6 +11,7 @@ import {
     Animated,
     FlatList,
     TouchableOpacity,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/FontAwesome5';
@@ -32,6 +33,12 @@ const Chat = ({ route }) => {
     const flatListRef = React.useRef();
     const socketRef = useSocket();
     const socket = socketRef?.socketRef?.current;
+    const onlineUsers = socketRef?.onlineUsers;
+
+    const getRoomCode = (text) => {
+        const match = text.match(/Room Code:\s*(\w+)/);
+        return match ? match[1] : null;
+    };
     //const [text, setText] = useState("");
 
     useEffect(() => {
@@ -201,17 +208,15 @@ const Chat = ({ route }) => {
         if (!socket) return;
 
         const handleReceive = (message) => {
-            console.log("Received via socket:", message);
+            console.log(message);
             setMessages(prev => [...prev, message]);
         };
 
         socket.on("receiveMessage", handleReceive);
 
-        return () => {
-            socket.off("receiveMessage", handleReceive);
-        };
-    }, [socket]);
-
+        return () => socket.off("receiveMessage", handleReceive);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, userData]);
 
     // send message
     const sendMessage = async () => {
@@ -249,6 +254,9 @@ const Chat = ({ route }) => {
     };
 
 
+    const isOtherUserOnline = otherUser
+        ? onlineUsers?.includes(otherUser?._id)
+        : false;
 
 
     return (
@@ -270,6 +278,15 @@ const Chat = ({ route }) => {
                         />
                         <Text style={styles.avatar}>{otherUser?.avatar || '🐟'}</Text>
                         <Text style={styles.username}>{otherUser?.username}</Text>
+                        <Text
+                            style={{
+                                color: isOtherUserOnline ? "green" : "gray",
+                                fontSize: 12,
+                                marginLeft: 8,
+                            }}
+                        >
+                            {isOtherUserOnline ? "Online" : "Offline"}
+                        </Text>
                     </View>
 
                     {/* MESSAGES */}
@@ -284,6 +301,10 @@ const Chat = ({ route }) => {
                                         message={item?.text || ''}
                                         isMe={item?.sender?._id === userData?._id}
                                         seen={item.seenBy?.includes(otherUser?._id)}
+                                        userData={userData}
+                                        type={item?.type}
+                                        roomCode={getRoomCode(item?.text)}
+                                        timeStamp={item?.updatedAt}
                                     />
                                 )}
 

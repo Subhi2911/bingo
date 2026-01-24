@@ -15,7 +15,9 @@ const Messaging = () => {
     const [chats, setChats] = useState([]);
     const [userData, setUserData] = useState(null);
     const [loadingChats, setLoadingChats] = useState(true);
-    const { socket, onlineUsers } = useSocket();
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
+    const onlineUsers= socketRef?.onlineUsers
     //const [isOnline, setIsOnline] = useState(false);
 
     useEffect(() => {
@@ -24,7 +26,7 @@ const Messaging = () => {
         }
     }, [userData, socket]);
 
-    
+
     useEffect(() => {
         const getMyUserData = async () => {
             try {
