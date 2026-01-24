@@ -23,6 +23,7 @@ const Fast = () => {
     const [user, setUser] = React.useState(null);
 
     React.useEffect(() => {
+        //console.log(socket);
         const getUser = async () => {
             try {
                 const token = await AsyncStorage.getItem("authToken");
@@ -40,6 +41,7 @@ const Fast = () => {
             }
         };
         getUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 

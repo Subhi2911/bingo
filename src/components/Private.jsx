@@ -1,283 +1,504 @@
 /* eslint-disable react-native/no-inline-styles */
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image, BackHandler } from 'react-native'
-import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import CommonSelectionRoom from './CommonSelectionRoom'
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import {
+    StyleSheet,
+    Text,
+    View,
+    ImageBackground,
+    TouchableOpacity,
+    TextInput,
+    BackHandler,
+    Share,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import GameScreen from './GameScreen'
 import { useNavigation } from '@react-navigation/native';
-import CustomAlert from './CustomAlert';
-import { useSocket } from '../context/SocketContext';
-import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { useSocket } from '../context/SocketContext';
+import { BACKEND_URL } from '../config/backend';
+import GameScreen from './GameScreen';
+import PrivateRoomBoard from './PrivateRoomBoard';
 
-const Power = () => {
-    const { current: socket } = useSocket();
-    const [gameStarted, setGameStarted] = React.useState(false);
-    const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
-    const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match
-    const [roomCode, setRoomCode] = React.useState(null);
+const PrivateRoom = () => {
     const navigation = useNavigation();
-    const [ready, setReady] = React.useState(false);
-    const [user, setUser] = React.useState(null);
-    const [powerSelected, setPowerSelected] = React.useState(1);
-    const [gameType, setGameType] = React.useState(null);
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
+    //const { current: socket } = useSocket();
+    const pinRefs = useRef([]);
 
-    React.useEffect(() => {
-        const getUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await response.json();
-                setUser(json);
-            } catch (error) {
-                console.error(error);
-            }
+    // USER
+    const [user, setUser] = useState(null);
+    //friends
+    const [friends, setFriends] = useState([]);
+
+    // FLOW
+    const [gameType, setGameType] = useState(null);
+    const [playerCount, setPlayerCount] = useState(null);
+    const [usePassword, setUsePassword] = useState(false);
+    const [password, setPassword] = useState('');
+    const [ready, setReady] = useState(false);
+    const [passwordDigits, setPasswordDigits] = useState(['', '', '', '']);
+
+
+    // ROOM
+    const [roomCode, setRoomCode] = useState(null);
+    const [matchedPlayers, setMatchedPlayers] = useState([]);
+    const [gameStarted, setGameStarted] = useState(false);
+
+    useEffect(() => {
+        console.log(socketRef);
+        console.log(socket);
+        if (!socket) return;
+
+        socket.on("connect", () => {
+            console.log("Socket connected:", socket.id);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket]);
+
+    /* ===================== FETCH USER ===================== */
+    useEffect(() => {
+        const fetchUser = async () => {
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) return;
+
+            const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth-token': token,
+                },
+            });
+
+            const json = await res.json();
+            setUser(json);
         };
-        getUser();
+
+        fetchUser();
     }, []);
 
+    const handleInviteFriend = (friend) => {
+        if (!socket) return;
+        socket.emit('invite_to_private_room', {
+            friendId: friend._id,
+            roomCode,
+        });
+        alert(`${friend.username} invited!`);
+    };
 
-    // Disable back button
-    React.useEffect(() => {
-        const backAction = () => true
+
+    useEffect(() => {
+        if (!user) return;
+        const fetchFriends = async () => {
+            const res = await fetch(`${BACKEND_URL}/api/chat/getfriends`, {
+                method: 'GET',
+                headers: { 'auth-token': await AsyncStorage.getItem('authToken') },
+            });
+            const json = await res.json();
+            setFriends(json);
+        };
+        fetchFriends();
+    }, [user]);
+
+    /* ===================== DISABLE BACK ===================== */
+    useEffect(() => {
+        const backAction = () => true;
         const backHandler = BackHandler.addEventListener(
             'hardwareBackPress',
             backAction
-        )
-        return () => backHandler.remove()
-    }, [])
+        );
+        return () => backHandler.remove();
+    }, []);
 
-    const handleReady = () => {
-        if (!socket) {
-            console.log('jhuygy')
-            return
+    /* ===================== SOCKET EVENTS ===================== */
+    const finalPassword = usePassword ? passwordDigits.join('') : null;
+    useEffect(() => {
+        if (!socket || !user) return;
+
+        const onRoomCreated = ({ roomCode, players }) => {
+            setRoomCode(roomCode);
+            setMatchedPlayers(players);
         };
-        console.log(user)
-        socket.emit("find_match", {
-            socketId: socket.id,
-            userId: user?._id,
-            username: user?.username, // replace later with real user
-            avatar: user?.avatar,
-            size: playerCount, // 2,3,4,5 selected earlier
-            gameType: 'power'
+
+        const onMatchFound = ({ roomCode, players }) => {
+            setRoomCode(roomCode);
+            setMatchedPlayers(players);
+            setTimeout(() => setGameStarted(true), 1200);
+        };
+
+        socket.on('private_room_created', onRoomCreated);
+        socket.on('match_found', onMatchFound);
+
+        return () => {
+            socket.off('private_room_created', onRoomCreated);
+            socket.off('match_found', onMatchFound);
+        };
+    }, [socket, user]);
+
+    /* ===================== CREATE ROOM ===================== */
+    const handleReady = useCallback(() => {
+        console.log(socket);
+        if (!socket || !user) return;
+        console.log('hey');
+
+        setReady(true);
+
+        socket.emit('create_private_room', {
+            userId: user._id,
+            username: user.username,
+            avatar: user.avatar,
+            gameType,
+            size: playerCount,
+            password: finalPassword,
+        });
+    }, [socket, user, gameType, playerCount, finalPassword]);
+
+    /* ===================== INVITE LOGIC ===================== */
+    const handleInvite = async () => {
+        if (!roomCode) return;
+
+        await Share.share({
+            message: `🎮 Join my private room!\n\nRoom Code: ${roomCode}\nGame: ${gameType.toUpperCase()}`,
         });
     };
 
-    React.useEffect(() => {
-        if (!socket || !user) return; // wait for user
-
-        const handleMatchFound = ({ roomCode, players }) => {
-            // filter out self safely
-            //const filteredPlayers = players.filter(p => p.userId !== (user?._id || ""));
-            setMatchedPlayers(players);
-            console.log(players);
-            setRoomCode(roomCode);
-
-            setTimeout(() => setGameStarted(true), 2000);
-        };
-
-        socket.on("match_found", handleMatchFound);
-
-        return () => socket.off("match_found", handleMatchFound);
-    }, [socket, user]);
-
-    // React.useEffect(() => {
-    //     console.log(user);
-    //     if (!socket) return;
-    //     socket.on("match_found", ({ roomCode, players }) => {
-    //         // filter out yourself
-    //         setMatchedPlayers(players.filter(p => p.userId !== user.id));
-    //         setRoomCode(roomCode);
-
-    //         setTimeout(() => {
-    //             setGameStarted(true);
-    //         }, 2000);
-    //     });
-
-    //     return () => socket.off("match_found");
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, []);
+    /* ===================== UI ===================== */
+    if (gameStarted && user) {
+        return (
+            <GameScreen
+                roomCode={roomCode}
+                players={playerCount}
+                matchedPlayers={matchedPlayers}
+                myId={user._id}
+                user={user}
+                gameType={gameType}
+            />
+        );
+    }
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            {!gameStarted &&
-                (<>
-                    <Icon
-                        name="sign-out-alt"
-                        size={30}
-                        style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
-                        onPress={() => { navigation.goBack(); }}
-                    />
-                    <ImageBackground
-                        source={require('../images/RegisterPage.png')}
-                        style={{ height: '100%', width: '100%' }}
+        <View style={{ flex: 1, backgroundColor: '#0F0C29' }}>
+            {/* EXIT */}
+            <TouchableOpacity
+                style={styles.exitBtn}
+                onPress={() => navigation.goBack()}
+            >
+                <Icon
+                    name="sign-out-alt"
+                    size={30}
+                    style={[styles.exitIcon, { transform: [{ scaleX: -1 }], color: '#FFD36E' }]}
+                />
+            </TouchableOpacity>
+
+            <ImageBackground
+                source={require('../images/RegisterPage.png')}
+                style={styles.bg}
+                resizeMode="cover"
+            >
+                {/* HEADER */}
+                <Text style={styles.heading}>PRIVATE LOBBY</Text>
+                <Text style={styles.subHeading}>Create your own battleground</Text>
+
+                {/* STEP 1 – GAME MODE */}
+                {!gameType && (
+                    <View style={styles.cardContainer}>
+                        {[
+                            { type: 'classic', icon: 'dot-circle' },
+                            { type: 'fast', icon: 'bolt' },
+                            { type: 'power', icon: 'magic' },
+                        ].map(item => (
+                            <TouchableOpacity
+                                key={item.type}
+                                style={styles.gameCard}
+                                onPress={() => setGameType(item.type)}
+                            >
+                                <Icon name={item.icon} size={36} color="#FFD36E" />
+                                <Text style={styles.cardText}>
+                                    {item.type.toUpperCase()}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
+                {/* STEP 2 – PLAYERS */}
+                {gameType && !playerCount && (
+                    <View style={styles.cardContainer}>
+                        {[2, 3, 4].map(p => (
+                            <TouchableOpacity
+                                key={p}
+                                style={styles.playerCard}
+                                onPress={() => setPlayerCount(p)}
+                            >
+                                <Icon name="users" size={26} color="#FFD36E" />
+                                <Text style={styles.cardText}>{p} PLAYERS</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
+                {/* STEP 3 – PASSWORD */}
+                {gameType && playerCount && (
+                    <View style={styles.passwordCard}>
+                        <TouchableOpacity
+                            style={styles.toggleRow}
+                            onPress={() => setUsePassword(prev => !prev)}
+                        >
+                            <Icon
+                                name={usePassword ? 'lock' : 'lock-open'}
+                                size={20}
+                                color="#FFD36E"
+                            />
+                            <Text style={styles.passwordLabel}>
+                                {usePassword ? 'PASSWORD ENABLED' : 'NO PASSWORD'}
+                            </Text>
+
+                        </TouchableOpacity>
+
+
+                        {usePassword && (
+                            <View style={styles.pinContainer}>
+                                {passwordDigits.map((digit, index) => (
+                                    <TextInput
+                                        key={index}
+                                        ref={ref => (pinRefs.current[index] = ref)}
+                                        style={styles.pinBox}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        secureTextEntry
+                                        value={digit}
+                                        onChangeText={text => {
+                                            const newDigits = [...passwordDigits];
+                                            newDigits[index] = text;
+                                            setPasswordDigits(newDigits);
+
+
+                                            if (text && index < 3) {
+                                                pinRefs.current[index + 1]?.focus();
+                                            }
+                                        }}
+                                        onKeyPress={({ nativeEvent }) => {
+
+                                            if (
+                                                nativeEvent.key === 'Backspace' &&
+                                                !passwordDigits[index] &&
+                                                index > 0
+                                            ) {
+                                                pinRefs.current[index - 1]?.focus();
+                                            }
+                                        }}
+                                    />
+                                ))}
+                            </View>
+                        )}
+
+
+                    </View>
+                )}
+                {gameType && playerCount && !roomCode && (
+                    <PrivateRoomBoard
+                        matchedPlayers={matchedPlayers}
+                        user={user}
+                        maxPlayers={playerCount || 4}
+                        friends={friends}
+                        onInviteFriend={handleInviteFriend}
+                    />)}
+
+                {/* CREATE */}
+                {gameType && playerCount && !roomCode && (
+                    <TouchableOpacity
+                        style={styles.createBtn}
+                        disabled={ready}
+                        onPress={handleReady}
                     >
-                        <Text style={styles.PrivateText}> Private </Text>
-                        <View style={styles.optionContainer}>
-                            <TouchableOpacity style={styles.options} onPress={() => { setGameType('classic') }} disabled={!!gameType}>
-                                <Icon name='dot-circle' size={40} style={{ color: '#b9e109' }} />
-                                <Text style={styles.optionText}>Classic</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.options} onPress={() => { setGameType('fast') }} disabled={!!gameType}>
-                                <Icon name='bolt' size={40} style={{ color: '#b9e109' }} />
-                                <Text style={styles.optionText}>Fast</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.options} onPress={() => { setGameType('power') }} disabled={!!gameType}>
-                                <Icon name='magic' size={40} style={{ color: '#b9e109' }} />
-                                <Text style={styles.optionText}>Power</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                    </ImageBackground>
-
-
-
-                    {/*<CommonSelectionRoom players={ready ? playerCount : 1} matchedPlayers={matchedPlayers} ready={ready} gameType="classic"/>
-                    <View style={styles.playerSelection}>
-                        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Players:</Text>
-                        <TouchableOpacity style={[styles.selectBtn, playerCount === 2 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(2) }}>
-                            <Text style={{ color: "#fff", fontWeight: "bold" }}>2P</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.selectBtn, playerCount === 3 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(3) }}>
-                            <Text style={{ color: "#fff", fontWeight: "bold" }}>3P</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.selectBtn, playerCount === 4 ? { backgroundColor: "#F8B55F" } : {}]} disabled={ready} onPress={() => { setPlayerCount(4) }}>
-                            <Text style={{ color: "#fff", fontWeight: "bold" }}>4P</Text>
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity style={[styles.selectBtn, players === 5 ? { backgroundColor: "#F8B55F" } : {}]} onPress={() => { setPlayers(5) }}>
-                            <Text style={{ color: "#fff", fontWeight: "bold" }}>5P</Text>
-                        </TouchableOpacity>  
-                    </View> 
-                    */}
-                    {/* <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} disabled={!socket || ready}>
-                        <Text style={{ color: "#000", fontWeight: "bold" }} >Ready</Text>
-                    </TouchableOpacity> */}
-                    {/* <TouchableOpacity style={styles.startBtn} onPress={() => setGameStarted(true)}>
-                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Start Game</Text>
-                    </TouchableOpacity> */}
-                </>
-                )}
-            {gameStarted && ready &&
-                (
-                    <>
-                        <GameScreen
-                            players={playerCount}
-                            matchedPlayers={matchedPlayers}
-                            roomCode={roomCode}
-                            myId={user._id}
-                            user={user}
-                            gameType="private" />
-                    </>
-
+                        <Text style={styles.createText}>
+                            {ready ? 'CREATING ROOM...' : 'CREATE ROOM'}
+                        </Text>
+                    </TouchableOpacity>
                 )}
 
+                {/* INVITE */}
+                {roomCode && (
+                    <View style={styles.inviteCard}>
+                        <Text style={styles.roomCode}>ROOM CODE</Text>
+                        <Text style={styles.codeText}>{roomCode}</Text>
+
+                        <TouchableOpacity
+                            style={styles.inviteBtn}
+                            onPress={handleInvite}
+                        >
+                            <Icon name="share-alt" size={18} color="#000" />
+                            <Text style={styles.inviteText}>INVITE FRIENDS</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </ImageBackground>
         </View>
-    )
-}
+    );
 
-export default Power;
+};
 
+export default PrivateRoom;
+
+/* ===================== STYLES ===================== */
 const styles = StyleSheet.create({
-    startBtn: {
-        marginTop: 10,
-        backgroundColor: "#F8B55F",
-        paddingHorizontal: 20,
-        paddingVertical: 5,
-        borderRadius: 10,
-        height: 40,
-        width: 120,
-        fontSize: 26,
-        justifyContent: 'center',
+    bg: {
+        flex: 1,
+        paddingTop: 90,
         alignItems: 'center',
-        position: 'absolute',
-        bottom: 180,
-        alignSelf: 'center',
     },
-    readyBtn: {
-        marginTop: 10,
-        backgroundColor: "#EEEEEE",
-        paddingHorizontal: 20,
-        paddingVertical: 5,
-        borderRadius: 10,
-        height: 40,
-        width: 120,
-        fontSize: 26,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: 120,
-        alignSelf: 'center',
-
-    },
-    selectBtn: {
-        backgroundColor: "#D9CFC7",
-        paddingHorizontal: 15,
-        paddingVertical: 5,
-        borderRadius: 10,
-        height: 40,
-        fontSize: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        color: '#000',
-    },
-    playerSelection: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 20,
-        position: 'absolute',
-        bottom: 250,
-        width: '75%',
-    },
-    exitIcon: {
+    exitBtn: {
         position: 'absolute',
         top: 50,
         left: 20,
-        color: '#F8B55F',
-        zIndex: 10,
+        zIndex: 20,
     },
-    PrivateText: {
-        position: 'absolute',
-        top: 50,
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#F8B55F',
-        zIndex: 10,
-        right: 180,
+    heading: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#FFD36E',
+        letterSpacing: 2,
     },
-    options: {
-        height: 150,
-        width: '80%',
-        backgroundColor: '#3d365c',
-        display: 'flex',
-        justifyContent: 'center',
+    subHeading: {
+        color: '#AAA',
+        marginBottom: 30,
+    },
+
+    cardContainer: {
+        width: '100%',
         alignItems: 'center',
-        margin: 8,
+    },
+
+    gameCard: {
+        width: '85%',
+        height: 90,
+        backgroundColor: '#1B1B3A',
+        marginVertical: 10,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#FFD36E',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 14,
+    },
+
+    playerCard: {
+        width: 220,
+        height: 70,
+        backgroundColor: '#1B1B3A',
+        marginVertical: 8,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#FFD36E',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+
+    cardText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFD36E',
+    },
+
+    passwordCard: {
+        backgroundColor: '#1B1B3A',
+        padding: 20,
+        borderRadius: 20,
+        width: '85%',
+        alignItems: 'center',
+        marginTop: 20,
+        borderWidth: 1,
+        borderColor: '#FFD36E',
+    },
+
+    toggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+
+    passwordLabel: {
+        color: '#FFD36E',
+        fontWeight: 'bold',
+    },
+
+    input: {
+        marginTop: 12,
+        width: '100%',
+        backgroundColor: '#fff',
+        padding: 10,
+        borderRadius: 10,
+    },
+
+    createBtn: {
+        position: 'absolute',
+        bottom: 80,
+        backgroundColor: '#FFD36E',
+        paddingHorizontal: 50,
+        paddingVertical: 14,
+        borderRadius: 30,
+    },
+
+    createText: {
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+
+    inviteCard: {
+        position: 'absolute',
+        bottom: 60,
+        alignItems: 'center',
+        backgroundColor: '#1B1B3A',
+        padding: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#FFD36E',
+    },
+
+    roomCode: {
+        color: '#AAA',
+        letterSpacing: 2,
+    },
+
+    codeText: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#FFD36E',
+        marginVertical: 6,
+    },
+
+    inviteBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#FFD36E',
+        paddingHorizontal: 24,
+        paddingVertical: 10,
+        borderRadius: 24,
+    },
+
+    inviteText: {
+        fontWeight: 'bold',
+    },
+    pinContainer: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 14,
+    },
+
+    pinBox: {
+        width: 55,
+        height: 55,
+        backgroundColor: '#0F0C29',
+        borderRadius: 12,
         borderWidth: 2,
-        borderColor: 'white',
-        borderRadius: 20
-    },
-    optionContainer: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'absolute',
-        top: 150,
-        left: 30,
-        width: '90%'
-    },
-    optionText: {
-        fontSize: 24,
+        borderColor: '#FFD36E',
+        textAlign: 'center',
+        fontSize: 22,
         fontWeight: 'bold',
-        color: '#b9e109',
-        zIndex: 10,
-    }
-})
+        color: '#FFD36E',
+    },
+});

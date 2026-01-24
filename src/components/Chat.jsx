@@ -30,9 +30,8 @@ const Chat = ({ route }) => {
     const [otherUser, setOtherUser] = useState(null);
     const [messages, setMessages] = useState([]);
     const flatListRef = React.useRef();
-    const { socket } = useSocket();
-    const [isSocketReady, setIsSocketReady] = useState(false);
-
+    const socketRef = useSocket();
+    const socket = socketRef?.socketRef?.current;
     //const [text, setText] = useState("");
 
     useEffect(() => {
@@ -56,16 +55,15 @@ const Chat = ({ route }) => {
 
         const handleConnect = () => {
             console.log("Socket connected:", socket.id);
-            setIsSocketReady(true);
             socket.emit("joinChat", chatId);
         };
 
         if (socket?.connected) {
-            setIsSocketReady(true);
+
             socket.emit("joinChat", chatId);
         } else {
             socket?.on("connect", () => {
-                setIsSocketReady(true);
+
                 socket.emit("joinChat", chatId);
             });
         }
@@ -184,7 +182,7 @@ const Chat = ({ route }) => {
         const joinChat = () => {
             console.log("Socket connected:", socket.id);
             socket.emit("joinChat", chatId);
-            setIsSocketReady(true);
+
         };
 
         if (socket.connected) {
@@ -217,7 +215,7 @@ const Chat = ({ route }) => {
 
     // send message
     const sendMessage = async () => {
-        if (!typedMessage.trim() || !isSocketReady || !socket?.connected) {
+        if (!typedMessage.trim() || !socket?.connected) {
             console.log("Socket not ready or empty message");
             return;
         }

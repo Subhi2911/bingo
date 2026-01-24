@@ -87,7 +87,7 @@ const AvatarSelection = () => {
 
     return (
         <ImageBackground
-            source={require('../images/message_bg.png')}
+            source={require('../images/RegisterPage.png')}
             style={{ flex: 1 }}
         >
             <SafeAreaView style={{ flex: 1 }}>
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         alignSelf: 'center',
         marginTop: 20,
-        color: '#000',
+        color: '#FFD700',
     },
     grid: {
         flexDirection: 'row',
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
         margin: 10,
         padding: 18,
         borderRadius: 50,
-        backgroundColor: 'rgba(15,72,4,0.56)',
+        backgroundColor: 'rgba(236, 187, 236, 0.56)',
     },
     golden: {
         backgroundColor: '#FFD700',
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
         marginTop: 30,
     },
     btn: {
-        backgroundColor: '#1e7f00',
+        backgroundColor: '#eb88de',
         paddingHorizontal: 30,
         paddingVertical: 12,
         borderRadius: 25,

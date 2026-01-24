@@ -208,7 +208,7 @@ const Dashboard = () => {
                         >
                             <Text style={styles.logoutText}>Logout</Text>
                         </TouchableOpacity>
-                        {/* <TouchableOpacity
+                        <TouchableOpacity
                             style={[styles.btn, styles.logout]}
                             onPress={async () => {
                                 
@@ -217,7 +217,7 @@ const Dashboard = () => {
                             }}
                         >
                             <Text style={styles.logoutText}>avatar</Text>
-                        </TouchableOpacity> */}
+                        </TouchableOpacity>
                     </View>
                 </Pressable>
             </Modal>

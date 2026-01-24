@@ -33,12 +33,13 @@ export const SocketProvider = ({ children }) => {
   return (
     <SocketContext.Provider
       value={{
-        socket: socketRef.current,
+        socketRef,
         onlineUsers,
       }}
     >
       {children}
     </SocketContext.Provider>
+
   );
 };
 
