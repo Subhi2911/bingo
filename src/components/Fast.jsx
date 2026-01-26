@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Fast = () => {
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
     const [gameStarted, setGameStarted] = React.useState(false);
     const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
     const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match

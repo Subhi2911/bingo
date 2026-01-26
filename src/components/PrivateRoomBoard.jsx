@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -42,22 +43,49 @@ const PrivateRoomBoard = ({
   }, [opponents, user, maxPlayers]);
 
   // Position presets (supports up to 4 players)
-  const positions = [
-    { top: '8%', left: '15%' },
-    { top: '8%', right: '15%' },
-    { bottom: '10%', right: '15%' },
-    { bottom: '10%', left: '15%' },
-  ];
+  // const positions = [
+  //   { top: '8%', left: '15%' },
+  //   { top: '8%', right: '15%' },
+  //   { bottom: '10%', right: '15%' },
+  //   { bottom: '10%', left: '15%' },
+  // ];
+  const playerPositions = {
+    1: [{ bottom: '9%', left: '13%' }],
+    2: [
+      { top: '16%', right: '12%' },
+      { bottom: '9%', left: '13%' }
+    ],
+    3: [
+      { top: '16%', left: '13%' },
+      { top: '16%', right: '12%' },
+      { bottom: '9%', left: '13%' }
+    ],
+    4: [
+      { top: '16%', left: '13%' },
+      { top: '16%', right: '12%' },
+      { bottom: '9%', right: '13%' },
+      { bottom: '9%', left: '13%' }
+    ],
+    5: [
+      { top: '16%', left: '13%' },
+      { top: '16%', right: '12%' },
+      { bottom: '9%', right: '13%' },
+      { bottom: '9%', left: '13%' },
+      { top: '32%', left: '26%' }
+    ]
+  };
+
 
   return (
     <View style={styles.boardContainer}>
       <ImageBackground
-        source={require('../images/RegisterPage.png')}
+        source={require('../images/userSelectionPrivate.png')}
         style={styles.boardBg}
       >
         {slots.map((player, index) => {
           const isMe = index === slots.length - 1;
-          const posStyle = positions[index] || {};
+          const currentPositions = playerPositions[slots.length] || [];
+          const posStyle = currentPositions[index] || {};
 
           return (
             <View key={index} style={[styles.playerSlot, posStyle]}>
@@ -67,6 +95,12 @@ const PrivateRoomBoard = ({
                     <Text style={styles.avatarText}>
                       {player.avatar || '🐟'}
                     </Text>
+                    {player?.ready && (
+                      <View style={styles.readyBadge}>
+                        <Icon name="thumbs-up" size={14} color="#000" />
+                      </View>
+                    )}
+
                   </View>
                   <Text style={styles.playerName}>
                     {isMe ? 'Me' : player.username || 'Player'}
@@ -262,4 +296,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
   },
+  readyBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#4CAF50',
+    padding: 6,
+    borderRadius: 12,
+  }
+
 });

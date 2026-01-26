@@ -16,7 +16,7 @@ const Messaging = () => {
     const [userData, setUserData] = useState(null);
     const [loadingChats, setLoadingChats] = useState(true);
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
     const onlineUsers= socketRef?.onlineUsers
     //const [isOnline, setIsOnline] = useState(false);
 

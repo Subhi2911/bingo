@@ -5,10 +5,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSocket } from '../context/SocketContext';
 
-const MessageBubble = ({ message, isMe, seen, userData, type, roomCode, timeStamp }) => {
+const MessageBubble = ({ message, isMe, seen, userData, type, roomCode, timeStamp, playerCount, gameType }) => {
     const navigation = useNavigation();
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
     console.log(timeStamp)
     const dateObj = new Date(timeStamp);
 
@@ -26,14 +26,22 @@ const MessageBubble = ({ message, isMe, seen, userData, type, roomCode, timeStam
                 {
                     text: 'Join',
                     onPress: () => {
-                        // Navigate to PrivateRoomBoard
-                        navigation.navigate('Private', { roomCode: roomCode });
                         // Emit join event to socket
                         socket?.emit('join_private_room', {
                             roomCode: roomCode,
                             userId: userData._id,
                             username: userData.username,
                             avatar: userData.avatar,
+                            socketId: socket.id
+                        });
+
+                        socket.once('private_room_updated', () => {
+                            navigation.navigate('Private', {
+                                roomCode,
+                                gameType,
+                                playerCount,
+                                initialRoomCreated: true,
+                            });
                         });
                     },
                 },
@@ -42,6 +50,7 @@ const MessageBubble = ({ message, isMe, seen, userData, type, roomCode, timeStam
     };
     React.useEffect(() => {
         console.log(message);
+        console.log(socket);
     })
 
     return (

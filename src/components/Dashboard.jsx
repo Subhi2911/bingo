@@ -27,7 +27,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import Search from "./Search";
 import { useSocket } from "../context/SocketContext";
-
+import Bell from "./Bell";
+import NotificationPanel from "./NotificationPanel";
+import { useNotifications } from "../context/NotificationContext";
 
 
 const Dashboard = () => {
@@ -39,36 +41,74 @@ const Dashboard = () => {
     const [searchResults, setSearchResults] = React.useState([]);
     const [query, setQuery] = React.useState("");
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
+    const [panelVisible, setPanelVisible] = React.useState(false);
+    const { hasUnread } = useNotifications();
+    const [notifications, setNotifications] = React.useState([]);
+
+
+
+
+    const openNotification = async (notification) => {
+        // mark as read
+        try {
+            const token = await AsyncStorage.getItem("authToken");
+            await fetch(`${BACKEND_URL}/api/notifications/${notification._id}/read`, {
+                method: "PATCH",
+                headers: { "auth-token": token },
+            });
+        } catch (e) {
+            console.log(e);
+        }
+
+        // navigate to private room if it's a private room invite
+        if (notification.type === "PRIVATE_ROOM_INVITE") {
+            const { roomCode, gameType, playerCount } = notification.data;
+            navigation.navigate("PrivateRoom", { roomCode, gameType, playerCount });
+        }
+    };
+
+    // useEffect(() => {
+    //     if (!socket) return;
+
+    //     socket.on("private_room_invite", ({ roomCode, fromUser }) => {
+    //         Alert.alert(
+    //             "Game Invite 🎮",
+    //             `${fromUser.username} invited you to a private room`,
+    //             [
+    //                 { text: "Decline", style: "cancel" },
+    //                 {
+    //                     text: "Join",
+    //                     onPress: () => {
+    //                         socket.emit("join_private_room", {
+    //                             roomCode,
+    //                             userId: user._id,
+    //                             username: user.username,
+    //                             avatar: user.avatar || "🐟",
+    //                         });
+    //                     },
+    //                 },
+    //             ]
+    //         );
+    //     });
+
+    //     return () => {
+    //         socket.off("private_room_invite");
+    //     };
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [socket]);
 
     useEffect(() => {
         if (!socket) return;
+        console.log(socketRef);
 
-        socket.on("private_room_invite", ({ roomCode, fromUser }) => {
-            Alert.alert(
-                "Game Invite 🎮",
-                `${fromUser.username} invited you to a private room`,
-                [
-                    { text: "Decline", style: "cancel" },
-                    {
-                        text: "Join",
-                        onPress: () => {
-                            socket.emit("join_private_room", {
-                                roomCode,
-                                userId: user._id,
-                                username: user.username,
-                                avatar: user.avatar || "🐟",
-                            });
-                        },
-                    },
-                ]
-            );
+        socket.on("newNotification", (notification) => {
+            // Update state of notifications in the drawer
+            setNotifications((prev) => [notification, ...prev]);
         });
 
-        return () => {
-            socket.off("private_room_invite");
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        return () => socket.off("newNotification");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
 
     useEffect(() => {
@@ -82,6 +122,7 @@ const Dashboard = () => {
 
         return () => clearTimeout(timeout);
     }, [query]);
+    
 
     const searchUser = async (query) => {
         try {
@@ -169,6 +210,12 @@ const Dashboard = () => {
 
 
                                     <View style={styles.iconContainer2}>
+                                        <TouchableOpacity>
+                                            <>
+                                                <Bell hasUnread={hasUnread} onPress={() => navigation.navigate("NotificationPanel")} />
+                                                {panelVisible && <NotificationPanel onOpenNotification={(n) => { setPanelVisible(false); openNotification(n); }} />}
+                                            </>
+                                        </TouchableOpacity>
                                         <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
                                             <Icon name="paper-plane" size={28} color="#F8B55F" />
                                         </TouchableOpacity>
@@ -270,7 +317,7 @@ const styles = StyleSheet.create({
     },
     iconContainer2: {
         flexDirection: "row",
-        gap: 14,
+        gap: 20,
         alignItems: "center",
     },
     avatarContainer: {

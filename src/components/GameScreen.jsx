@@ -25,7 +25,7 @@ import ProfileModal from './ProfileModal';
 const GameScreen = (props) => {
     const navigation = useNavigation();
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
     const [winModal, setWinModal] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
     const [currentTurn, setCurrentTurn] = useState(null);

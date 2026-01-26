@@ -32,27 +32,38 @@ const Chat = ({ route }) => {
     const [messages, setMessages] = useState([]);
     const flatListRef = React.useRef();
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
     const onlineUsers = socketRef?.onlineUsers;
+    const [firstLoad, setFirstLoad] = useState(true);
 
     const getRoomCode = (text) => {
-        const match = text.match(/Room Code:\s*(\w+)/);
+        const match = text?.match(/Room Code:\s*(\w+)/);
         return match ? match[1] : null;
     };
+    const getPlayerCount = (text) => {
+        const playerCount = text?.match(/Total Players:\s*(\d+)/)?.[1];
+        return playerCount || null;
+    }
+    const getGameType = (text) => {
+        const gameType = text?.match(/GameType:\s*(.+)/)?.[1];
+        return gameType || null;
+    }
     //const [text, setText] = useState("");
 
     useEffect(() => {
-        if (flatListRef.current && messages.length) {
-            // Scroll to the **last item**
-            flatListRef.current.scrollToEnd({ animated: false });
-        }
-    }, [messages]);
+        if (!flatListRef.current) return;
 
-    useEffect(() => {
-        if (flatListRef.current) {
+        // If first load, scroll without animation
+        if (firstLoad) {
+            flatListRef.current.scrollToEnd({ animated: false });
+            setFirstLoad(false); // subsequent messages will animate
+        } else {
+            // New messages animate scroll
             flatListRef.current.scrollToEnd({ animated: true });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages]);
+
 
     useEffect(() => {
         if (!socket) return;
@@ -305,13 +316,15 @@ const Chat = ({ route }) => {
                                         type={item?.type}
                                         roomCode={getRoomCode(item?.text)}
                                         timeStamp={item?.updatedAt}
+                                        playerCount={getPlayerCount(item?.text)}
+                                        gameType={getGameType(item?.text)}
                                     />
                                 )}
 
                                 contentContainerStyle={{ paddingVertical: 10 }}
                                 // optional for smooth auto-scroll on new messages
                                 onContentSizeChange={() =>
-                                    flatListRef.current?.scrollToOffset({ offset: 0, animated: true })
+                                    flatListRef.current?.scrollToEnd({ animated: true })
                                 }
 
                             />}

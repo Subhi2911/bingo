@@ -9,6 +9,7 @@ import {
     TextInput,
     BackHandler,
     Share,
+    Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
@@ -21,10 +22,14 @@ import PrivateRoomBoard from './PrivateRoomBoard';
 
 const PrivateRoom = () => {
     const navigation = useNavigation();
-    const { roomCode: initialRoomCode } =
-        navigation.getState()?.routes?.find(r => r.name === 'Private')?.params || {};
+    const {
+        roomCode: initialRoomCode,
+        gameType: initialGameType,
+        playerCount: initialPlayerCount,
+        initialRoomCreated: initialRoomCreated,
+    } = navigation.getState()?.routes?.find(r => r.name === 'Private')?.params || {};
     const socketRef = useSocket();
-    const socket = socketRef?.socketRef?.current;
+    const socket = socketRef?.socket;
     const pinRefs = useRef([]);
 
     // USER
@@ -32,28 +37,121 @@ const PrivateRoom = () => {
     const [friends, setFriends] = useState([]);
 
     // FLOW
-    const [gameType, setGameType] = useState(null);
-    const [playerCount, setPlayerCount] = useState(null);
+    const [gameType, setGameType] = useState(initialGameType || null);
+    const [playerCount, setPlayerCount] = useState(initialPlayerCount || null);
     const [usePassword, setUsePassword] = useState(false);
     const [passwordDigits, setPasswordDigits] = useState(['', '', '', '']);
     const [ready, setReady] = useState(false);
-    const [roomCreated, setRoomCreated] = useState(false);
+    const [roomCreated, setRoomCreated] = useState(initialRoomCreated || false);
 
     // ROOM
     const [roomCode, setRoomCode] = useState(initialRoomCode || null);
     const [matchedPlayers, setMatchedPlayers] = useState([]);
     const [gameStarted, setGameStarted] = useState(false);
-    const isHost = user?._id;
+
+    //joinroom
+    const [password, setPassword] = useState('')
+    const [enteredRoomCode, setEnteredRoomCode] = useState('')
+    const [awaitingPassword, setAwaitingPassword] = useState(false);
+    const [joinPasswordDigits, setJoinPasswordDigits] = useState(['', '', '', '']);
+    const joinPinRefs = useRef([]);
+
+    const [hasCode, setHasCode] = useState('');
+    const [requiresPassword, setRequiresPassword] = useState(false);
+
+    const isHost =
+        matchedPlayers?.length > 0 &&
+        matchedPlayers[0]?.userId === user?._id;
+    const allPlayersReady =
+        matchedPlayers.length > 0 &&
+        matchedPlayers.every(p => p.userId === matchedPlayers[0].userId || p.ready);
 
     const finalPassword = usePassword ? passwordDigits.join('') : null;
+    const joinFinalPassword = joinPasswordDigits.join('');
 
-    /* ===================== SOCKET EVENTS ===================== */
+    /* ===================== JOIN ROOM ===================== */
+
+    const handleJoinRoom = async () => {
+        if (!socket || !user || !enteredRoomCode) return;
+
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const res = await fetch(`${BACKEND_URL}/api/rooms/${enteredRoomCode}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth-token': token,
+                },
+            });
+
+            const roomData = await res.json();
+
+            if (!res.ok || !roomData) {
+                Alert.alert('Room not found', 'Please check the room code.');
+                return;
+            }
+            console.log(roomData);
+
+            // 🔑 STEP 1: Password required → ASK for password
+            if (roomData.passwordRequired && !awaitingPassword) {
+                setRequiresPassword(true);
+                setAwaitingPassword(true);
+                return; // ⛔ STOP here
+            }
+
+            // 🔐 STEP 2: Validate password
+            if (roomData.passwordRequired && roomData.password !== parseInt(joinFinalPassword,10)) {
+                console.log(roomData.passwordRequired,roomData.password, joinFinalPassword)
+                Alert.alert('Wrong password', 'Please enter correct room password.');
+                return;
+            }
+
+            // ✅ STEP 3: Join room
+            socket.emit('join_private_room', {
+                roomCode: roomData.code,
+                userId: user._id,
+                username: user.username,
+                avatar: user.avatar,
+                password: joinFinalPassword || null,
+                socketId: socket.id,
+            });
+
+            setRoomCode(roomData.code);
+            setGameType(roomData.gameType);
+            setPlayerCount(roomData.size);
+            setRoomCreated(true);
+
+        } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'Unable to join room.');
+        }
+    };
 
     useEffect(()=>{
-        console.log(initialRoomCode);
-    },[initialRoomCode])
+        console.log(roomCode);
+        console.log(gameType);
+        console.log(playerCount);
+    },[gameType,roomCode,playerCount])
+    /* ===================== CREATE ROOM ===================== */
+    const handleCreateRoom = useCallback(() => {
+        if (!socket || !user || ready || !gameType || !playerCount) return;
+
+        setRoomCreated(true);
+        setReady(true);
+        console.log(finalPassword);
+        socket.emit('create_private_room', {
+            userId: user._id,
+            username: user.username,
+            avatar: user.avatar,
+            gameType,
+            size: playerCount,
+            password: finalPassword,
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, user, gameType, playerCount, finalPassword, ready]);
+
+    /* ===================== SOCKET EVENTS ===================== */
     useEffect(() => {
-        if (!socket || !user) return;
+        if (!socket) return;
 
         const onRoomCreated = ({ roomCode, players }) => {
             setRoomCode(roomCode);
@@ -61,24 +159,31 @@ const PrivateRoom = () => {
             setRoomCreated(true);
         };
 
-        const onMatchFound = ({ roomCode, players }) => {
-            setRoomCode(roomCode);
-            setMatchedPlayers(players);
-            setTimeout(() => setGameStarted(true), 1200);
-        };
-
         const onPrivateRoomUpdated = ({ players }) => {
             setMatchedPlayers(players);
         };
 
         socket.on('private_room_created', onRoomCreated);
-        socket.on('match_found', onMatchFound);
         socket.on('private_room_updated', onPrivateRoomUpdated);
+
+        socket.on('private_game_started', ({ roomCode, players, gameType }) => {
+            setMatchedPlayers(players);
+            setGameType(gameType);
+            setGameStarted(true);
+
+            socket.emit('join_room', {
+                roomCode,
+                userId: user._id,
+                username: user.username,
+                avatar: user.avatar,
+                gameType,
+            });
+        });
 
         return () => {
             socket.off('private_room_created', onRoomCreated);
-            socket.off('match_found', onMatchFound);
             socket.off('private_room_updated', onPrivateRoomUpdated);
+            socket.off('private_game_started');
         };
     }, [socket, user]);
 
@@ -92,11 +197,9 @@ const PrivateRoom = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'auth-token': token },
             });
-
             const json = await res.json();
             setUser(json);
         };
-
         fetchUser();
     }, []);
 
@@ -128,37 +231,36 @@ const PrivateRoom = () => {
             try {
                 const token = await AsyncStorage.getItem('authToken');
                 const res = await fetch(`${BACKEND_URL}/api/rooms/${roomCode}`, {
-                    headers: { 'Content-Type': 'application/json', 'auth-token': token },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'auth-token': token,
+                    },
                 });
                 const roomData = await res.json();
-                setMatchedPlayers(roomData.players);
-                setGameType(roomData.gameType);
-                if (typeof roomData.size === 'number') {
-                    setPlayerCount(roomData.size);
+
+                if (!matchedPlayers.length && roomData.players?.length) {
+                    setMatchedPlayers(roomData.players);
                 }
+
+                if (roomData.gameType) setGameType(roomData.gameType);
+                if (typeof roomData.size === 'number') setPlayerCount(roomData.size);
             } catch (err) {
                 console.error('Error fetching room:', err);
             }
         };
-
         fetchRoom();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [roomCode, user]);
 
-    /* ===================== CREATE ROOM ===================== */
-    const handleCreateRoom = useCallback(() => {
-        if (!socket || !user || ready) return;
+    /* ===================== READY ===================== */
+    const handleReady = () => {
+        if (!socket || !roomCode || !user) return;
 
-        setReady(true);
-
-        socket.emit('create_private_room', {
+        socket.emit('private_player_ready', {
+            roomCode,
             userId: user._id,
-            username: user.username,
-            avatar: user.avatar,
-            gameType,
-            size: playerCount,
-            password: finalPassword,
         });
-    }, [socket, user, gameType, playerCount, finalPassword, ready]);
+    };
 
     /* ===================== INVITE FRIEND ===================== */
     const getChatId = async (otherUserId) => {
@@ -191,7 +293,7 @@ const PrivateRoom = () => {
             const inviteMessage = {
                 chatId,
                 sender: user._id,
-                text: `🎮 ${user.username} invited you to a private room! Room Code: ${roomCode}`,
+                text: `🎮 ${user.username} invited you to a private room! Room Code: ${roomCode}. \nGameType: ${gameType} \nTotal Players: ${playerCount}`,
                 type: 'private_room_invite',
                 roomCode,
                 gameType,
@@ -205,6 +307,11 @@ const PrivateRoom = () => {
 
             const savedMessage = await res.json();
             socket.emit('sendMessage', savedMessage);
+            socket.emit('invite_to_private_room', {
+                friendId: friend._id,
+                roomCode,
+                fromUser: { _id: user._id, username: user.username },
+            });
         } catch (err) {
             console.error('Error sending invite message:', err);
         }
@@ -215,23 +322,16 @@ const PrivateRoom = () => {
         if (!roomCode) return;
 
         await Share.share({
-            message: `🎮 Join my private room!\n\nRoom Code: ${roomCode}\nGame: ${gameType.toUpperCase()}`,
+            message: `🎮 Join my private room!\n\nRoom Code: ${roomCode}\nGame: ${gameType?.toUpperCase()}`,
         });
     };
 
     /* ===================== DISABLE BACK ===================== */
     useEffect(() => {
         const backAction = () => true;
-        const backHandler = BackHandler.addEventListener(
-            'hardwareBackPress',
-            backAction
-        );
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
         return () => backHandler.remove();
     }, []);
-
-    useEffect(() => {
-        console.log(playerCount);
-    }, [playerCount]);
 
     /* ===================== RENDER ===================== */
     if (gameStarted && user) {
@@ -272,34 +372,111 @@ const PrivateRoom = () => {
                 <Text style={styles.heading}>PRIVATE LOBBY</Text>
                 <Text style={styles.subHeading}>Create your own battleground</Text>
 
-                {/* STEP 1 – GAME MODE */}
+                {/* SETUP STEPS */}
                 {showSetupSteps && !gameType && (
-                    <View style={styles.cardContainer}>
-                        {[
-                            { type: 'classic', icon: 'dot-circle' },
-                            { type: 'fast', icon: 'bolt' },
-                            { type: 'power', icon: 'magic' },
-                        ].map(item => (
-                            <TouchableOpacity
-                                key={item.type}
-                                style={styles.gameCard}
-                                onPress={() => setGameType(item.type)}
-                            >
-                                <Icon name={item.icon} size={36} color="#FFD36E" />
-                                <Text style={styles.cardText}>{item.type.toUpperCase()}</Text>
+                    <>
+                        <View style={styles.cardContainer}>
+                            {[
+                                { type: 'classic', icon: 'dot-circle' },
+                                { type: 'fast', icon: 'bolt' },
+                                { type: 'power', icon: 'magic' },
+                            ].map(item => (
+                                <TouchableOpacity
+                                    key={item.type}
+                                    style={styles.gameCard}
+                                    onPress={() => setGameType(item.type)}
+                                >
+                                    <Icon name={item.icon} size={36} color="#FFD36E" />
+                                    <Text style={styles.cardText}>{item.type.toUpperCase()}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        {!hasCode && (
+                            <TouchableOpacity onPress={() => setHasCode(true)}>
+                                <Text style={[styles.subHeading, { marginTop: 10, fontSize: 18 }]}>
+                                    Join through Room Code
+                                </Text>
                             </TouchableOpacity>
-                        ))}
-                    </View>
+                        )}
+
+                        {hasCode && (
+                            <View style={styles.joinCard}>
+                                <Text style={styles.label}>ROOM CODE</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter room code"
+                                    placeholderTextColor="#AAA"
+                                    value={enteredRoomCode}
+                                    onChangeText={setEnteredRoomCode}
+                                    disabled={requiresPassword}
+                                />
+
+                                { requiresPassword && (
+                                    <>
+                                        <Text style={styles.label}>PASSWORD</Text>
+
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                                            {joinPasswordDigits.map((digit, index) => (
+                                                <TextInput
+                                                    key={index}
+                                                    ref={ref => (joinPinRefs.current[index] = ref)}
+                                                    value={digit}
+                                                    style={{
+                                                        width: 55,
+                                                        height: 55,
+                                                        borderRadius: 10,
+                                                        backgroundColor: '#0F0C29',
+                                                        color: '#FFD36E',
+                                                        fontSize: 22,
+                                                        textAlign: 'center',
+                                                    }}
+                                                    keyboardType="number-pad"
+                                                    maxLength={1}
+                                                    secureTextEntry
+                                                    onChangeText={text => {
+                                                        const newDigits = [...joinPasswordDigits];
+                                                        newDigits[index] = text;
+                                                        setJoinPasswordDigits(newDigits);
+
+                                                        if (text && index < 3) {
+                                                            joinPinRefs.current[index + 1]?.focus();
+                                                        }
+                                                    }}
+                                                    onKeyPress={({ nativeEvent }) => {
+                                                        if (
+                                                            nativeEvent.key === 'Backspace' &&
+                                                            !joinPasswordDigits[index] &&
+                                                            index > 0
+                                                        ) {
+                                                            joinPinRefs.current[index - 1]?.focus();
+                                                        }
+                                                    }}
+                                                />
+                                            ))}
+                                        </View>
+                                    </>
+                                )}
+
+                                <TouchableOpacity
+                                    style={[styles.mainBtn, { marginTop: 15 }]}
+                                    onPress={handleJoinRoom}
+                                >
+                                    <Text style={styles.mainText}>JOIN ROOM</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                    </>
                 )}
 
-                {/* STEP 2 – PLAYERS */}
+                {/* PLAYER COUNT SELECTION */}
                 {showSetupSteps && gameType && !playerCount && (
                     <View style={styles.cardContainer}>
                         {[2, 3, 4].map(p => (
                             <TouchableOpacity
                                 key={p}
                                 style={styles.playerCard}
-                                onPress={() => { setPlayerCount(p); console.log(playerCount) }}
+                                onPress={() => setPlayerCount(p)}
                             >
                                 <Icon name="users" size={26} color="#FFD36E" />
                                 <Text style={styles.cardText}>{p} PLAYERS</Text>
@@ -308,7 +485,7 @@ const PrivateRoom = () => {
                     </View>
                 )}
 
-                {/* STEP 3 – PASSWORD */}
+                {/* PASSWORD SETUP */}
                 {showSetupSteps && gameType && playerCount && (
                     <View style={styles.passwordCard}>
                         <TouchableOpacity
@@ -368,7 +545,7 @@ const PrivateRoom = () => {
                 )}
 
                 {/* PRIVATE ROOM BOARD */}
-                {roomCreated && (
+                {(roomCreated || roomCode) && (
                     <>
                         <PrivateRoomBoard
                             matchedPlayers={matchedPlayers}
@@ -381,7 +558,8 @@ const PrivateRoom = () => {
                         {/* INVITE */}
                         <View style={styles.inviteCard}>
                             <Text style={styles.roomCode}>ROOM CODE</Text>
-                            <Text style={styles.codeText}>{roomCode}</Text>
+                            <Text style={styles.codeText}>{roomCode || '----'}</Text>
+                            <Text style={[styles.roomCode, {margin:1}]}>Password: {finalPassword}</Text>
 
                             <TouchableOpacity style={styles.inviteBtn} onPress={handleInvite}>
                                 <Icon name="share-alt" size={18} color="#000" />
@@ -389,13 +567,34 @@ const PrivateRoom = () => {
                             </TouchableOpacity>
                         </View>
 
+                        {/* READY BUTTON */}
+                        {!isHost && !matchedPlayers.find(p => p.userId === user?._id)?.ready && (
+                            <TouchableOpacity
+                                style={[styles.mainBtn, { marginTop: 10 }]}
+                                onPress={handleReady}
+                            >
+                                <Text style={styles.mainText}>READY</Text>
+                            </TouchableOpacity>
+                        )}
+
                         {/* START GAME BUTTON FOR HOST */}
                         {isHost && (
                             <TouchableOpacity
-                                style={[styles.mainBtn, { marginTop: 10 }]}
-                                onPress={() => socket.emit('start_game', { roomCode })}
+                                style={[
+                                    styles.mainBtn,
+                                    {
+                                        marginTop: 10,
+                                        backgroundColor:
+                                            allPlayersReady && matchedPlayers?.length > 1 ? '#FFD36E' : '#b5b4a7',
+                                        opacity: allPlayersReady ? 1 : 0.5,
+                                    },
+                                ]}
+                                disabled={!(allPlayersReady && matchedPlayers?.length > 1)}
+                                onPress={() => socket.emit('start_private_game', { roomCode })}
                             >
-                                <Text style={styles.mainText}>START GAME</Text>
+                                <Text style={styles.mainText}>
+                                    {allPlayersReady && matchedPlayers.length > 1 ? 'START GAME' : 'WAITING FOR PLAYERS'}
+                                </Text>
                             </TouchableOpacity>
                         )}
                     </>
@@ -545,5 +744,32 @@ const styles = StyleSheet.create({
     },
     inviteText: {
         fontWeight: 'bold'
+    },
+    joinCard: {
+        backgroundColor: '#1B1B3A',
+        padding: 20,
+        borderRadius: 20,
+        width: '85%',
+        alignSelf: 'center',
+        marginTop: 30,
+        borderWidth: 1,
+        borderColor: '#FFD36E',
+    },
+    label: {
+        color: '#FFD36E',
+        fontWeight: 'bold',
+        marginTop: 10,
+        marginBottom: 5,
+        fontSize: 16,
+    },
+    input: {
+        backgroundColor: '#0F0C29',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FFD36E',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        color: '#FFD36E',
+        fontSize: 16,
     },
 });
