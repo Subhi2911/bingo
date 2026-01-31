@@ -108,7 +108,7 @@ const Dashboard = () => {
         });
 
         return () => socket.off("newNotification");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
 
     useEffect(() => {
@@ -122,7 +122,7 @@ const Dashboard = () => {
 
         return () => clearTimeout(timeout);
     }, [query]);
-    
+
 
     const searchUser = async (query) => {
         try {
@@ -229,14 +229,17 @@ const Dashboard = () => {
                                 {/*Search Bar */}
                                 {(selected === 'home' || selected === 'search') &&
                                     <View style={styles.searchBar}>
-                                        <Icon name="search" size={18} color="#bab8cc" />
+                                        <Icon name="search" size={16} color="#C6C3E0" />
                                         <TextInput
                                             placeholder="Search by Player ID"
+                                            placeholderTextColor="#C6C3E0"
                                             value={query}
                                             onChangeText={setQuery}
                                             style={styles.searchInput}
                                         />
-                                    </View>}
+                                    </View>
+
+                                }
                             </>}
 
                     </SafeAreaView>
@@ -250,7 +253,8 @@ const Dashboard = () => {
 
                     <NavBar selectedScreen={setSelected} />
                 </ImageBackground>
-            )}
+            )
+            }
 
             {/* PROFILE MODAL */}
             <Modal
@@ -302,7 +306,7 @@ const Dashboard = () => {
                     </View>
                 </Pressable>
             </Modal>
-        </View>
+        </View >
     );
 };
 
@@ -351,19 +355,20 @@ const styles = StyleSheet.create({
     searchBar: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#3d365cb6",
-        padding: 10,
-        borderRadius: 10,
-        marginHorizontal: 25,
-        marginTop: 10,
-        gap: 5,
+        gap: 10,
+        backgroundColor: "#2a244ae0",   // SAME as navbar
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 14,
+        marginHorizontal:22
     },
+
     searchInput: {
-        marginLeft: 12,
-        color: "#b8b6c9",
-        fontSize: 16,
-        fontWeight: 600,
+        flex: 1,
+        color: '#FFFFFF',
+        fontSize: 15,
     },
+
     popupAvatar: {
         width: 60,
         height: 60,

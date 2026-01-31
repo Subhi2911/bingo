@@ -46,7 +46,7 @@ const Play = () => {
   useEffect(() => {
     fetchGameHistory();
   }, []);
-  
+
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
@@ -62,7 +62,7 @@ const Play = () => {
           </Text>
 
           <View style={styles.userAvatar}>
-            <Text style={{ fontSize: 25 }}>{item.avatar || '🐟'}</Text>
+            <Text style={{ fontSize: 20 }}>{item?.winner?.avatar || '🐟'}</Text>
           </View>
           <Text style={styles.winnerName}>{item?.winner?.username || 'undefined'}</Text>
 
@@ -142,11 +142,13 @@ const styles = StyleSheet.create({
     gap: 6
   },
   userAvatar: {
-    height: 20,
-    width: 20,
-    borderRadius: 10,
+    height: 30,
+    width: 30,
+    borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#F8B55F'
+    borderColor: '#F8B55F',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   winnerName: {
     color: '#F8B55F',

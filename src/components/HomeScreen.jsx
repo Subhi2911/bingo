@@ -16,8 +16,10 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ScrollView } from "react-native";
 
-const HomeScreen = ({setSelected, setSearchResults}) => {
+
+const HomeScreen = ({ setSelected, setSearchResults }) => {
     const navigation = useNavigation();
 
     const [showRewardsModal, setShowRewardsModal] = React.useState(false);
@@ -26,7 +28,7 @@ const HomeScreen = ({setSelected, setSearchResults}) => {
 
     //const [searchResults, setSearchResults] = useState([]);
 
-    
+
 
     const launchGame = (mode) => {
         navigation.navigate(mode);
@@ -52,7 +54,7 @@ const HomeScreen = ({setSelected, setSearchResults}) => {
         getUser();
     }, []);
 
-   
+
 
 
     const dailyReward = {
@@ -85,129 +87,114 @@ const HomeScreen = ({setSelected, setSearchResults}) => {
     };
 
     return (
+
         <View style={styles.container}>
-           
 
-            {/* DAILY REWARD CARD */}
-            <Pressable
-                style={styles.rewardCard}
-                onPress={() => setShowRewardsModal(true)}
-            >
-                <Text style={styles.rewardTitle}>Daily Reward</Text>
-                <Text style={styles.rewardSub}>
-                    +{dailyReward[user?.daysLoggedIn % 7 || 1]} available
-                </Text>
-
-                <TouchableOpacity style={styles.claimBtn} onPress={handleClaimRewards}>
-                    <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                        CLAIM
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {/* DAILY REWARD */}
+                <Pressable style={styles.rewardCard} onPress={() => setShowRewardsModal(true)}>
+                    <Text style={styles.rewardTitle}>Daily Reward</Text>
+                    <Text style={styles.rewardSub}>
+                        +{dailyReward[user?.daysLoggedIn % 7 || 1]} available
                     </Text>
-                </TouchableOpacity>
-            </Pressable>
-
-            {/* USER STATS */}
-            <View style={styles.userRow}>
-                <Text style={styles.username}>{user?.username}</Text>
-                <View style={[styles.coinRow, { gap: 20 }]}>
-                    <View style={styles.coinRow}>
-                        <Image
-                            source={require("../images/xpicon.png")}
-                            style={{ width: 25, height: 25 }}
-                        />
-                        <Text style={styles.xpText}> {user?.xp || 0}</Text>
-                    </View>
-                    <View style={styles.coinRow}>
-                        <Icon name="coins" size={18} color="#F8B55F" />
-                        <Text style={styles.coinText}> {user?.money}</Text>
-                    </View>
-                </View>
-            </View>
-
-            {/* BANNER */}
-            <View style={styles.banner}>
-                <Text style={styles.bannerTitle}>Weekend Rush!</Text>
-                <Text style={styles.bannerSub}>Win x2 Rewards Today</Text>
-            </View>
-
-            {/* LEVEL */}
-            <View style={{ marginTop: 10 }}>
-                <Text style={styles.levelText}>LEVEL {user?.level}</Text>
-                <View style={styles.progressBar}>
-                    <View
-                        style={[
-                            styles.progressFill,
-                            { width: `${(user?.level || 1) * 10}%` },
-                        ]}
-                    />
-                </View>
-            </View>
-
-            {/* PLAY GRID */}
-            <View style={styles.playGrid}>
-                <PlayCard icon="dot-circle" label="Classic" onPress={() => launchGame("Classic")} />
-                <PlayCard icon="bolt" label="Fast" onPress={() => launchGame("Fast")} />
-                <PlayCard icon="magic" label="Power Bingo" onPress={() => launchGame("Power")} />
-                <PlayCard icon="lock" label="Private Room" onPress={() => launchGame("Private")} />
-            </View>
-
-            {/* ACTIONS */}
-            <View style={styles.actionsRow}>
-                <Action icon="tasks" label="Missions" onPress={() => { navigation.navigate("Missions") }} />
-                <Action icon="medal" label="Ranking" onPress={() => { navigation.navigate("Ranking") }} />
-                <Action icon="user-friends" label="Friends" onPress={() => { navigation.navigate("Friends") }} />
-            </View>
-
-            {/* MODAL */}
-            <Modal
-                visible={showRewardsModal}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowRewardsModal(false)}
-            >
-                {/* Backdrop */}
-                <Pressable
-                    style={styles.modalBackdrop}
-                    onPress={() => setShowRewardsModal(false)}
-                >
-                    {/* Modal Box */}
-                    <Pressable
-                        style={styles.modalBox}
-                        onPress={() => { }}   // prevents closing
-                    >
-                        {/* Title */}
-                        <Text style={styles.modalTitle}>Daily Rewards</Text>
-
-                        {/* Reward Image */}
-                        <ImageBackground
-                            source={require("../images/dailyclaims-bg.png")}
-                            style={styles.rewardImage}
-                            contentFit="contain"
-                        >
-                            <Text style={styles.rewardText}>
-                                +{dailyReward[user?.daysLoggedIn % 7 || 1]}
-                            </Text>
-                        </ImageBackground>
-
-                        {/* Claim Button */}
-                        <TouchableOpacity
-                            style={styles.closeBtn}
-                            onPress={handleClaimRewards}
-                        >
-                            <Text style={{ fontWeight: "bold" }}>CLAIM REWARD</Text>
-                        </TouchableOpacity>
-                    </Pressable>
                 </Pressable>
-            </Modal>
-        </View>
+
+                {/* HEADER */}
+
+                <View style={styles.header}>
+                    <Text style={styles.username}>{user?.username}</Text>
+
+                    <View style={styles.headerRight}>
+                        <View style={styles.statBox}>
+                            <Image source={require("../images/xpicon.png")} style={styles.statIcon} />
+                            <Text style={styles.xpText}>{user?.xp || 0} XP</Text>
+                        </View>
+
+                        <View style={styles.statBox}>
+                            <Icon name="coins" size={16} color="#FFD67A" />
+                            <Text style={styles.coinText}>{user?.money}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* XP LEVEL CARD */}
+                <View style={styles.levelCard}>
+                    <Text style={styles.levelTitle}>LEVEL {user?.level}</Text>
+
+                    {/* Progress bar */}
+                    <View style={styles.progressBar}>
+                        <View
+                            style={[
+                                styles.progressFill,
+                                { width: `${(user?.xp % 100)}%` },
+                            ]}
+                        />
+                    </View>
+
+                    {/* Stars checkpoints */}
+                    <View style={styles.starRow}>
+                        {[20, 40, 60, 80, 100].map((mark, i) => (
+                            <View key={i} style={styles.starWrapper}>
+                                <Icon
+                                    name="star"
+                                    size={18}
+                                    color={(user?.xp % 100) >= mark ? "#FFD67A" : "#555"}
+                                />
+                                <Text style={styles.starText}>{mark}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                {/* PLAY GRID */}
+                <View style={styles.playGrid}>
+                    <PlayCard icon="dot-circle" label="Classic" entryFee={20} onPress={() => launchGame("Classic")} />
+                    <PlayCard icon="bolt" label="Fast" entryFee={15} onPress={() => launchGame("Fast")} />
+                    <PlayCard icon="magic" label="Power Bingo" entryFee={40} onPress={() => launchGame("Power")} />
+                    <PlayCard icon="lock" label="Private Room" entryFee={0} onPress={() => launchGame("Private")} />
+                </View>
+
+
+
+                {/* ACTIONS */}
+                <View style={styles.actionsRow}>
+                    <Action icon="tasks" label="Missions" onPress={() => navigation.navigate("Missions")} />
+                    <Action icon="medal" label="Ranking" onPress={() => navigation.navigate("Ranking")} />
+                    <Action icon="user-friends" label="Friends" onPress={() => navigation.navigate("Friends")} />
+                </View>
+
+
+            </ScrollView>
+        </View >
     );
+
 };
 
-const PlayCard = ({ icon, label, onPress }) => (
+const PlayCard = ({ icon, label, entryFee, onPress }) => (
     <TouchableOpacity style={styles.playCard} onPress={onPress}>
-        <Icon name={icon} size={26} color="#FFD67A" />
+
+        {/* Top Row */}
+        <View style={styles.cardTop}>
+            <Icon name={icon} size={26} color="#FFD67A" />
+            {entryFee > 0 && (
+                <View style={styles.feeBadge}>
+                    <Text style={styles.feeText}>🪙 {entryFee}</Text>
+                </View>
+            )}
+        </View>
+
+        {/* Label */}
         <Text style={styles.playLabel}>{label}</Text>
+
+        {/* Bottom hint */}
+        {entryFee > 0 ? (
+            <Text style={styles.playHint}>Entry Fee</Text>
+        ) : (
+            <Text style={styles.playHint}>Free Room</Text>
+        )}
     </TouchableOpacity>
 );
+
 
 const Action = ({ icon, label, onPress }) => (
     <TouchableOpacity style={styles.actionBox} onPress={onPress}>
@@ -218,159 +205,157 @@ const Action = ({ icon, label, onPress }) => (
 
 export default HomeScreen;
 
+const CARD = "#2A244A";     // matches navbar family
+const BORDER = "#4A4370";   // softer, cleaner edges
+const GOLD = "#FFD67A";
+const TEXT = "#FFFFFF";
+const SUB = "#A9A6C1";
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        paddingTop: 10,
+        paddingHorizontal: 22,
+        paddingTop: 4,
     },
-    rewardCard: {
-        backgroundColor: "#3D365C",
-        borderRadius: 15,
-        padding: 15,
-        alignItems: "center",
-    },
-    rewardTitle: {
-        color: "#FFD67A",
-        fontSize: 18,
-        fontWeight: "bold",
-    },
-    rewardSub: {
-        color: "#fff",
-        marginTop: 5,
-    },
-    claimBtn: {
-        marginTop: 8,
-        backgroundColor: "#F8B55F",
-        paddingHorizontal: 20,
-        paddingVertical: 6,
-        borderRadius: 10,
-    },
-    userRow: {
-        marginTop: 20,
+
+    header: {
         flexDirection: "row",
         justifyContent: "space-between",
-    },
-    
-    username: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "600",
-    },
-    coinRow: {
-        flexDirection: "row",
         alignItems: "center",
+        marginBottom: 20,
     },
-    coinText: {
-        color: "#FFD67A",
-        fontSize: 16,
-    },
-    xpText: {
-        color: "#30c30c",
-        fontSize: 16,
-    },
-    banner: {
-        backgroundColor: "#23203C",
-        marginTop: 25,
-        padding: 15,
-        borderRadius: 12,
-    },
-    bannerTitle: {
-        color: "#FFD67A",
-        fontSize: 18,
+    username: {
+        color: TEXT,
+        fontSize: 22,
         fontWeight: "bold",
     },
-    bannerSub: {
-        color: "#fff",
-        marginTop: 5,
+    headerRight: {
+        flexDirection: "row",
+        gap: 12,
     },
-    levelText: {
-        color: "#fff",
+    statBox: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        //backgroundColor: CARD,
+        padding: 8,
+        //borderRadius: 10,
+        //borderWidth: 1,
+        //borderColor: BORDER,
+    },
+    statIcon: { width: 20, height: 20 },
+    xpText: { color: "#39D353", fontWeight: "bold" },
+    coinText: { color: GOLD, fontWeight: "bold" },
+
+    /* LEVEL CARD */
+    levelCard: {
+        backgroundColor: CARD,
+        borderRadius: 20,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: BORDER,
+        marginBottom: 20,
+    },
+    levelTitle: {
+        color: GOLD,
+        fontWeight: "bold",
+        marginBottom: 10,
     },
     progressBar: {
-        backgroundColor: "#fff3",
         height: 10,
+        backgroundColor: BORDER,
         borderRadius: 10,
-        marginTop: 5,
-        width: "95%",
+        overflow: "hidden",
     },
     progressFill: {
-        backgroundColor: "#FFD67A",
         height: "100%",
-        borderRadius: 10,
+        backgroundColor: GOLD,
     },
+    starRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 12,
+    },
+    starWrapper: {
+        alignItems: "center",
+    },
+    starText: {
+        color: SUB,
+        fontSize: 10,
+    },
+
+    /* PLAY GRID */
     playGrid: {
-        marginTop: 25,
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
+        marginBottom: 10,
     },
     playCard: {
-        backgroundColor: "#4A416B",
         width: "48%",
+        backgroundColor: CARD,
+        borderRadius: 18,
+        padding: 18,
         marginBottom: 15,
-        paddingVertical: 15,
-        borderRadius: 12,
+        borderWidth: 1.2,
+        borderColor: BORDER,
+    },
+    cardTop: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    feeBadge: {
+        borderWidth: 1,
+        borderColor: GOLD,
+        borderRadius: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+    },
+    feeText: { color: GOLD, fontSize: 12 },
+    playLabel: {
+        marginTop: 14,
+        color: TEXT,
+        fontSize: 18,
+        fontWeight: "bold",
+    },
+    playHint: { color: SUB, fontSize: 12 },
+
+    /* REWARD */
+    rewardCard: {
+        backgroundColor: CARD,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: BORDER,
+        marginBottom: 20,
         alignItems: "center",
     },
-    playLabel: {
-        color: "#fff",
-        marginTop: 6,
-        fontWeight: "600",
-    },
+    rewardTitle: { color: GOLD, fontWeight: "bold" },
+    rewardSub: { color: SUB, marginTop: 4 },
+
     actionsRow: {
         flexDirection: "row",
         justifyContent: "space-around",
-        marginTop: 30,
+        marginBottom: 30,
     },
-    actionBox: {
+    actionBox: { alignItems: "center" },
+    actionText: { color: TEXT, marginTop: 4 },
+    searchBar: {
+        flexDirection: "row",
         alignItems: "center",
-    },
-    actionText: {
-        color: "#fff",
-        marginTop: 5,
+        gap: 10,
+        backgroundColor: "#2A244A",   // SAME as navbar
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 14,
+        marginBottom: 18,
     },
 
-    /* MODAL */
-    modalBackdrop: {
+    searchInput: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.6)", // transparent background
-        justifyContent: "center",
-        alignItems: "center",
+        color: TEXT,
+        fontSize: 15,
     },
-    modalBox: {
-        //backgroundColor: "#3D365C",
-        width: "85%",
-        borderRadius: 18,
-        alignItems: "center",
-        //paddingVertical: 20,
-    },
-    modalTitle: {
-        color: "#FFD67A",
-        fontSize: 20,
-        fontWeight: "bold",
-        marginBottom: 5,
-    },
-    rewardImage: {
-        width: 400,
-        height: 450,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    rewardText: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "bold",
-        backgroundColor: "rgba(0,0,0,0.4)",
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    closeBtn: {
-        marginTop: 15,
-        backgroundColor: "#F8B55F",
-        paddingHorizontal: 25,
-        paddingVertical: 10,
-        borderRadius: 12,
-    },
+
 });
+

@@ -25,10 +25,6 @@ const OtherProfile = () => {
     const [loading, setLoading] = useState(true);
     const [requestStatus, setRequestStatus] = useState("none");
 
-    const avatarMap = {
-        daub: require('../avatars/daub.png'),
-    };
-
     useEffect(() => {
         fetchUserProfile();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,43 +129,43 @@ const OtherProfile = () => {
                     </View>
 
                     {/* AVATAR */}
-                    <View style={styles.avatar}>
-                        <Text style={{ fontSize: 115 }}>{user.avatar || '🐟'}</Text>
+                    <View style={styles.avatarCard}>
+                        <View style={styles.avatarGlow} />
+                        <Text style={styles.avatarEmoji}>{user.avatar || '🐟'}</Text>
+
+                        <View style={styles.levelBadge}>
+                            <Text style={styles.levelText}>⭐ Lv {user.level}</Text>
+                        </View>
                     </View>
+
+                    <Text style={styles.username}>{user.username}</Text>
+
+                    <View style={styles.statusRow}>
+                        <View style={styles.onlineDot} />
+                        <Text style={styles.statusText}>Online</Text>
+                    </View>
+
+                    <Text style={styles.playerId}>ID: {user.playerId}</Text>
 
                     {/* USER INFO */}
                     <Text style={styles.username}>{user.username}</Text>
                     <Text style={styles.playerId}>ID: {user.playerId}</Text>
 
                     {/* STATS */}
-                    {/* STATS */}
-                    <View style={styles.statsRow}>
-                        <Stat
-                            label="Wins"
-                            value={user.wins.length || 0}
-                            icon="trophy"
-                            emoji="🏆"
-                            style={{ borderRightWidth: 2, borderColor: "#000", paddingRight: 12 }}
-                        />
-
-                        <Stat
-                            label="Level"
-                            value={user.level}
-                            icon="star"
-                            emoji="⭐"
-                            style={{ borderRightWidth: 2, borderColor: "#000", paddingRight: 12 }}
-                        />
-
-                        <Stat
-                            label="XP"
-                            value={user.xp}
-                            icon="bolt"
-                            emoji="⚡"
-                            style={{ paddingLeft: 12 }}
-                        />
+                    <View style={styles.statsGrid}>
+                        <GameStat icon="trophy" emoji="🏆" label="Wins" value={user.wins.length || 0} />
+                        <GameStat icon="star" emoji="⭐" label="Level" value={user.level} />
+                        <GameStat icon="bolt" emoji="⚡" label="XP" value={user.xp} />
+                        <GameStat icon="fire" emoji="🔥" label="Streak" value={user.streak || 0} />
                     </View>
 
-
+                    <View style={styles.achievementRow}>
+                        {["🥇", "🔥", "👑", "🎯"].map((item, i) => (
+                            <View key={i} style={styles.achievementBadge}>
+                                <Text style={{ fontSize: 22 }}>{item}</Text>
+                            </View>
+                        ))}
+                    </View>
 
                     {/* FRIEND ACTION */}
                     {requestStatus === "friends" ? (
@@ -200,17 +196,15 @@ const OtherProfile = () => {
         </View >
     );
 };
-
-const Stat = ({ label, value, icon, emoji, style }) => (
-    <View style={[styles.statBox, style]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {icon && <Icon name={icon} size={80} color="#FFD67A" />}
-
-        </View>
+const GameStat = ({ icon, emoji, label, value }) => (
+    <View style={styles.statCard}>
+        <Icon name={icon} size={22} color="#FFD67A" />
+        <Text style={styles.statEmoji}>{emoji}</Text>
         <Text style={styles.statValue}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
     </View>
 );
+
 
 
 export default OtherProfile;
@@ -250,10 +244,10 @@ const styles = StyleSheet.create({
         borderRadius: 110,
         marginTop: 20,
         //backgroundColor: "#ebdede",
-        display:'flex',
-        justifyContent:'center',
-        alignItems:'center',
-        backgroundColor:'#000'
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#000'
     },
     username: {
         color: "#fff",
@@ -273,16 +267,8 @@ const styles = StyleSheet.create({
     statBox: {
         alignItems: "center",
     },
-    statValue: {
-        color: "#2d0202",
-        fontSize: 20,
-        fontWeight: "700",
-    },
-    statLabel: {
-        color: "#13024f",
-        fontSize: 30,
-        marginTop: 2,
-    },
+   
+    
     addBtn: {
         flexDirection: "row",
         alignItems: "center",
@@ -307,6 +293,122 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         marginTop: 15,
     },
+    avatarCard: {
+  marginTop: 20,
+  alignItems: "center",
+  justifyContent: "center",
+},
+avatarGlow: {
+  position: "absolute",
+  width: 240,
+  height: 240,
+  borderRadius: 120,
+  backgroundColor: "#FFD67A",
+  opacity: 0.25,
+},
+avatarEmoji: {
+  fontSize: 110,
+  backgroundColor: "#000",
+  width: 220,
+  height: 220,
+  borderRadius: 110,
+  textAlign: "center",
+  textAlignVertical: "center",
+},
+levelBadge: {
+  position: "absolute",
+  bottom: 10,
+  right: 20,
+  backgroundColor: "#FFD67A",
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 12,
+},
+levelText: {
+  fontWeight: "800",
+  color: "#000",
+},
+
+statusRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
+  marginTop: 4,
+},
+onlineDot: {
+  width: 8,
+  height: 8,
+  borderRadius: 4,
+  backgroundColor: "#00ff6a",
+},
+statusText: {
+  color: "#00ff6a",
+  fontWeight: "600",
+},
+
+statsGrid: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 14,
+  marginTop: 25,
+},
+statCard: {
+  width: 140,
+  backgroundColor: "#1e1b3a",
+  borderRadius: 18,
+  padding: 12,
+  alignItems: "center",
+},
+statEmoji: { fontSize: 20 },
+statValue: {
+  color: "#FFD67A",
+  fontSize: 20,
+  fontWeight: "800",
+},
+statLabel: {
+  color: "#fff",
+  fontSize: 12,
+},
+
+achievementRow: {
+  flexDirection: "row",
+  gap: 12,
+  marginTop: 20,
+},
+achievementBadge: {
+  backgroundColor: "#23203C",
+  padding: 10,
+  borderRadius: 12,
+},
+
+actionRow: {
+  flexDirection: "row",
+  gap: 12,
+  marginTop: 30,
+},
+primaryBtn: {
+  flexDirection: "row",
+  gap: 8,
+  backgroundColor: "#FFD67A",
+  paddingHorizontal: 20,
+  paddingVertical: 12,
+  borderRadius: 25,
+},
+primaryBtnText: {
+  fontWeight: "800",
+  color: "#000",
+},
+secondaryBtn: {
+  backgroundColor: "#4e4aff",
+  padding: 12,
+  borderRadius: 50,
+},
+dangerBtn: {
+  backgroundColor: "#ff3b3b",
+  padding: 12,
+  borderRadius: 50,
+},
+
     pendingBadge: {
         flexDirection: "row",
         alignItems: "center",

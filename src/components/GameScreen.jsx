@@ -21,6 +21,11 @@ import FloatingBingoGhost from './FloatingBingoGhost';
 import BingoPopUp from './BingoPopUp';
 import WinConfetti from './WinConfetti';
 import ProfileModal from './ProfileModal';
+import Intro from './Intro'
+import LevelModal from './LevelModal';
+import XPModal from './XPModal';
+import { BACKEND_URL } from '../config/backend';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
@@ -43,7 +48,7 @@ const GameScreen = (props) => {
     const [floatingNumbers, setFloatingNumbers] = useState([]);
 
     const [bingopop, setBingopop] = useState(false);
-    const [hasShownResult, setHasShownResult] = useState(false);
+    //const [hasShownResult, setHasShownResult] = useState(false);
 
     const didWinRef = useRef(false);
 
@@ -56,7 +61,55 @@ const GameScreen = (props) => {
 
 
     const gameEndedRef = React.useRef(false);
+    const [loading, setLoading] = React.useState(true);
 
+
+    const [levelModalVisible, setLevelModalVisible] = useState(false);
+
+    const [xpModalVisible, setXpModalVisible] = useState(false);
+    const [xpResult, setXpResult] = useState(null);
+    const oldXpRef = useRef(props.user.xp);
+
+    const handleWinModalClose = () => {
+        setWinModal(false);
+        setXpModalVisible(true);
+    };
+
+
+    useEffect(() => {
+        console.log('ll', xpResult)
+    }, [xpResult])
+
+    const updateXPFromServer = async (didWin) => {
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+
+            // ⭐ CAPTURE OLD XP BEFORE API CALL
+            oldXpRef.current = props.user.xp;
+
+            const res = await fetch(`${BACKEND_URL}/api/games/update-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'auth-token': token,
+                },
+                body: JSON.stringify({
+                    didWin,
+                    bonusXP: 20,
+                }),
+            });
+
+            const data = await res.json();
+
+            setXpResult({
+                ...data,
+                oldXP: oldXpRef.current,  // ⭐ send frozen old XP
+            });
+
+        } catch (e) {
+            console.log(e);
+        }
+    };
 
 
     useEffect(() => {
@@ -87,6 +140,7 @@ const GameScreen = (props) => {
                 setResult("lose");
                 setWinnerPlayerId(winnerId);
                 setBingopop(true);
+                updateXPFromServer(false);
             }
         };
 
@@ -246,6 +300,12 @@ const GameScreen = (props) => {
         };
     }, [socket]);
 
+    useEffect(() => {
+        setTimeout(() => {
+            setLoading(false);
+        }, 2000);
+    })
+
     const playAgain = () => {
         socket.emit("player_ready", { roomCode: props.roomCode, userId: props.user._id });
     };
@@ -318,6 +378,8 @@ const GameScreen = (props) => {
                 setWinnerPlayerId(playerId === props.user._id ? props.user._id : null);
                 setBingopop(true);
 
+                updateXPFromServer(playerId === props.user._id );
+
                 // Sync with server
                 socket.emit("game_end", {
                     roomCode: props.roomCode,
@@ -342,206 +404,240 @@ const GameScreen = (props) => {
 
 
     return (
-        <View style={styles.container}>
-            <Icon
-                name="sign-out-alt"
-                size={30}
-                style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
-                onPress={() => setShowAlert(true)}
-            />
+        <>
+            {loading ? (
+                <Intro />
+            ) : (
 
-            <CustomAlert
-                visible={showAlert}
-                title="Exit Game"
-                message="Are you sure you want to leave? It will charge you 40 coins."
-                onCancel={() => setShowAlert(false)}
-                onConfirm={() => navigation.goBack()}
-            />
+                <View style={styles.container}>
+                    <Icon
+                        name="sign-out-alt"
+                        size={30}
+                        style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
+                        onPress={() => setShowAlert(true)}
+                    />
 
-            <ImageBackground
-                source={require('../images/gameScreen.jpg')}
-                style={{ width: '100%', height: '100%' }}
-            >
-                <View style={{ position: 'absolute', top: '3%', left: '40%' }}>
-                    <Text style={styles.roomCode}>{props.roomCode}</Text>
-                </View>
-
-                <View style={{ flex: 1 }}>
-                    {turnOrder?.map((player, index) => {
-                        let pos = {};
-                        if (player?.userId === props?.user?._id) {
-                            pos = { bottom: '10%', left: '10%' };
-                        } else {
-                            const idx = otherPlayers.findIndex(p => p.userId === player?.userId);
-                            pos = positions[idx] || {};
-                        }
-
-                        const isCurrentTurn = player?.userId === currentTurn;
-
-                        return (
-                            <View key={player?.userId} style={[styles.player, pos]}>
-                                <View
-
-                                    style={{
-                                        position: 'absolute',
-                                        width: 70,
-                                        height: 70,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    {isCurrentTurn && (
-                                        <AvatarTimer
-                                            key={`${player.userId}-${currentTurn}`}
-                                            size={55}
-                                            duration={TURN_TIME}
-                                            onComplete={() => {
-                                                const availableNumbers = playerBoards[props?.user?._id]?.filter(
-                                                    n => !pickedNumbers.includes(n)
-                                                );
-                                                if (!availableNumbers?.length) return;
-                                                const randomNumber =
-                                                    availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
-                                                handleNumberPress(randomNumber);
-                                            }}
-                                        />
-                                    )}
-
-                                    <TouchableOpacity
-                                        ref={avatarRef}
-                                        style={styles.userAvatar}
-                                        onPress={() => openProfile(player)}
-                                    >
-                                        <View style={[styles.userAvatarImage, { backgroundColor: '#000' }]}>
-                                            <Text style={{ fontSize: 35 }}>{player?.avatar || '🐟'}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-
-                                </View>
-                                <Text style={styles.userText}>
-                                    {player?.userId === props?.user?._id ? 'Me' : player.username}
-                                </Text>
-                            </View>
-                        );
-                    })}
-                    <View style={{ position: 'absolute', top: '50%', left: '12%' }}>
-                        {floatingNumbers.map((num, i) => (
-                            <FloatingNumber key={i} number={num} />
-                        ))}
-                    </View>
-
-                    <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
-                        {pickedNumbers.map((num, index) => (
-                            <FloatingNumber key={index} number={num} />
-                        ))}
-                    </View>
+                    <CustomAlert
+                        visible={showAlert}
+                        title="Exit Game"
+                        message="Are you sure you want to leave? It will charge you 40 coins."
+                        onCancel={() => setShowAlert(false)}
+                        onConfirm={() => navigation.goBack()}
+                    />
 
                     <ImageBackground
-                        source={require('../images/BingoBoard (2).png')}
-                        style={styles.board}
+                        source={require('../images/gameScreen.jpg')}
+                        style={{ width: '100%', height: '100%' }}
                     >
-                        <View style={styles.grid}>
-                            {playerBoards[props?.user?._id]?.map((num, index) => {
-                                if (!num) return null; // <<< guard
-                                const isPicked = pickedNumbers.includes(num);
-                                const disabled = currentTurn !== props?.user?._id || isPicked;
-
-                                return (
-                                    <TouchableOpacity
-                                        key={index}
-                                        disabled={disabled}
-                                        onPress={() => handleNumberPress(num)}
-                                        style={[styles.box, isPicked && { opacity: 0.7 }, disabled && { opacity: 0.4 }]}
-                                    >
-                                        {isPicked && (
-                                            <Image
-                                                source={require('../images/daub (2).png')}
-                                                style={{ width: 40, height: 40, position: "absolute", opacity: 0.5 }}
-                                            />
-                                        )}
-                                        <Text style={styles.numberText}>{num}</Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-
+                        <View style={{ position: 'absolute', top: '3%', left: '40%' }}>
+                            <Text style={styles.roomCode}>{props.roomCode}</Text>
                         </View>
-                    </ImageBackground>
 
-                    {playerWins[props?.user?._id] && (
-                        <View style={styles.bingowin}>
-                            {letters.map((letter, index) => {
-                                const daubed = playerWins[props?.user?._id]?.[letter];
+                        <View style={{ flex: 1 }}>
+                            {turnOrder?.map((player, index) => {
+                                let pos = {};
+                                if (player?.userId === props?.user?._id) {
+                                    pos = { bottom: '10%', left: '10%' };
+                                } else {
+                                    const idx = otherPlayers.findIndex(p => p.userId === player?.userId);
+                                    pos = positions[idx] || {};
+                                }
+
+                                const isCurrentTurn = player?.userId === currentTurn;
 
                                 return (
-                                    <View key={index} style={styles.bingoLetterContainer}>
-                                        {/* STATIC letter */}
-                                        <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
-                                            <Text style={[styles.letterText, daubed && styles.daubedText]}>
-                                                {letter}
-                                            </Text>
-                                        </View>
+                                    <View key={player?.userId} style={[styles.player, pos]}>
+                                        <View
 
-                                        {/* FLOATING ghost */}
-                                        <FloatingBingoGhost letter={letter} trigger={daubed} />
+                                            style={{
+                                                position: 'absolute',
+                                                width: 70,
+                                                height: 70,
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            {isCurrentTurn && (
+                                                <AvatarTimer
+                                                    key={`${player.userId}-${currentTurn}`}
+                                                    size={55}
+                                                    duration={TURN_TIME}
+                                                    onComplete={() => {
+                                                        const availableNumbers = playerBoards[props?.user?._id]?.filter(
+                                                            n => !pickedNumbers.includes(n)
+                                                        );
+                                                        if (!availableNumbers?.length) return;
+                                                        const randomNumber =
+                                                            availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+                                                        handleNumberPress(randomNumber);
+                                                    }}
+                                                />
+                                            )}
+
+                                            <TouchableOpacity
+                                                ref={avatarRef}
+                                                style={styles.userAvatar}
+                                                onPress={() => openProfile(player)}
+                                            >
+                                                <View style={[styles.userAvatarImage, { backgroundColor: '#000' }]}>
+                                                    <Text style={{ fontSize: 35 }}>{player?.avatar || '🐟'}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+
+                                        </View>
+                                        <Text style={styles.userText}>
+                                            {player?.userId === props?.user?._id ? 'Me' : player.username}
+                                        </Text>
                                     </View>
                                 );
                             })}
+                            <View style={{ position: 'absolute', top: '50%', left: '12%' }}>
+                                {floatingNumbers.map((num, i) => (
+                                    <FloatingNumber key={i} number={num} />
+                                ))}
+                            </View>
+
+                            <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
+                                {pickedNumbers.map((num, index) => (
+                                    <FloatingNumber key={index} number={num} />
+                                ))}
+                            </View>
+
+                            <ImageBackground
+                                source={require('../images/BingoBoard (2).png')}
+                                style={styles.board}
+                            >
+                                <View style={styles.grid}>
+                                    {playerBoards[props?.user?._id]?.map((num, index) => {
+                                        if (!num) return null; // <<< guard
+                                        const isPicked = pickedNumbers.includes(num);
+                                        const disabled = currentTurn !== props?.user?._id || isPicked;
+
+                                        return (
+                                            <TouchableOpacity
+                                                key={index}
+                                                disabled={disabled}
+                                                onPress={() => handleNumberPress(num)}
+                                                style={[styles.box, isPicked && { opacity: 0.7 }, disabled && { opacity: 0.4 }]}
+                                            >
+                                                {isPicked && (
+                                                    <Image
+                                                        source={require('../images/daub (2).png')}
+                                                        style={{ width: 40, height: 40, position: "absolute", opacity: 0.5 }}
+                                                    />
+                                                )}
+                                                <Text style={styles.numberText}>{num}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+
+                                </View>
+                            </ImageBackground>
+
+                            {playerWins[props?.user?._id] && (
+                                <View style={styles.bingowin}>
+                                    {letters.map((letter, index) => {
+                                        const daubed = playerWins[props?.user?._id]?.[letter];
+
+                                        return (
+                                            <View key={index} style={styles.bingoLetterContainer}>
+                                                {/* STATIC letter */}
+                                                <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
+                                                    <Text style={[styles.letterText, daubed && styles.daubedText]}>
+                                                        {letter}
+                                                    </Text>
+                                                </View>
+
+                                                {/* FLOATING ghost */}
+                                                <FloatingBingoGhost letter={letter} trigger={daubed} />
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+
+
+                            )}
+
                         </View>
+                        {console.log(winModal)}
+                        {bingopop && (
+                            <>
+                                {result === 'win' && <WinConfetti />}
+                                <BingoPopUp
+                                    delay={bingopop ? 200 : null}
+                                    onAnimationEnd={() => {
+                                        setWinModal(true);
+                                        setBingopop(false);
+                                    }}
+                                />
+                            </>
+
+                        )}
+                    </ImageBackground>
+                    <Modal
+                        transparent
+                        visible={winModal}
+                        animationType="fade"
+                    >
+
+                        <WinningModal
+                            result={result}
+                            matchedPlayers={props.matchedPlayers}
+                            onClose={handleWinModalClose}
+                            winnerPlayerId={winnerPlayerId}
+                            playAgain={playAgain}
+                            readyPlayers={readyPlayers}
+                            user={props.user}
+                        />
 
 
+                    </Modal>
+                    {profileDetails && profileVisible && (
+                        <Modal
+                            visible={profileVisible}
+                            transparent
+                            animationType="fade"
+                            statusBarTranslucent
+                        >
+                            <ProfileModal
+                                visible={profileVisible}
+                                anchor={anchor}
+                                user={profileDetails}
+                                onClose={() => setProfileVisible(false)}
+                                myId={props.user._id} />
+                        </Modal>
                     )}
+                    <LevelModal
+                        visible={levelModalVisible}
+                        didWin={result === 'win'}
+                        currentLevel={xpResult?.level}
+                        currentStars={xpResult?.stars}
+
+                        onClose={() => {
+                            navigation.navigate("Dashboard");
+                        }}
+                    //onLevelUpdate={handleUpdateLevel}
+                    />
+                    {!!xpResult && <XPModal
+
+                        visible={xpModalVisible && !!xpResult}
+                        earnedXP={xpResult?.earnedXP}
+                        oldXP={xpResult?.oldXP}
+                        newXP={xpResult?.xp}
+                        xpNeeded={xpResult?.xpNeeded}
+                        starGained={xpResult?.starGained}
+                        onFinish={() => {
+                            setTimeout(() => {
+                                setXpModalVisible(false);
+                                setLevelModalVisible(true);
+                            }, 3000);
+
+                        }}
+                    />}
 
                 </View>
-                {console.log(winModal)}
-                {bingopop && (
-                    <>
-                        {result === 'win' && <WinConfetti />}
-                        <BingoPopUp
-                            delay={bingopop ? 200 : null}
-                            onAnimationEnd={() => {
-                                setWinModal(true);
-                                setBingopop(false);
-                            }}
-                        />
-                    </>
-
-                )}
-            </ImageBackground>
-            <Modal
-                transparent
-                visible={winModal}
-                animationType="fade"
-            >
-
-                <WinningModal
-                    result={result}
-                    matchedPlayers={props.matchedPlayers}
-                    onClose={() => setWinModal(false)}
-                    winnerPlayerId={winnerPlayerId}
-                    playAgain={playAgain}
-                    readyPlayers={readyPlayers}
-                    user={props.user}
-                />
-
-
-            </Modal>
-            {profileDetails && profileVisible && (
-                <Modal
-                    visible={profileVisible}
-                    transparent
-                    animationType="fade"
-                    statusBarTranslucent
-                >
-                    <ProfileModal
-                        visible={profileVisible}
-                        anchor={anchor}
-                        user={profileDetails}
-                        onClose={() => setProfileVisible(false)}
-                        myId={props.user._id} />
-                </Modal>
             )}
-
-        </View>
+        </>
     );
 };
 

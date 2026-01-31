@@ -68,6 +68,7 @@ const PrivateRoom = () => {
 
     const finalPassword = usePassword ? passwordDigits.join('') : null;
     const joinFinalPassword = joinPasswordDigits.join('');
+    const me = matchedPlayers.find(p => p.userId === user?._id);
 
     /* ===================== JOIN ROOM ===================== */
 
@@ -99,26 +100,27 @@ const PrivateRoom = () => {
             }
 
             // 🔐 STEP 2: Validate password
-            if (roomData.passwordRequired && roomData.password !== parseInt(joinFinalPassword,10)) {
-                console.log(roomData.passwordRequired,roomData.password, joinFinalPassword)
+            if (roomData.passwordRequired && roomData.password !== parseInt(joinFinalPassword, 10)) {
+                console.log(roomData.passwordRequired, roomData.password, joinFinalPassword)
                 Alert.alert('Wrong password', 'Please enter correct room password.');
                 return;
             }
 
             // ✅ STEP 3: Join room
             socket.emit('join_private_room', {
-                roomCode: roomData.code,
+                roomCode: roomData.roomCode,
                 userId: user._id,
                 username: user.username,
                 avatar: user.avatar,
                 password: joinFinalPassword || null,
-                socketId: socket.id,
+                //socketId: socket.id,
             });
-
-            setRoomCode(roomData.code);
+            console.log(roomData);
+            setRoomCode(roomData.roomCode);
             setGameType(roomData.gameType);
             setPlayerCount(roomData.size);
             setRoomCreated(true);
+            console.log(socket.id);
 
         } catch (err) {
             console.error(err);
@@ -126,11 +128,11 @@ const PrivateRoom = () => {
         }
     };
 
-    useEffect(()=>{
-        console.log(roomCode);
-        console.log(gameType);
-        console.log(playerCount);
-    },[gameType,roomCode,playerCount])
+    useEffect(() => {
+        console.log('qwerty', roomCode);
+        console.log('poppy', gameType);
+        console.log('hikle', playerCount);
+    }, [gameType, roomCode, playerCount])
     /* ===================== CREATE ROOM ===================== */
     const handleCreateRoom = useCallback(() => {
         if (!socket || !user || ready || !gameType || !playerCount) return;
@@ -157,10 +159,19 @@ const PrivateRoom = () => {
             setRoomCode(roomCode);
             setMatchedPlayers(players);
             setRoomCreated(true);
+            // HOST MUST JOIN LIKE EVERYONE ELSE
+            socket.emit('join_private_room', {
+                roomCode,
+                userId: user._id,
+                username: user.username,
+                avatar: user.avatar,
+                //socketId: socket.id,
+            });
         };
 
-        const onPrivateRoomUpdated = ({ players }) => {
+        const onPrivateRoomUpdated = ({ roomCode,players }) => {
             setMatchedPlayers(players);
+            console.log('aries',matchedPlayers)
         };
 
         socket.on('private_room_created', onRoomCreated);
@@ -411,7 +422,7 @@ const PrivateRoom = () => {
                                     disabled={requiresPassword}
                                 />
 
-                                { requiresPassword && (
+                                {requiresPassword && (
                                     <>
                                         <Text style={styles.label}>PASSWORD</Text>
 
@@ -559,7 +570,7 @@ const PrivateRoom = () => {
                         <View style={styles.inviteCard}>
                             <Text style={styles.roomCode}>ROOM CODE</Text>
                             <Text style={styles.codeText}>{roomCode || '----'}</Text>
-                            <Text style={[styles.roomCode, {margin:1}]}>Password: {finalPassword}</Text>
+                            {(finalPassword && isHost) && <Text style={[styles.roomCode, { margin: 1 }]}>Password: {finalPassword}</Text>}
 
                             <TouchableOpacity style={styles.inviteBtn} onPress={handleInvite}>
                                 <Icon name="share-alt" size={18} color="#000" />
@@ -568,13 +579,17 @@ const PrivateRoom = () => {
                         </View>
 
                         {/* READY BUTTON */}
-                        {!isHost && !matchedPlayers.find(p => p.userId === user?._id)?.ready && (
+                        {!isHost && !(matchedPlayers.find(p => p.userId === user?._id)?.ready) && (
+                            <>
+                            {console.log(!isHost,matchedPlayers,!(matchedPlayers.find(p => p.userId === user?._id)?.ready) )}
                             <TouchableOpacity
                                 style={[styles.mainBtn, { marginTop: 10 }]}
                                 onPress={handleReady}
                             >
                                 <Text style={styles.mainText}>READY</Text>
                             </TouchableOpacity>
+                            
+                        </>
                         )}
 
                         {/* START GAME BUTTON FOR HOST */}

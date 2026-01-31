@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   navbar: {
     height: 60,
     width: '90%',
-    backgroundColor: '#3D365C',
+    backgroundColor: '#2A244A',
     justifyContent: 'space-around',
     alignItems: 'center',
     flexDirection: 'row',

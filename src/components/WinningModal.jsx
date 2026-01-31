@@ -204,7 +204,7 @@ export default function WinningModal({
 
           {/* CLOSE BUTTON */}
           <TouchableOpacity
-            onPress={() => navigation.navigate("Home")}
+            onPress={onClose}
             style={[styles.closetxt, { backgroundColor: theme.accent }]}
           >
             <Text style={{ fontWeight: "700" }}>Close</Text>
