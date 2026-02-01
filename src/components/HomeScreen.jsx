@@ -17,11 +17,14 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScrollView } from "react-native";
+//import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+
+
 
 
 const HomeScreen = ({ setSelected, setSearchResults }) => {
     const navigation = useNavigation();
-
+    //const tabBarHeight = useBottomTabBarHeight();
     const [showRewardsModal, setShowRewardsModal] = React.useState(false);
     const [user, setUser] = React.useState(null);
     const [query, setQuery] = React.useState("");
@@ -90,13 +93,23 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
 
         <View style={styles.container}>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingHorizontal: 22,
+                    paddingTop: 8,
+                    paddingBottom: 120,
+                }}
+            >
                 {/* DAILY REWARD */}
-                <Pressable style={styles.rewardCard} onPress={() => setShowRewardsModal(true)}>
+                <Pressable style={styles.rewardCard} onPress={() => { setShowRewardsModal(true); }}>
                     <Text style={styles.rewardTitle}>Daily Reward</Text>
                     <Text style={styles.rewardSub}>
                         +{dailyReward[user?.daysLoggedIn % 7 || 1]} available
                     </Text>
+                    <TouchableOpacity style={styles.claimBtn} onPress={handleClaimRewards}>
+                        <Text style={{ color: "#000", fontWeight: "bold" }} >Claim</Text>
+                    </TouchableOpacity>
                 </Pressable>
 
                 {/* HEADER */}
@@ -107,7 +120,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                     <View style={styles.headerRight}>
                         <View style={styles.statBox}>
                             <Image source={require("../images/xpicon.png")} style={styles.statIcon} />
-                            <Text style={styles.xpText}>{user?.xp || 0} XP</Text>
+                            <Text style={styles.xpText}>{user?.totalXp || 0} XP</Text>
                         </View>
 
                         <View style={styles.statBox}>
@@ -119,26 +132,36 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
 
                 {/* XP LEVEL CARD */}
                 <View style={styles.levelCard}>
-                    <Text style={styles.levelTitle}>LEVEL {user?.level}</Text>
+                    <View style={styles.levelAndXp}>
+                        <View>
+                            <Text style={styles.levelTitle}>LEVEL {user?.level}</Text>
+                        </View>
+                        <View style={styles.statBoxLevel}>
+                            <Image source={require("../images/xpicon.png")} style={styles.statIcon} />
+                            <Text style={styles.xpText}>{user?.levelXp || 0} XP</Text>
+                        </View>
+                    </View>
+
 
                     {/* Progress bar */}
                     <View style={styles.progressBar}>
                         <View
                             style={[
                                 styles.progressFill,
-                                { width: `${(user?.xp % 100)}%` },
+                                { width: `${(user?.levelXp % 100)}%` },
                             ]}
                         />
                     </View>
 
                     {/* Stars checkpoints */}
                     <View style={styles.starRow}>
-                        {[20, 40, 60, 80, 100].map((mark, i) => (
+                        {[0, 20, 40, 60, 80, 100].map((mark, i) => (
                             <View key={i} style={styles.starWrapper}>
                                 <Icon
                                     name="star"
                                     size={18}
-                                    color={(user?.xp % 100) >= mark ? "#FFD67A" : "#555"}
+                                    color={(user?.levelXp % 100) >= mark ? "#FFD67A" : "#555"}
+                                    solid={(user?.levelXp % 100) >= mark}
                                 />
                                 <Text style={styles.starText}>{mark}</Text>
                             </View>
@@ -214,8 +237,8 @@ const SUB = "#A9A6C1";
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 22,
-        paddingTop: 4,
+        // paddingHorizontal: 22,
+        // paddingTop: 4,
     },
 
     header: {
@@ -223,6 +246,19 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 20,
+    },
+    claimBtn: {
+        backgroundColor: "#FFD67A",
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
+        height: 40,
+        width: 80,
+        fontSize: 26,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 3
     },
     username: {
         color: TEXT,
@@ -243,6 +279,12 @@ const styles = StyleSheet.create({
         //borderWidth: 1,
         //borderColor: BORDER,
     },
+    statBoxLevel: {
+        flexDirection: 'row',
+        gap: 6,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
     statIcon: { width: 20, height: 20 },
     xpText: { color: "#39D353", fontWeight: "bold" },
     coinText: { color: GOLD, fontWeight: "bold" },
@@ -255,6 +297,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: BORDER,
         marginBottom: 20,
+    },
+    levelAndXp: {
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+
     },
     levelTitle: {
         color: GOLD,

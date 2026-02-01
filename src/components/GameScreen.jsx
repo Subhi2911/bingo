@@ -46,6 +46,8 @@ const GameScreen = (props) => {
     const letters = ['B', 'I', 'N', 'G', 'O'];
     const [timer, setTimer] = useState(TURN_TIME);
     const [floatingNumbers, setFloatingNumbers] = useState([]);
+    const xpUpdatedRef = useRef(false);
+
 
     const [bingopop, setBingopop] = useState(false);
     //const [hasShownResult, setHasShownResult] = useState(false);
@@ -77,14 +79,21 @@ const GameScreen = (props) => {
 
 
     useEffect(() => {
+        console.log(props.players, props.gameType)
         console.log('ll', xpResult)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [xpResult])
 
-    const updateXPFromServer = async (didWin) => {
+    const updateXPFromServer = async (
+        didWin,
+        gameType = props.gameType,
+        playerCount = props.players
+    ) => {
+        if (xpUpdatedRef.current) return; // 🔒 BLOCK repeats
+        xpUpdatedRef.current = true;
+
         try {
             const token = await AsyncStorage.getItem('authToken');
-
-            // ⭐ CAPTURE OLD XP BEFORE API CALL
             oldXpRef.current = props.user.xp;
 
             const res = await fetch(`${BACKEND_URL}/api/games/update-progress`, {
@@ -94,8 +103,11 @@ const GameScreen = (props) => {
                     'auth-token': token,
                 },
                 body: JSON.stringify({
+                    gameId:props.roomCode,
                     didWin,
                     bonusXP: 20,
+                    gameType,
+                    playerCount
                 }),
             });
 
@@ -103,13 +115,13 @@ const GameScreen = (props) => {
 
             setXpResult({
                 ...data,
-                oldXP: oldXpRef.current,  // ⭐ send frozen old XP
+                oldXP: oldXpRef.current,
             });
-
         } catch (e) {
             console.log(e);
         }
     };
+
 
 
     useEffect(() => {
@@ -378,7 +390,7 @@ const GameScreen = (props) => {
                 setWinnerPlayerId(playerId === props.user._id ? props.user._id : null);
                 setBingopop(true);
 
-                updateXPFromServer(playerId === props.user._id );
+                updateXPFromServer(playerId === props.user._id);
 
                 // Sync with server
                 socket.emit("game_end", {
@@ -588,6 +600,7 @@ const GameScreen = (props) => {
                             playAgain={playAgain}
                             readyPlayers={readyPlayers}
                             user={props.user}
+                            gameType={props.gameType}
                         />
 
 
@@ -623,9 +636,10 @@ const GameScreen = (props) => {
                         visible={xpModalVisible && !!xpResult}
                         earnedXP={xpResult?.earnedXP}
                         oldXP={xpResult?.oldXP}
-                        newXP={xpResult?.xp}
+                        newXP={xpResult?.levelXp}
                         xpNeeded={xpResult?.xpNeeded}
                         starGained={xpResult?.starGained}
+                        //levelXp={xpResult.levelXp}
                         onFinish={() => {
                             setTimeout(() => {
                                 setXpModalVisible(false);

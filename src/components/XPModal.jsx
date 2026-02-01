@@ -1,33 +1,43 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
+
 import React, { useEffect, useRef } from 'react';
-import { Modal, View, Text, StyleSheet, Animated } from 'react-native';
+import {
+    Modal,
+    View,
+    Text,
+    StyleSheet,
+    Animated,
+} from 'react-native';
 
 const XPModal = ({
     visible,
     earnedXP,
     oldXP,
     newXP,
-    xpNeeded,
-    leveledUp,     // 👈 important flag from backend
+    xpNeeded = 100,
+    leveledUp,
     onFinish,
+    //levelXp
 }) => {
-    const progressAnim = useRef(new Animated.Value(oldXP)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         if (!visible) return;
 
-        // Reset animated value to correct start XP
         progressAnim.setValue(oldXP);
 
         if (leveledUp) {
+            // Fill to 100%
             Animated.timing(progressAnim, {
                 toValue: xpNeeded,
                 duration: 900,
                 useNativeDriver: false,
             }).start(() => {
+                // Reset bar
                 progressAnim.setValue(0);
 
+                // Fill remaining XP
                 Animated.timing(progressAnim, {
                     toValue: newXP,
                     duration: 900,
@@ -37,9 +47,10 @@ const XPModal = ({
                 });
             });
         } else {
+            // Normal XP gain/loss
             Animated.timing(progressAnim, {
                 toValue: newXP,
-                duration: 1600,
+                duration: 1200,
                 useNativeDriver: false,
             }).start(() => {
                 setTimeout(onFinish, 700);
@@ -47,21 +58,26 @@ const XPModal = ({
         }
     }, [visible]);
 
-
     const widthInterpolate = progressAnim.interpolate({
         inputRange: [0, xpNeeded],
         outputRange: ['0%', '100%'],
+        extrapolate: 'clamp',
     });
 
     return (
         <Modal transparent visible={visible} animationType="fade">
             <View style={styles.overlay}>
                 <View style={styles.modal}>
-                    <Text style={styles.title}>+{earnedXP} XP</Text>
+                    <Text style={styles.title}>
+                        {earnedXP >= 0 ? `+${earnedXP}` : earnedXP} XP
+                    </Text>
 
                     <View style={styles.barBg}>
                         <Animated.View
-                            style={[styles.barFill, { width: widthInterpolate }]}
+                            style={[
+                                styles.barFill,
+                                { width: widthInterpolate },
+                            ]}
                         />
                     </View>
 
@@ -70,7 +86,9 @@ const XPModal = ({
                     </Text>
 
                     {leveledUp && (
-                        <Text style={styles.levelText}>🎉 LEVEL UP!</Text>
+                        <Text style={styles.levelText}>
+                            🎉 LEVEL UP!
+                        </Text>
                     )}
                 </View>
             </View>
@@ -83,7 +101,7 @@ export default XPModal;
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: 'rgba(0,0,0,0.75)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -113,7 +131,8 @@ const styles = StyleSheet.create({
     },
     xpText: {
         marginTop: 10,
-        color: '#fff',
+        color: '#ccc',
+        fontSize: 14,
     },
     levelText: {
         marginTop: 15,

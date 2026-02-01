@@ -24,7 +24,8 @@ export default function WinningModal({
   onClose = () => { },
   readyPlayers = {},
   playAgain,
-  user
+  user,
+  gameType
 }) {
   const navigation = useNavigation();
   const isWin = result === "win";
@@ -52,8 +53,12 @@ export default function WinningModal({
     soundPlayedRef.current = true;
   }, [isWin]);
 
-  
 
+  const coinCount = {
+    classic: 20,
+    fast: 15,
+    power: 40,
+  }
 
   /* ------------------ THEME ------------------ */
   const theme = {
@@ -150,9 +155,23 @@ export default function WinningModal({
                   )}
 
                 </View>
-                <Text style={[styles.name, { color: theme.text }]}>
-                  🏆 {winnerPlayer.username}
-                </Text>
+                <View style={styles.winnerCard}>
+                  {/* Trophy + Username */}
+                  <View style={styles.winnerRow}>
+                    <Text style={styles.wintrophy}>🏆</Text>
+                    <Text style={[styles.winnerName, { color: theme.text }]}>
+                      {winnerPlayer.username}
+                    </Text>
+
+                  </View>
+                  {/* Coin Reward */}
+                  <View style={styles.coinBadge}>
+                    <Icon name="coins" size={13} color="#FFD67A" />
+                    <Text style={styles.coinText}>
+                      +{coinCount[gameType] * otherPlayers.length}
+                    </Text>
+                  </View>
+                </View>
                 {isWin && (
                   <Text style={styles.winnerBadge}>CHAMPION</Text>
                 )}
@@ -191,12 +210,21 @@ export default function WinningModal({
                     )}
 
                   </View>
-                  <Text
-                    style={[styles.nameSmall, { color: theme.text }]}
-                    numberOfLines={1}
-                  >
-                    {p.username}
-                  </Text>
+                  <View style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text
+                      style={[styles.nameSmall, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
+                      {p.username}
+
+                    </Text>
+                    <View style={[styles.coinBadge, { backgroundColor: '#ffa1a1' }]}>
+                      <Icon name="coins" size={13} color="#520000" />
+                      <Text style={[styles.coinText, { color: "#520000" }]}>
+                        -{coinCount[gameType]}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               ))}
             </View>
@@ -258,6 +286,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "center",
 
+  },
+  winnerCard: {
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+
+  winnerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+
+  wintrophy: {
+    fontSize: 22,
+    marginRight: 6,
+  },
+
+  winnerName: {
+    fontSize: 20,
+    fontWeight: "800",
+  },
+
+  coinBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#065c13", // 🔥 contrast on gold
+    paddingVertical: 3,
+    paddingHorizontal: 7,
+    borderRadius: 18,
+  },
+
+  coinText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFD67A",
   },
   mainText: {
     fontSize: 40,
@@ -330,20 +394,20 @@ const styles = StyleSheet.create({
     height: AVATAR,
     borderRadius: AVATAR / 2,
     resizeMode: "contain",
-    display:'flex',
-    justifyContent:'center',
-    alignItems:'center',
-    backgroundColor:'#0000'
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0000'
   },
   avatarSmall: {
     width: AVATAR_SMALL,
     height: AVATAR_SMALL,
     borderRadius: AVATAR_SMALL / 2,
     resizeMode: "contain",
-    display:'flex',
-    justifyContent:'center',
-    alignItems:'center',
-    backgroundColor:'#0000'
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0000'
   },
   name: {
     marginTop: 8,
