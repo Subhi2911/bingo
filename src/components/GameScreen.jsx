@@ -47,9 +47,12 @@ const GameScreen = (props) => {
     const [timer, setTimer] = useState(TURN_TIME);
     const [floatingNumbers, setFloatingNumbers] = useState([]);
     const xpUpdatedRef = useRef(false);
-
+    const gameStartTimeRef = useRef(null);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     const [bingopop, setBingopop] = useState(false);
+    const bingoShownRef = useRef(false);
+
     //const [hasShownResult, setHasShownResult] = useState(false);
 
     const didWinRef = useRef(false);
@@ -77,6 +80,16 @@ const GameScreen = (props) => {
         setXpModalVisible(true);
     };
 
+    const gameDurationSeconds = Math.floor(
+        (Date.now() - gameStartTimeRef.current) / 1000
+    );
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
 
     useEffect(() => {
         console.log(props.players, props.gameType)
@@ -87,7 +100,8 @@ const GameScreen = (props) => {
     const updateXPFromServer = async (
         didWin,
         gameType = props.gameType,
-        playerCount = props.players
+        playerCount = props.players,
+        gameDurationSeconds
     ) => {
         if (xpUpdatedRef.current) return; // 🔒 BLOCK repeats
         xpUpdatedRef.current = true;
@@ -103,11 +117,12 @@ const GameScreen = (props) => {
                     'auth-token': token,
                 },
                 body: JSON.stringify({
-                    gameId:props.roomCode,
+                    gameId: props.roomCode,
                     didWin,
-                    bonusXP: 20,
+                    //bonusXP: 20,
                     gameType,
-                    playerCount
+                    playerCount,
+                    duration: gameDurationSeconds
                 }),
             });
 
@@ -174,6 +189,10 @@ const GameScreen = (props) => {
 
             setTurnOrder(order);
             setMe(order.find(p => p.userId === props?.user?._id));
+            if (!gameStartTimeRef.current) {
+                gameStartTimeRef.current = Date.now();
+            }
+
         };
 
         socket.on("turn_order", handleTurnOrder);
@@ -191,6 +210,21 @@ const GameScreen = (props) => {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
+
+    useEffect(() => {
+        if (!gameStartTimeRef.current) return;
+
+        const interval = setInterval(() => {
+            const seconds = Math.floor(
+                (Date.now() - gameStartTimeRef.current) / 1000
+            );
+            setElapsedSeconds(seconds);
+        }, 1000);
+
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gameStartTimeRef.current]);
+
 
     useEffect(() => {
         const backAction = () => true;
@@ -277,12 +311,15 @@ const GameScreen = (props) => {
 
 
     useEffect(() => {
-        console.log(turnOrder);
-        if (!turnOrder?.length) return;
-        checkBingo(props.user._id);
+        if (
+            !turnOrder?.length ||
+            !playerBoards[props.user._id] ||
+            gameEndedRef.current
+        ) return;
 
+        checkBingo(props.user._id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pickedNumbers, turnOrder]);
+    }, [pickedNumbers, turnOrder, playerBoards]);
 
     const [readyPlayers, setReadyPlayers] = useState({});
     const resetGameState = () => {
@@ -316,7 +353,7 @@ const GameScreen = (props) => {
         setTimeout(() => {
             setLoading(false);
         }, 2000);
-    })
+    },[])
 
     const playAgain = () => {
         socket.emit("player_ready", { roomCode: props.roomCode, userId: props.user._id });
@@ -386,6 +423,8 @@ const GameScreen = (props) => {
                 // ✅ WIN detected
                 gameEndedRef.current = true;
                 playerData.completed = true;
+
+
                 setResult(playerId === props.user._id ? "win" : "lose");
                 setWinnerPlayerId(playerId === props.user._id ? props.user._id : null);
                 setBingopop(true);
@@ -398,6 +437,7 @@ const GameScreen = (props) => {
                     winnerId: playerId
                 });
             }
+
 
             newWins[playerId] = playerData;
             return newWins;
@@ -443,7 +483,12 @@ const GameScreen = (props) => {
                     >
                         <View style={{ position: 'absolute', top: '3%', left: '40%' }}>
                             <Text style={styles.roomCode}>{props.roomCode}</Text>
+                            <View style={styles.timerBox}>
+                                <Icon name="clock" size={14} color="#FFD67A" />
+                                <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
+                            </View>
                         </View>
+
 
                         <View style={{ flex: 1 }}>
                             {turnOrder?.map((player, index) => {
@@ -471,7 +516,6 @@ const GameScreen = (props) => {
                                         >
                                             {isCurrentTurn && (
                                                 <AvatarTimer
-                                                    key={`${player.userId}-${currentTurn}`}
                                                     size={55}
                                                     duration={TURN_TIME}
                                                     onComplete={() => {
@@ -572,19 +616,17 @@ const GameScreen = (props) => {
 
                         </View>
                         {console.log(winModal)}
-                        {bingopop && (
-                            <>
-                                {result === 'win' && <WinConfetti />}
-                                <BingoPopUp
-                                    delay={bingopop ? 200 : null}
-                                    onAnimationEnd={() => {
-                                        setWinModal(true);
-                                        setBingopop(false);
-                                    }}
-                                />
-                            </>
-
+                        {bingopop && !bingoShownRef.current && (
+                            <BingoPopUp
+                                delay={200}
+                                onAnimationEnd={() => {
+                                    bingoShownRef.current = true;
+                                    setWinModal(true);
+                                    setBingopop(false);
+                                }}
+                            />
                         )}
+
                     </ImageBackground>
                     <Modal
                         transparent
@@ -663,6 +705,26 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%'
     },
+    timerBox: {
+        position: 'absolute',
+        top: 60,
+        //left:170,
+        alignSelf: 'center',
+        flexDirection: 'row',
+        gap: 6,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 2,
+        borderColor: '#FFD67A'
+    },
+    timerText: {
+        color: '#FFD67A',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+
     player: {
         position: 'absolute',
         alignItems: 'center'

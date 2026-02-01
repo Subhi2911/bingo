@@ -1,11 +1,39 @@
-import { FlatList, ImageBackground, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native'
+import { FlatList, ImageBackground, StyleSheet, Text, TouchableOpacity, View, Image, AsyncStorage } from 'react-native'
 import React from 'react';
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { useNavigation } from '@react-navigation/native';
 
+import { BACKEND_URL } from '../config/backend';
+
 const Ranking = () => {
     const [selectedMode, setSelectedMode] = React.useState("world");
     const navigation = useNavigation();
+    const [topUsers, setTopUsers]=React.useState(null);
+    const [userRank, setUserRank] = React.useState(null);
+    const [currentUser, setCurrentUser] = React.useState(null);
+    
+
+    const fetchLeaderboard = async () => {
+    try {
+        const token = await AsyncStorage.getItem('authToken');
+
+        const res = await fetch(`${BACKEND_URL}/api/leaderboard`, {
+            headers: {
+                'auth-token': token,
+            },
+        });
+
+        const data = await res.json();
+
+        setTopUsers(data.topUsers);
+        setUserRank(data.userRank);
+        setCurrentUser(data.currentUser);
+
+    } catch (err) {
+        console.log(err);
+    }
+};
+
 
     const dummyData = [
         { "id": 1, "name": "Aarav", "level": 12, "xp": 11523 },
@@ -83,7 +111,7 @@ const Ranking = () => {
                     </View>
 
                     <FlatList
-                        data={dummyData}
+                        data={topUsers}
                         keyExtractor={(item) => item.id.toString()}
                         renderItem={({ item }) => (
                             <View style={styles.content}>

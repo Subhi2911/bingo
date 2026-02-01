@@ -1,10 +1,43 @@
 /* eslint-disable react-native/no-inline-styles */
 import { FlatList, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
-import { Image } from 'expo-image'
+import React, { useEffect } from 'react'
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { BACKEND_URL } from '../config/backend';
 
 const LeaderBoard = () => {
     const [selectedMode, setSelectedMode] = React.useState("world");
+    const navigation = useNavigation();
+    const [topUsers, setTopUsers] = React.useState(null);
+    const [userRank, setUserRank] = React.useState(null);
+    const [currentUser, setCurrentUser] = React.useState(null);
+
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const token = await AsyncStorage.getItem('authToken');
+
+                const res = await fetch(`${BACKEND_URL}/api/games/leaderboard`, {
+                    headers: {
+                        'auth-token': token,
+                    },
+                });
+
+                const data = await res.json();
+
+                setTopUsers(data.topUsers);
+                setUserRank(data.userRank);
+                setCurrentUser(data.currentUser);
+
+            } catch (err) {
+                console.log(err);
+            }
+        };
+        console.log(topUsers);
+        fetchLeaderboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
     const dummyData = [
         { "id": 1, "name": "Aarav", "level": 12, "xp": 11523 },
         { "id": 2, "name": "Priya", "level": 7, "xp": 6734 },
@@ -40,44 +73,72 @@ const LeaderBoard = () => {
 
     return (
         <View style={styles.container}>
-            <ImageBackground
-                source={require('../images/podium.png')}
-                style={styles.podium}
-            >
-                <View />
-            </ImageBackground>
-            <View style={styles.playersList}>
-                <TouchableOpacity style={[styles.selectBtn, selectedMode === "world" ? { backgroundColor: "#F8B55F" } : {}]} onPress={() => { setSelectedMode("world") }}>
-                    <Text style={{ color: "#fff", fontWeight: "bold" }}>World</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.selectBtn, selectedMode === "area" ? { backgroundColor: "#F8B55F" } : {}]} onPress={() => { setSelectedMode("area") }}>
-                    <Text style={{ color: "#fff", fontWeight: "bold" }}>Area</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.selectBtn, selectedMode === "friends" ? { backgroundColor: "#F8B55F" } : {}]} onPress={() => { setSelectedMode("friends") }}>
-                    <Text style={{ color: "#fff", fontWeight: "bold" }}>Friends</Text>
-                </TouchableOpacity>
-            </View>
-            <View style={styles.list}>
-                <View style={styles.heading}>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>Name </Text>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>Level </Text>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>XP </Text>
-                </View>
-                {(selectedMode==='world' || selectedMode==='area'|| selectedMode==='friends') && 
-                <FlatList
-                    data={dummyData}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <View style={styles.content}>
-                            <Text style={{ color: '#fff', fontWeight: 'bold' }}>{item.name} (India)</Text>
-                            <Text style={{ color: '#F8B55F', fontWeight: 'bold' }}>{item.level}</Text>
-                            <Text style={{ color: '#FFE1E0' ,fontWeight: 'bold'}}>{item.xp} XP</Text>
+
+            {/* 🏆 PODIUM TOP 3 */}
+            <View style={styles.podiumContainer}>
+                {topUsers?.slice(0, 3).map((user, index) => (
+                    <View key={user._id} style={[styles.podiumCard, index === 0 && styles.firstPlace]}>
+                        <Text style={styles.podiumRank}>#{index + 1}</Text>
+                        <View style={styles.avatar}>
+                            <Text style={{ fontSize: 28 }}>{user.avatar || "👤"}</Text>
                         </View>
-                    )}
-                />}
+                        <Text style={styles.podiumName}>{user.username}</Text>
+                        <Text style={styles.podiumXP}>{user.xp} XP</Text>
+                    </View>
+                ))}
             </View>
+
+            {/* 🔘 Tabs */}
+            <View style={styles.tabs}>
+                {["world", "area", "friends"].map(mode => (
+                    <TouchableOpacity
+                        key={mode}
+                        style={[
+                            styles.tabBtn,
+                            selectedMode === mode && styles.activeTab
+                        ]}
+                        onPress={() => setSelectedMode(mode)}
+                    >
+                        <Text style={styles.tabText}>{mode.toUpperCase()}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            {/* 📜 LIST FROM 4TH */}
+            <FlatList
+                style={{ width: '90%' }}
+                data={topUsers?.slice(3)}
+                keyExtractor={(item) => item._id}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item, index }) => (
+                    <View style={styles.row}>
+                        <Text style={styles.rank}>#{index + 4}</Text>
+
+                        <View style={styles.rowUser}>
+                            <Text style={{ fontSize: 20 }}>{item.avatar || "👤"}</Text>
+                            <Text style={styles.name}>{item.username}</Text>
+                        </View>
+
+                        <Text style={styles.xp}>{item.xp} XP</Text>
+                    </View>
+                )}
+            />
+
+            {/* 👤 YOUR RANK STICKY */}
+            {currentUser && (
+                <View style={styles.myRank}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                        Your Rank: #{userRank}
+                    </Text>
+                    <Text style={{ color: '#FFD67A' }}>
+                        {currentUser.xp} XP
+                    </Text>
+                </View>
+            )}
+
         </View>
-    )
+    );
+
 }
 
 export default LeaderBoard
@@ -85,51 +146,115 @@ export default LeaderBoard
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        width: '100%',
-        height: '100%',
+        //backgroundColor: '#1B1B1D',
         alignItems: 'center',
-        paddingLeft: '10%',
+        paddingTop: 40,
     },
-    podium: {
+
+    /* PODIUM */
+    podiumContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         width: '90%',
-        height: '55%',
+        marginBottom: 25,
+    },
+    podiumCard: {
+        alignItems: 'center',
+        backgroundColor: '#2A244A',
+        padding: 10,
+        borderRadius: 18,
+        width: '30%',
+        borderWidth:2,
+        borderColor:'#FFD67A'
+    },
+    firstPlace: {
+        backgroundColor: '#F8B55F',
+        transform: [{ scale: 1.1 }],
+    },
+    podiumRank: {
+        color: '#fff',
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    avatar: {
+        width: 55,
+        height: 55,
+        borderRadius: 30,
+        backgroundColor: '#000',
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 6,
     },
-    playersList: {
+    podiumName: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    podiumXP: {
+        color: '#FFD67A',
+        fontWeight: 'bold',
+    },
+
+    /* TABS */
+    tabs: {
         flexDirection: 'row',
-        gap: 15,
-        position: 'absolute',
-        top: '30%',
+        gap: 12,
+        marginBottom: 15,
     },
-    selectBtn: {
-        backgroundColor: '#252526',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 10,
+    tabBtn: {
+        backgroundColor: '#2A244A',
+        paddingVertical: 8,
+        paddingHorizontal: 18,
+        borderRadius: 20,
     },
-    list: {
-        position: 'absolute',
-        top:'40%',
-        height: '50%',
+    activeTab: {
+        backgroundColor: '#F8B55F',
     },
-    heading: {
+    tabText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+
+    /* LIST ROW */
+    row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        width: 300,
-        paddingBottom: 10,
-        borderBottomWidth: 2,
-        borderBottomColor: '#F8B55F',
-        marginBottom: 10,
-    },
-    content: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: 300,
-        marginBottom: 8,
-        height: 40,
         alignItems: 'center',
-        borderBottomColor: '#ffffff',
-        borderBottomWidth: 1,
+        backgroundColor: '#2A244A',
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 8,
+        borderWidth:2,
+        borderColor:'#4A4370'
     },
-})
+    rank: {
+        color: '#FFD67A',
+        fontWeight: 'bold',
+        width: 40,
+    },
+    rowUser: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        flex: 1,
+    },
+    name: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    xp: {
+        color: '#FFE1E0',
+        fontWeight: 'bold',
+    },
+
+    /* MY RANK */
+    myRank: {
+        position: 'absolute',
+        bottom: 20,
+        width: '90%',
+        backgroundColor: '#333',
+        padding: 15,
+        borderRadius: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+});
