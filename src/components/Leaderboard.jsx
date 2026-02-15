@@ -29,7 +29,7 @@ const LeaderBoard = () => {
                 setTopUsers(data.topUsers);
                 setUserRank(data.userRank);
                 setCurrentUser(data.currentUser);
-
+                console.log(data);
             } catch (err) {
                 console.log(err);
             }
@@ -83,7 +83,7 @@ const LeaderBoard = () => {
                             <Text style={{ fontSize: 28 }}>{user.avatar || "👤"}</Text>
                         </View>
                         <Text style={styles.podiumName}>{user.username}</Text>
-                        <Text style={styles.podiumXP}>{user.xp} XP</Text>
+                        <Text style={styles.podiumXP}>{user.totalXp} XP</Text>
                     </View>
                 ))}
             </View>
@@ -119,7 +119,7 @@ const LeaderBoard = () => {
                             <Text style={styles.name}>{item.username}</Text>
                         </View>
 
-                        <Text style={styles.xp}>{item.xp} XP</Text>
+                        <Text style={styles.xp}>{item.totalXp} XP</Text>
                     </View>
                 )}
             />
@@ -130,8 +130,8 @@ const LeaderBoard = () => {
                     <Text style={{ color: '#fff', fontWeight: 'bold' }}>
                         Your Rank: #{userRank}
                     </Text>
-                    <Text style={{ color: '#FFD67A' }}>
-                        {currentUser.xp} XP
+                    <Text style={{ color: '#f9f8f5' }}>
+                        {currentUser.totalXp} XP
                     </Text>
                 </View>
             )}
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
     /* MY RANK */
     myRank: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 100,
         width: '90%',
-        backgroundColor: '#333',
+        backgroundColor: '#f4cd56cb',
         padding: 15,
         borderRadius: 12,
         flexDirection: 'row',

@@ -715,7 +715,14 @@ const GameScreen = (props) => {
 
                         </View>
                         {/* INPUT BAR */}
-                        <Animated.View style={[styles.inputContainer, { transform: [{ translateY: Animated.multiply(keyboardHeight, -1), },], },]}>
+                        <Animated.View
+                            style={[
+                                styles.inputContainer,
+                                {
+                                    bottom: Animated.add(keyboardHeight, 20),
+                                },
+                            ]}
+                        >
 
                             <TextInput
                                 style={[styles.input, { height: inputHeight }]}
@@ -809,8 +816,8 @@ const GameScreen = (props) => {
 
                         visible={xpModalVisible && !!xpResult}
                         earnedXP={xpResult?.earnedXP}
-                        oldXP={xpResult?.oldXP}
-                        newXP={xpResult?.levelXp}
+                        oldXP={xpResult?.levelXp}
+                        newXP={xpResult?.levelXp + xpResult?.earnedXP}
                         xpNeeded={xpResult?.xpNeeded}
                         starGained={xpResult?.starGained}
                         //levelXp={xpResult.levelXp}
@@ -972,6 +979,7 @@ const styles = StyleSheet.create({
         marginTop: 20
     },
     inputContainer: {
+        flex:1,
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 12,

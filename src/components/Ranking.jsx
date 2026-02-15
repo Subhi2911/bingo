@@ -1,215 +1,279 @@
-import { FlatList, ImageBackground, StyleSheet, Text, TouchableOpacity, View, Image, AsyncStorage } from 'react-native'
+import {
+    FlatList,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    SafeAreaView
+} from 'react-native';
 import React from 'react';
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { useNavigation } from '@react-navigation/native';
-
 import { BACKEND_URL } from '../config/backend';
 
 const Ranking = () => {
+
     const [selectedMode, setSelectedMode] = React.useState("world");
+    const [leaderboard, setLeaderboard] = React.useState(null);
     const navigation = useNavigation();
-    const [topUsers, setTopUsers]=React.useState(null);
-    const [userRank, setUserRank] = React.useState(null);
-    const [currentUser, setCurrentUser] = React.useState(null);
-    
+    const avatars = {
+        '🐵': 'Mischief Maverick',
+        '🐶': 'Loyal Legend',
+        '🐱': 'Shadow Prowler',
+        '🦁': 'Golden King',
+        '🐯': 'Stripe Fury',
+        '🦊': 'Crimson Trickster',
+        '🐮': 'Iron Grazer',
+        '🐭': 'Swift Whisper',
+        '🐴': 'Storm Charger',
+        '🐸': 'Neon Hopper',
+        '🐔': 'Dawn Striker',
+        '🐍': 'Venom Viper',
+    };
+
 
     const fetchLeaderboard = async () => {
-    try {
-        const token = await AsyncStorage.getItem('authToken');
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/games/ranking`);
+            const data = await res.json();
+            setLeaderboard(data);
+        } catch (err) {
+            console.log(err);
+        }
+    };
 
-        const res = await fetch(`${BACKEND_URL}/api/leaderboard`, {
-            headers: {
-                'auth-token': token,
-            },
-        });
+    React.useEffect(() => {
+        fetchLeaderboard();
+    }, []);
 
-        const data = await res.json();
+    const renderAvatarCard = ({ item, index }) => {
+        const isTop = index === 0;
 
-        setTopUsers(data.topUsers);
-        setUserRank(data.userRank);
-        setCurrentUser(data.currentUser);
+        return (
+            <View style={[styles.card, isTop && styles.topCard]}>
 
-    } catch (err) {
-        console.log(err);
-    }
-};
+                {/* Header Row */}
+                <View style={styles.cardHeader}>
+                    <View style={styles.avatarRow}>
+                        <Text style={styles.emoji}>{item.avatar}</Text>
+                        <View>
+                            <Text style={styles.avatarTitle}>
+                                {isTop ? "Avatar of the Week" : `${avatars[item.avatar] || "Unknown Avatar"}`}
+                            </Text>
+                            {isTop && <Text style={styles.avatarTitle}>
+                                {avatars[item.avatar]}
+                            </Text>}
+                            <Text style={styles.totalXp}>
+                                {item.totalXp} XP
+                            </Text>
+                        </View>
+                    </View>
 
+                    {isTop && <Text style={styles.crown}>👑</Text>}
+                </View>
 
-    const dummyData = [
-        { "id": 1, "name": "Aarav", "level": 12, "xp": 11523 },
-        { "id": 2, "name": "Priya", "level": 7, "xp": 6734 },
-        { "id": 3, "name": "Rahul", "level": 20, "xp": 19512 },
-        { "id": 4, "name": "Sneha", "level": 3, "xp": 2478 },
-        { "id": 5, "name": "Vikram", "level": 15, "xp": 14321 },
-        { "id": 6, "name": "Maya", "level": 1, "xp": 512 },
-        { "id": 7, "name": "Omar", "level": 9, "xp": 8650 },
-        { "id": 8, "name": "Lina", "level": 27, "xp": 26890 },
-        { "id": 9, "name": "Jose", "level": 5, "xp": 4567 },
-        { "id": 10, "name": "Mei", "level": 18, "xp": 17643 },
-        { "id": 11, "name": "Fatima", "level": 13, "xp": 12678 },
-        { "id": 12, "name": "Leo", "level": 22, "xp": 21789 },
-        { "id": 13, "name": "Zoe", "level": 4, "xp": 3489 },
-        { "id": 14, "name": "Ethan", "level": 30, "xp": 29534 },
-        { "id": 15, "name": "Nisha", "level": 11, "xp": 10880 },
-        { "id": 16, "name": "Sam", "level": 2, "xp": 1850 },
-        { "id": 17, "name": "Chen", "level": 16, "xp": 15211 },
-        { "id": 18, "name": "Olga", "level": 14, "xp": 13654 },
-        { "id": 19, "name": "Amrita", "level": 8, "xp": 7462 },
-        { "id": 20, "name": "Diego", "level": 19, "xp": 18333 },
-        { "id": 21, "name": "Hana", "level": 6, "xp": 5234 },
-        { "id": 22, "name": "Luca", "level": 21, "xp": 20567 },
-        { "id": 23, "name": "Aisha", "level": 24, "xp": 23701 },
-        { "id": 24, "name": "Tom", "level": 10, "xp": 9544 },
-        { "id": 25, "name": "Kiran", "level": 17, "xp": 16620 },
-        { "id": 26, "name": "Sara", "level": 25, "xp": 24399 },
-        { "id": 27, "name": "Ivan", "level": 29, "xp": 28712 },
-        { "id": 28, "name": "Priyanka", "level": 23, "xp": 22110 },
-        { "id": 29, "name": "Arjun", "level": 26, "xp": 25345 },
-        { "id": 30, "name": "Bella", "level": 31, "xp": 30456 }
-    ]
+                {/* Users */}
+                {item.users.slice(0, 4).map((user, i) => (
+                    <View key={i} style={styles.userRow}>
+                        <Text style={[
+                            styles.rank,
+                            i === 0 && styles.gold,
+                            i === 1 && styles.silver,
+                            i === 2 && styles.bronze
+                        ]}>
+                            #{user.rank}
+                        </Text>
 
+                        <Text style={styles.name} numberOfLines={1}>
+                            {user.name}
+                        </Text>
+
+                        <Text style={styles.xp}>
+                            {user.xp} XP
+                        </Text>
+                    </View>
+                ))}
+
+            </View>
+        );
+    };
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <ImageBackground
                 source={require('../images/FriendsPage.png')}
                 style={{ flex: 1 }}
+                resizeMode="cover"
             >
+
+                {/* Header */}
                 <View style={styles.header}>
                     <Icon
                         name="arrow-left"
-                        size={26}
-                        color="#000"
+                        size={22}
+                        color="#000000"
                         onPress={() => navigation.goBack()}
                     />
-                    <Text style={styles.RankingText}>Ranking</Text>
+                    <Text style={styles.title}>Leaderboard</Text>
                 </View>
-                <Image
-                    source={require('../images/podium.png')}
-                    style={styles.podium}
-                />
 
-                {/* Mode selector */}
-                <View style={styles.playersList}>
+                {/* Mode Selector */}
+                <View style={styles.modeContainer}>
                     {['world', 'area', 'friends'].map(mode => (
                         <TouchableOpacity
                             key={mode}
-                            style={[styles.selectBtn, selectedMode === mode && { backgroundColor: "#F8B55F" }]}
+                            style={[
+                                styles.modeBtn,
+                                selectedMode === mode && styles.activeMode
+                            ]}
                             onPress={() => setSelectedMode(mode)}
                         >
-                            <Text style={{ color: "#fff", fontWeight: "bold" }}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</Text>
+                            <Text style={styles.modeText}>
+                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                {/* FlatList */}
-                <View style={styles.list}>
-                    <View style={styles.heading}>
-                        <Text style={styles.headingText}>Name</Text>
-                        <Text style={styles.headingText}>Level</Text>
-                        <Text style={styles.headingText}>XP</Text>
-                    </View>
-
+                {/* Leaderboard */}
+                {leaderboard && (
                     <FlatList
-                        data={topUsers}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={({ item }) => (
-                            <View style={styles.content}>
-                                <Text style={styles.contentText}>{item.name} (India)</Text>
-                                <Text style={styles.levelText}>{item.level}</Text>
-                                <Text style={styles.xpText}>{item.xp} XP</Text>
-                            </View>
-                        )}
-                        showsVerticalScrollIndicator={true}
+                        data={leaderboard.avatars}
+                        keyExtractor={(item) => item.avatar}
+                        renderItem={renderAvatarCard}
+                        contentContainerStyle={{ paddingBottom: 30 }}
+                        showsVerticalScrollIndicator={false}
                     />
-                </View>
+                )}
+
             </ImageBackground>
-        </View>
-    )
-}
+        </SafeAreaView>
+    );
+};
 
-export default Ranking
-
+export default Ranking;
 const styles = StyleSheet.create({
+
     container: {
         flex: 1,
-        width: '100%',
-        height: '100%',
-        //paddingHorizontal: 16,
     },
+
     header: {
         flexDirection: "row",
         alignItems: "center",
-        marginTop: 60, // header a little lower
-        marginHorizontal: 16,
-    },
-    RankingText: {
-        fontSize: 22,
-        fontWeight: "bold",
-        marginLeft: 16,
-        color: "#000",
-    },
-    podium: {
-        width: '100%',
-        height: '35%',
-        resizeMode: 'contain',
-        alignSelf: 'center',
-    },
-    playersList: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        //marginTop: 0,
-        marginBottom: 10,
-    },
-    selectBtn: {
-        backgroundColor: '#252526',
-        paddingVertical: 10,
         paddingHorizontal: 20,
-        borderRadius: 10,
+        marginTop: 60,
     },
-    list: {
-        flex: 1,
+
+    title: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginLeft: 15,
+        color: "#000000",
     },
-    heading: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+
+    modeContainer: {
+        flexDirection: "row",
+        justifyContent: "center",
+        marginVertical: 15,
+    },
+
+    modeBtn: {
+        backgroundColor: "rgba(255,255,255,0.15)",
+        paddingVertical: 8,
+        paddingHorizontal: 18,
+        borderRadius: 20,
+        marginHorizontal: 6,
+    },
+
+    activeMode: {
+        backgroundColor: "#ffd900",
+    },
+
+    modeText: {
+        color: "#000000",
+        fontWeight: "600",
+    },
+
+    /* ---------- CARD ---------- */
+
+    card: {
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        marginHorizontal: 16,
+        marginVertical: 8,
+        padding: 14,
+        borderRadius: 18,
+    },
+
+    topCard: {
+        borderWidth: 1.5,
+        borderColor: "#FFD700",
+        backgroundColor: "rgba(248, 254, 189, 0.92)"
+    },
+
+    cardHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 10,
-        paddingHorizontal: 10,
-        borderBottomWidth: 2,
-        borderBottomColor: '#F8B55F',
     },
-    headingText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
-        width: 100,
-        textAlign: 'center',
+
+    avatarRow: {
+        flexDirection: "row",
+        alignItems: "center",
     },
-    content: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 10,
-        height: 40,
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#fff',
+
+    emoji: {
+        fontSize: 34,
+        marginRight: 10,
     },
-    contentText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        width: 100,
-        textAlign: 'center',
+
+    avatarTitle: {
+        color: "#000000",
+        fontWeight: "600",
+        fontSize: 14,
     },
-    levelText: {
-        color: '#F8B55F',
-        fontWeight: 'bold',
-        width: 50,
-        textAlign: 'center',
+
+    totalXp: {
+        color: "#30c30c",
+        fontSize: 12,
+        marginTop: 2,
     },
-    xpText: {
-        color: '#FFE1E0',
-        fontWeight: 'bold',
-        width: 80,
-        textAlign: 'center',
+
+    crown: {
+        fontSize: 18,
     },
-})
+
+    /* ---------- USER ROW ---------- */
+
+    userRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 6,
+    },
+
+    rank: {
+        width: 40,
+        fontWeight: "bold",
+        fontSize: 13,
+        color: "#000000",
+    },
+
+    name: {
+        flex: 1,
+        color: "#000000",
+        fontSize: 13,
+    },
+
+    xp: {
+        color: "#30c30c",
+        fontSize: 13,
+        fontWeight: "600",
+    },
+
+    gold: { color: "#ffa200" },
+    silver: { color: "#909090" },
+    bronze: { color: "#bd650e" },
+
+});

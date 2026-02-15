@@ -13,7 +13,7 @@ import {
 const XPModal = ({
     visible,
     earnedXP,
-    oldXP,
+    oldXP=0,
     newXP,
     xpNeeded = 100,
     leveledUp,
