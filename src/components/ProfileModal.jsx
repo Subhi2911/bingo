@@ -178,7 +178,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
 
               {/* Stats */}
               <View style={styles.statsRow}>
-                <Stat label="XP" value={otherUser.xp} />
+                <Stat label="XP" value={otherUser.totalXp} />
                 <Stat label="Wins" value={otherUser.wins} />
                 <Stat label="Coins" value={otherUser.money} />
               </View>

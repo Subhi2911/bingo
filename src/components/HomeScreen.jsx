@@ -156,14 +156,18 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                     {/* Stars checkpoints */}
                     <View style={styles.starRow}>
                         {[0, 20, 40, 60, 80, 100].map((mark, i) => (
-                            <View key={i} style={styles.starWrapper}>
-                                <Icon
-                                    name="star"
-                                    size={18}
-                                    color={(user?.levelXp % 100) >= mark ? "#FFD67A" : "#555"}
-                                    solid={(user?.levelXp % 100) >= mark}
-                                />
-                                <Text style={styles.starText}>{mark}</Text>
+                            <View key={i} style={styles.starWrapper} visible={!i === 0}>
+                                {i !== 0 && (
+                                    <>
+                                        <Icon
+                                            name="star"
+                                            size={18}
+                                            color={(user?.levelXp % 100) >= mark ? "#FFD67A" : "#555"}
+                                            solid={(user?.levelXp % 100) >= mark}
+                                        />
+                                        <Text style={styles.starText}>{mark}</Text>
+                                    </>
+                                )}
                             </View>
                         ))}
                     </View>

@@ -30,7 +30,7 @@ import { useSocket } from "../context/SocketContext";
 import Bell from "./Bell";
 import NotificationPanel from "./NotificationPanel";
 import { useNotifications } from "../context/NotificationContext";
-
+import SpinWheelModal from "./SpinWheel";
 
 const Dashboard = () => {
     const [loading, setLoading] = React.useState(true);
@@ -45,7 +45,7 @@ const Dashboard = () => {
     const [panelVisible, setPanelVisible] = React.useState(false);
     const { hasUnread } = useNotifications();
     const [notifications, setNotifications] = React.useState([]);
-
+    const [openWheel, setOpenWheel] = React.useState(false);
 
 
 
@@ -219,10 +219,13 @@ const Dashboard = () => {
                                         <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
                                             <Icon name="paper-plane" size={28} color="#F8B55F" />
                                         </TouchableOpacity>
-                                        <Image
-                                            source={require("../images/LuckySpin.png")}
-                                            style={{ width: 45, height: 45 }}
-                                        />
+                                        <TouchableOpacity onPress={() => { setOpenWheel(true) }}>
+                                            <Image
+                                                source={require("../images/LuckySpin.png")}
+                                                style={{ width: 45, height: 45 }}
+                                            />
+                                        </TouchableOpacity>
+
                                     </View>
                                 </View>
 
@@ -306,6 +309,9 @@ const Dashboard = () => {
                     </View>
                 </Pressable>
             </Modal>
+            {openWheel &&
+                <SpinWheelModal isOpen={openWheel} onClose={() => setOpenWheel(false)} />
+            }
         </View >
     );
 };
@@ -360,7 +366,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 12,
         borderRadius: 14,
-        marginHorizontal:22
+        marginHorizontal: 22
     },
 
     searchInput: {

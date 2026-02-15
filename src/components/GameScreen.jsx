@@ -7,7 +7,11 @@ import {
     TouchableOpacity,
     View,
     Image,
-    Modal
+    Modal,
+    TextInput,
+    Animated,
+    Keyboard,
+    Dimensions
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
@@ -26,6 +30,8 @@ import LevelModal from './LevelModal';
 import XPModal from './XPModal';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FloatingMessage from "./FloatingMessage";
+
 
 const GameScreen = (props) => {
     const navigation = useNavigation();
@@ -49,6 +55,10 @@ const GameScreen = (props) => {
     const xpUpdatedRef = useRef(false);
     const gameStartTimeRef = useRef(null);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [floatingMessages, setFloatingMessages] = useState([]);
+    const [inputHeight, setInputHeight] = useState(48);
+    const keyboardHeight = useRef(new Animated.Value(0)).current;
+
 
     const [bingopop, setBingopop] = useState(false);
     const bingoShownRef = useRef(false);
@@ -75,14 +85,17 @@ const GameScreen = (props) => {
     const [xpResult, setXpResult] = useState(null);
     const oldXpRef = useRef(props.user.xp);
 
+    const [chatInput, setChatInput] = useState("");
+    const [chatMessages, setChatMessages] = useState([]);
+
     const handleWinModalClose = () => {
         setWinModal(false);
         setXpModalVisible(true);
     };
 
-    const gameDurationSeconds = Math.floor(
-        (Date.now() - gameStartTimeRef.current) / 1000
-    );
+    // const gameDurationSeconds = Math.floor(
+    //     (Date.now() - gameStartTimeRef.current) / 1000
+    // );
 
     const formatTime = (seconds) => {
         const m = Math.floor(seconds / 60);
@@ -97,18 +110,47 @@ const GameScreen = (props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [xpResult])
 
+    useEffect(() => {
+        const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+            Animated.timing(keyboardHeight, {
+                toValue: e.endCoordinates.height,
+                duration: 250,
+                useNativeDriver: false,
+            }).start();
+        });
+
+        const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+            Animated.timing(keyboardHeight, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        });
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
+
     const updateXPFromServer = async (
         didWin,
         gameType = props.gameType,
-        playerCount = props.players,
-        gameDurationSeconds
+        playerCount = props.players
     ) => {
-        if (xpUpdatedRef.current) return; // 🔒 BLOCK repeats
+        if (xpUpdatedRef.current) return;
         xpUpdatedRef.current = true;
 
         try {
             const token = await AsyncStorage.getItem('authToken');
             oldXpRef.current = props.user.xp;
+
+            const duration = gameStartTimeRef.current
+                ? Math.floor((Date.now() - gameStartTimeRef.current) / 1000)
+                : 0;
 
             const res = await fetch(`${BACKEND_URL}/api/games/update-progress`, {
                 method: 'POST',
@@ -119,10 +161,9 @@ const GameScreen = (props) => {
                 body: JSON.stringify({
                     gameId: props.roomCode,
                     didWin,
-                    //bonusXP: 20,
                     gameType,
                     playerCount,
-                    duration: gameDurationSeconds
+                    duration: duration
                 }),
             });
 
@@ -132,10 +173,12 @@ const GameScreen = (props) => {
                 ...data,
                 oldXP: oldXpRef.current,
             });
+
         } catch (e) {
             console.log(e);
         }
     };
+
 
 
 
@@ -157,6 +200,47 @@ const GameScreen = (props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentTurn]);
 
+    useEffect(() => {
+        if (!socket || !props.roomCode) return;
+
+        socket.emit("join_chat_room", props.roomCode);
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, props.roomCode]);
+
+    const sendMessage = () => {
+        if (!chatInput.trim()) return;
+
+        socket.emit("send_message", {
+            roomCode: props.roomCode,
+            username: props.user.username,
+            text: chatInput.trim(),
+        });
+
+        setChatInput("");
+    };
+
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleReceive = (data) => {
+            setFloatingMessages(prev => [
+                ...prev,
+                {
+                    id: `${Date.now()}-${Math.random()}`,
+                    text: `${data.username}: ${data.text}`,
+                    top: Math.random() * 250 + 120,
+                }
+            ]);
+        };
+
+        socket.on("receive_message", handleReceive);
+
+        return () => {
+            socket.off("receive_message", handleReceive);
+        };
+    }, [socket]);
 
 
 
@@ -211,6 +295,8 @@ const GameScreen = (props) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
 
+
+
     useEffect(() => {
         if (!gameStartTimeRef.current) return;
 
@@ -233,20 +319,20 @@ const GameScreen = (props) => {
     }, []);
 
     const playerPositions = {
-        2: [{ top: '15%', right: '10%' }, { bottom: '15%', left: '10%' }],
-        3: [{ top: '15%', left: '40%' }, { bottom: '15%', left: '15%' }, { bottom: '15%', right: '15%' }],
+        2: [{ top: '18%', right: '10%' }, { bottom: '17%', left: '10%' }],
+        3: [{ top: '18%', left: '40%' }, { bottom: '17%', left: '15%' }, { bottom: '17%', right: '15%' }],
         4: [
-            { top: '15%', left: '8%' },
-            { top: '15%', right: '8%' },
-            { bottom: '15%', left: '8%' },
-            { bottom: '15%', right: '8%' }
+            { top: '18%', left: '8%' },
+            { top: '18%', right: '8%' },
+            { bottom: '17%', left: '8%' },
+            { bottom: '17%', right: '8%' }
         ],
         5: [
             { left: '8%', top: '22%' },
             { right: '8%', top: '22%' },
-            { left: '8%', bottom: '12%' },
-            { right: '8%', bottom: '12%' },
-            { bottom: '12%', left: '45%' }
+            { left: '8%', bottom: '17%' },
+            { right: '8%', bottom: '17%' },
+            { bottom: '17%', left: '45%' }
         ]
     };
     const positions = playerPositions[props.players] || [];
@@ -353,7 +439,7 @@ const GameScreen = (props) => {
         setTimeout(() => {
             setLoading(false);
         }, 2000);
-    },[])
+    }, [])
 
     const playAgain = () => {
         socket.emit("player_ready", { roomCode: props.roomCode, userId: props.user._id });
@@ -494,7 +580,7 @@ const GameScreen = (props) => {
                             {turnOrder?.map((player, index) => {
                                 let pos = {};
                                 if (player?.userId === props?.user?._id) {
-                                    pos = { bottom: '10%', left: '10%' };
+                                    pos = { bottom: '17%', left: '10%' };
                                 } else {
                                     const idx = otherPlayers.findIndex(p => p.userId === player?.userId);
                                     pos = positions[idx] || {};
@@ -552,6 +638,19 @@ const GameScreen = (props) => {
                                     <FloatingNumber key={i} number={num} />
                                 ))}
                             </View>
+                            {floatingMessages.map(msg => (
+                                <FloatingMessage
+                                    key={msg.id}
+                                    text={msg.text}
+                                    top={msg.top}
+                                    onFinish={() =>
+                                        setFloatingMessages(prev =>
+                                            prev.filter(m => m.id !== msg.id)
+                                        )
+                                    }
+                                />
+                            ))}
+
 
                             <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
                                 {pickedNumbers.map((num, index) => (
@@ -615,6 +714,39 @@ const GameScreen = (props) => {
                             )}
 
                         </View>
+                        {/* INPUT BAR */}
+                        <Animated.View style={[styles.inputContainer, { transform: [{ translateY: Animated.multiply(keyboardHeight, -1), },], },]}>
+
+                            <TextInput
+                                style={[styles.input, { height: inputHeight }]}
+                                placeholder="Type a message..."
+                                placeholderTextColor="#717171"
+                                value={chatInput}
+                                onChangeText={setChatInput}
+                                multiline={true}
+                                textAlignVertical="top"
+                                numberOfLines={4}
+                                onContentSizeChange={(e) => {
+                                    // dynamically adjust height, limit maxHeight
+                                    const newHeight = Math.min(120, e.nativeEvent.contentSize.height);
+                                    setInputHeight(newHeight < 48 ? 48 : newHeight); // min height 48
+                                }}
+
+                            />
+                            <TouchableOpacity
+                                onPress={sendMessage}
+                                disabled={!chatInput.trim()}
+                            >
+                                <Icon
+                                    name="paper-plane"
+                                    size={24}
+                                    color="#ffffff"
+                                    style={styles.sendIcon}
+                                />
+                            </TouchableOpacity>
+                            <Icon name="gift" size={24} color="#f708d7" />
+                        </Animated.View>
+
                         {console.log(winModal)}
                         {bingopop && !bingoShownRef.current && (
                             <BingoPopUp
@@ -839,5 +971,31 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginTop: 20
     },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        //backgroundColor: '#50a2eb6a',
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
 
+    },
+    input: {
+        flex: 1,
+        height: 48,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 25,
+        paddingHorizontal: 18,
+        backgroundColor: '#fff',
+        fontSize: 16,
+        color: '#000',
+        marginRight: 10,
+    },
+    sendIcon: {
+        marginRight: 12,
+    },
 });

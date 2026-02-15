@@ -27,150 +27,139 @@ const Power = () => {
         "🐵": [
             "Swift Dash",
             "Tree Leap",
-            "Mischief Steal",
-            "Evasion Roll"
+            "Mischief Steal"
         ],
         "🐶": [
             "Loyal Guard",
             "Tracker Sense",
-            "Pack Howl",
-            "Last Stand"
+            "Pack Howl"
         ],
         "🐱": [
             "Shadow Step",
             "Silent Claws",
-            "Nine Lives",
-            "Reflex Dodge"
+            "Nine Lives"
         ],
         "🦁": [
             "King’s Roar",
             "Dominance",
-            "Fear Aura",
-            "Savage Strike"
+            "Fear Aura"
         ],
         "🐯": [
             "Ambush Pounce",
             "Blood Frenzy",
-            "Predator Focus",
-            "Claw Rush"
+            "Predator Focus"
         ],
         "🦊": [
             "Illusion Clone",
             "Trick Swap",
-            "Mind Games",
-            "Phase Shift"
+            "Mind Games"
         ],
         "🐮": [
             "Iron Hide",
             "Ground Slam",
-            "Steadfast",
-            "Rally Moo"
+            "Steadfast"
         ],
         "🐭": [
             "Quick Escape",
             "Tiny Target",
-            "Sneak Bite",
-            "Speed Burst"
+            "Sneak Bite"
         ],
         "🐴": [
             "Charge Run",
             "Endurance",
-            "Hoof Strike",
-            "Wind Rider"
+            "Hoof Strike"
         ],
         "🐸": [
             "Mega Jump",
             "Sticky Tongue",
-            "Poison Skin",
-            "Swamp Camouflage"
+            "Poison Skin"
         ],
         "🐔": [
             "Panic Flap",
             "Egg Bomb",
-            "Feather Shield",
-            "Second Wind"
+            "Feather Shield"
         ],
         "🐍": [
             "Venom Bite",
             "Coil Trap",
-            "Heat Sense",
-            "Shed Skin"
+            "Heat Sense"
         ]
     };
     const powerDetails = {
+        // 🐵 Monkey
         "Swift Dash": "Temporarily increases movement speed, allowing quick repositioning.",
         "Tree Leap": "Jump over obstacles or enemies to reach a safe or strategic spot.",
         "Mischief Steal": "Steals a random item or bonus from the opponent.",
-        "Evasion Roll": "Dodges the next incoming attack completely.",
 
+        // 🐶 Dog
         "Loyal Guard": "Reduces incoming damage for a short duration.",
         "Tracker Sense": "Reveals the enemy’s position for a limited time.",
         "Pack Howl": "Boosts attack and defense of nearby allies.",
-        "Last Stand": "Prevents death once and leaves the player at very low health.",
 
+        // 🐱 Cat
         "Shadow Step": "Instantly teleport a short distance to evade danger.",
         "Silent Claws": "Increases critical hit chance for a brief period.",
         "Nine Lives": "Revives the player once after being defeated.",
-        "Reflex Dodge": "Automatically avoids one attack when triggered.",
 
+        // 🦁 Lion
         "King’s Roar": "Stuns nearby enemies for a short duration.",
         "Dominance": "Temporarily increases attack power.",
         "Fear Aura": "Weakens enemies by reducing their attack strength.",
-        "Savage Strike": "Delivers a powerful high-damage attack.",
 
+        // 🐯 Tiger
         "Ambush Pounce": "Leap onto an enemy to deal bonus surprise damage.",
         "Blood Frenzy": "Increases attack speed after dealing damage.",
         "Predator Focus": "Improves accuracy and damage against a single target.",
-        "Claw Rush": "Strikes the enemy multiple times rapidly.",
 
+        // 🦊 Fox
         "Illusion Clone": "Creates a fake clone to confuse enemies.",
         "Trick Swap": "Switch positions with an enemy or ally.",
         "Mind Games": "Causes enemies to miss or misfire attacks.",
-        "Phase Shift": "Become invisible and untargetable briefly.",
 
+        // 🐮 Cow
         "Iron Hide": "Greatly increases defense and reduces damage taken.",
         "Ground Slam": "Slams the ground, damaging nearby enemies.",
         "Steadfast": "Grants immunity to knockback and stuns.",
-        "Rally Moo": "Gradually restores health to nearby allies.",
 
+        // 🐭 Mouse
         "Quick Escape": "Instantly dash away from danger.",
         "Tiny Target": "Reduces chance of being hit by enemies.",
         "Sneak Bite": "Applies poison damage over time.",
-        "Speed Burst": "Briefly increases movement speed significantly.",
 
+        // 🐴 Horse
         "Charge Run": "Rush forward at high speed, knocking enemies back.",
         "Endurance": "Increases stamina and reduces exhaustion.",
         "Hoof Strike": "Powerful kick that pushes enemies away.",
-        "Wind Rider": "Grants a movement speed boost aura.",
 
+        // 🐸 Frog
         "Mega Jump": "Allows a very high jump to reach elevated areas.",
         "Sticky Tongue": "Pulls an enemy closer or grabs objects.",
         "Poison Skin": "Damages enemies on contact.",
-        "Swamp Camouflage": "Blend into the environment to avoid detection.",
 
+        // 🐔 Chicken
         "Panic Flap": "Move erratically to avoid enemy attacks.",
         "Egg Bomb": "Throws an explosive egg that deals area damage.",
         "Feather Shield": "Absorbs incoming damage for a short time.",
-        "Second Wind": "Resets cooldowns or restores stamina.",
 
+        // 🐍 Snake
         "Venom Bite": "Injects venom that deals damage over time.",
         "Coil Trap": "Immobilizes an enemy by wrapping around them.",
-        "Heat Sense": "Detects hidden or invisible enemies.",
-        "Shed Skin": "Removes all negative effects instantly."
+        "Heat Sense": "Detects hidden or invisible enemies."
     };
+
     const avatarEmojiVariants = {
-        "🐵": ["🐵", "🙈", "🙉", "🙊"],
-        "🐶": ["🐶", "🐕", "🦮", "🐕‍🦺"],
-        "🐱": ["🐱", "🐈", "🐈‍⬛", "😺"],
-        "🦁": ["🦁", "😺", "🐯", "👑"], // lion-styled vibe
-        "🐯": ["🐯", "🐅", "😼", "😾"],
-        "🦊": ["🦊", "😼", "🐕", "🧠"],
-        "🐮": ["🐮", "🐄", "🐂", "🐃"],
-        "🐭": ["🐭", "🐁", "🐀", "🐹"],
-        "🐴": ["🐴", "🐎", "🦄", "🏇"],
-        "🐸": ["🐸", "🐸‍⬛", "🐸", "🐸"],
-        "🐔": ["🐔", "🐓", "🐣", "🐥"],
-        "🐍": ["🐍", "🦎", "🐉", "🐲"]
+        "🐵": ["🙈", "🙉", "🙊"],
+        "🐶": ["🐕", "🦮", "🐕‍🦺"],
+        "🐱": ["🐈", "😾", "😺"],
+        "🦁": ["😺", "🐯", "👑"], // lion-styled vibe
+        "🐯": ["🐯", "🐅", "😾"],
+        "🦊": ["🦊", "🐕", "🧠"],
+        "🐮": ["🐄", "🐂", "🐃"],
+        "🐭": ["🐁", "🐀", "🐹"],
+        "🐴": ["🐎", "🦄", "🏇"],
+        "🐸": ["🐸‍⬛", "🐸", "🐸"],
+        "🐔": ["🐓", "🐣", "🐥"],
+        "🐍": ["🦎", "🐉", "🐲"]
     };
 
     React.useEffect(() => {
@@ -287,6 +276,7 @@ const Power = () => {
 
 
                     <View style={styles.powerSelection}>
+                        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Powers:</Text>    
                         {avatarPowers[user?.avatar]?.map((powerName, index) => (
                             <View key={index} style={{ width: 50 }}>
                                 <TouchableOpacity
