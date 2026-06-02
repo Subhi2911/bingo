@@ -301,8 +301,8 @@ const Power = () => {
                             </View>
                         ))}
                     </View>
-                    <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} disabled={!socket || ready}>
-                        <Text style={{ color: "#000", fontWeight: "bold" }} >Ready</Text>
+                    <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} disabled={true}>
+                        <Text style={{ color: "#000", fontWeight: "bold" }} >Ready (Coming Soon)</Text>
                     </TouchableOpacity>
                     {/* <TouchableOpacity style={styles.startBtn} onPress={() => setGameStarted(true)}>
                         <Text style={{ color: "#fff", fontWeight: "bold" }}>Start Game</Text>

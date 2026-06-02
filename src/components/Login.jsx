@@ -138,6 +138,12 @@ const Login = () => {
 			} else {
 				Alert.alert("Failed", data.message || "Something went wrong");
 			}
+			setStep(1);
+			setOtpEmail("");
+			setOtp("");
+			setPassword("");
+			setCpassword("");
+			setCredentials({ email: "", password: "" });
 		} catch (err) {
 			console.log(err);
 		}

@@ -196,6 +196,7 @@ const PrivateRoom = () => {
             socket.off('private_room_updated', onPrivateRoomUpdated);
             socket.off('private_game_started');
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket, user]);
 
     /* ===================== FETCH USER ===================== */
