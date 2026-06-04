@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 YOUR LOGIC (moved to context)
+  // YOUR LOGIC (moved to context)
   useEffect(() => {
     const getMyUserData = async () => {
       try {

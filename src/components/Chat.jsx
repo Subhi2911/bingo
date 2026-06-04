@@ -356,7 +356,7 @@ const Chat = ({ route }) => {
                             }}
 
                         />
-                        <TouchableOpacity
+                        {typedMessage.length > 0 && (<TouchableOpacity
                             onPress={sendMessage}
                             disabled={typedMessage.trim().length === 0}
                         >
@@ -366,7 +366,7 @@ const Chat = ({ route }) => {
                                 color="#ffffff"
                                 style={styles.sendIcon}
                             />
-                        </TouchableOpacity>
+                        </TouchableOpacity>)}
                         <Icon name="gift" size={24} color="#f708d7" />
                     </Animated.View>
 

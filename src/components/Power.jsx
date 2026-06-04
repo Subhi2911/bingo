@@ -11,6 +11,7 @@ import { useSocket } from '../context/SocketContext';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from "react-native";
+import GameScreenPower from './GameScreenPower';
 
 const Power = () => {
     const socketRef = useSocket();
@@ -87,64 +88,64 @@ const Power = () => {
     };
     const powerDetails = {
         // 🐵 Monkey
-        "Swift Dash": "Temporarily increases movement speed, allowing quick repositioning.",
-        "Tree Leap": "Jump over obstacles or enemies to reach a safe or strategic spot.",
-        "Mischief Steal": "Steals a random item or bonus from the opponent.",
+        "Swift Dash": "Instantly marks one random unmarked number on your board.",
+        "Tree Leap": "Marks two random unmarked numbers on your board.",
+        "Mischief Steal": "Copies the last number marked by an opponent.",
 
         // 🐶 Dog
-        "Loyal Guard": "Reduces incoming damage for a short duration.",
-        "Tracker Sense": "Reveals the enemy’s position for a limited time.",
-        "Pack Howl": "Boosts attack and defense of nearby allies.",
+        "Loyal Guard": "Protects you from all power effects for 15 seconds.",
+        "Tracker Sense": "Reveals the progress of a selected opponent's board.",
+        "Pack Howl": "Marks one additional random number on your board.",
 
         // 🐱 Cat
-        "Shadow Step": "Instantly teleport a short distance to evade danger.",
-        "Silent Claws": "Increases critical hit chance for a brief period.",
-        "Nine Lives": "Revives the player once after being defeated.",
+        "Shadow Step": "Instantly marks one unmarked number of your choice.",
+        "Silent Claws": "Removes one marked number from a random opponent.",
+        "Nine Lives": "Automatically cancels the first negative power used against you.",
 
         // 🦁 Lion
-        "King’s Roar": "Stuns nearby enemies for a short duration.",
-        "Dominance": "Temporarily increases attack power.",
-        "Fear Aura": "Weakens enemies by reducing their attack strength.",
+        "King’s Roar": "Disables all opponent powers for 10 seconds.",
+        "Dominance": "Marks two random unmarked numbers on your board.",
+        "Fear Aura": "Prevents a random opponent from marking numbers for 5 seconds.",
 
         // 🐯 Tiger
-        "Ambush Pounce": "Leap onto an enemy to deal bonus surprise damage.",
-        "Blood Frenzy": "Increases attack speed after dealing damage.",
-        "Predator Focus": "Improves accuracy and damage against a single target.",
+        "Ambush Pounce": "Removes one marked number from a selected opponent.",
+        "Blood Frenzy": "Marks two random numbers instantly.",
+        "Predator Focus": "Highlights the best available move toward completing a Bingo line.",
 
         // 🦊 Fox
-        "Illusion Clone": "Creates a fake clone to confuse enemies.",
-        "Trick Swap": "Switch positions with an enemy or ally.",
-        "Mind Games": "Causes enemies to miss or misfire attacks.",
+        "Illusion Clone": "Hides your board progress from opponents for 15 seconds.",
+        "Trick Swap": "Swaps one marked and one unmarked number on an opponent's board.",
+        "Mind Games": "Disables a random opponent's power for one use.",
 
         // 🐮 Cow
-        "Iron Hide": "Greatly increases defense and reduces damage taken.",
-        "Ground Slam": "Slams the ground, damaging nearby enemies.",
-        "Steadfast": "Grants immunity to knockback and stuns.",
+        "Iron Hide": "Makes you immune to all power effects for 15 seconds.",
+        "Ground Slam": "Removes one marked number from every opponent.",
+        "Steadfast": "Prevents your marked numbers from being altered for 15 seconds.",
 
         // 🐭 Mouse
-        "Quick Escape": "Instantly dash away from danger.",
-        "Tiny Target": "Reduces chance of being hit by enemies.",
-        "Sneak Bite": "Applies poison damage over time.",
+        "Quick Escape": "Removes any active negative effect on you.",
+        "Tiny Target": "Gives a 50% chance to ignore the next power used against you.",
+        "Sneak Bite": "Removes one marked number from a random opponent.",
 
         // 🐴 Horse
-        "Charge Run": "Rush forward at high speed, knocking enemies back.",
-        "Endurance": "Increases stamina and reduces exhaustion.",
-        "Hoof Strike": "Powerful kick that pushes enemies away.",
+        "Charge Run": "Automatically marks the next number you choose.",
+        "Endurance": "Allows you to use your power twice in the same match.",
+        "Hoof Strike": "Freezes a selected opponent for 5 seconds.",
 
         // 🐸 Frog
-        "Mega Jump": "Allows a very high jump to reach elevated areas.",
-        "Sticky Tongue": "Pulls an enemy closer or grabs objects.",
-        "Poison Skin": "Damages enemies on contact.",
+        "Mega Jump": "Instantly marks any one number of your choice.",
+        "Sticky Tongue": "Steals one marked number from an opponent.",
+        "Poison Skin": "Reflects the next negative power back to its sender.",
 
         // 🐔 Chicken
-        "Panic Flap": "Move erratically to avoid enemy attacks.",
-        "Egg Bomb": "Throws an explosive egg that deals area damage.",
-        "Feather Shield": "Absorbs incoming damage for a short time.",
+        "Panic Flap": "Instantly marks one random number on your board.",
+        "Egg Bomb": "Removes one marked number from all opponents.",
+        "Feather Shield": "Protects one completed Bingo line from disruption.",
 
         // 🐍 Snake
-        "Venom Bite": "Injects venom that deals damage over time.",
-        "Coil Trap": "Immobilizes an enemy by wrapping around them.",
-        "Heat Sense": "Detects hidden or invisible enemies."
+        "Venom Bite": "Freezes a selected opponent for 5 seconds.",
+        "Coil Trap": "Blocks an opponent from using their power.",
+        "Heat Sense": "Reveals all opponents' board progress for 10 seconds."
     };
 
     const avatarEmojiVariants = {
@@ -205,7 +206,8 @@ const Power = () => {
             username: user?.username, // replace later with real user
             avatar: user?.avatar,
             size: playerCount, // 2,3,4,5 selected earlier
-            gameType: 'power'
+            gameType: 'power',
+            selectedPower: avatarPowers[user?.avatar][powerSelected],
         });
     };
 
@@ -276,7 +278,7 @@ const Power = () => {
 
 
                     <View style={styles.powerSelection}>
-                        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Powers:</Text>    
+                        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18, alignSelf: 'center' }}>Powers:</Text>
                         {avatarPowers[user?.avatar]?.map((powerName, index) => (
                             <View key={index} style={{ width: 50 }}>
                                 <TouchableOpacity
@@ -301,9 +303,10 @@ const Power = () => {
                             </View>
                         ))}
                     </View>
-                    <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} disabled={true}>
-                        <Text style={{ color: "#000", fontWeight: "bold" }} >Ready (Coming Soon)</Text>
+                    <TouchableOpacity style={styles.readyBtn} onPress={() => { setReady(true); handleReady(); }} >
+                        <Text style={{ color: "#000", fontWeight: "bold" }} >Ready</Text>
                     </TouchableOpacity>
+                    {/* <Text style={{ position: 'absolute', bottom: 80, color: "#fff", fontSize: 12 }}>(Coming Soon)</Text> */}
                     {/* <TouchableOpacity style={styles.startBtn} onPress={() => setGameStarted(true)}>
                         <Text style={{ color: "#fff", fontWeight: "bold" }}>Start Game</Text>
                     </TouchableOpacity> */}
@@ -312,13 +315,19 @@ const Power = () => {
             {gameStarted && ready &&
                 (
                     <>
-                        <GameScreen
+                        <GameScreenPower
                             players={playerCount}
                             matchedPlayers={matchedPlayers}
                             roomCode={roomCode}
                             myId={user._id}
                             user={user}
-                            gameType="power" />
+                            gameType="power"
+                            selectedPower={
+                                avatarPowers[user?.avatar][powerSelected]
+                            }
+                            selectedPowerAvatar={avatarEmojiVariants[user.avatar][powerSelected]
+                            }
+                        />
                     </>
 
                 )}

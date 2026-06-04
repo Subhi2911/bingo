@@ -143,7 +143,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
               {/* Header */}
               <View style={styles.header}>
                 <View style={styles.avatar}>
-                  <Text style={{fontSize:30}}>{otherUser?.avatar}</Text>
+                  <Text style={{fontSize:30}}> {otherUser?.avatar.trim()}</Text>
                 </View>
                 <View>
                   <Text style={styles.name}>{otherUser.username}</Text>

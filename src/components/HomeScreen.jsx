@@ -88,6 +88,10 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
             console.error(error);
         }
     };
+    const canClaim =
+        user &&
+        (!user.lastDailyClaim ||
+            Date.now() - user.lastDailyClaim >= 24 * 60 * 60 * 1000);
 
     return (
 
@@ -103,13 +107,73 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
             >
                 {/* DAILY REWARD */}
                 <Pressable style={styles.rewardCard} onPress={() => { setShowRewardsModal(true); }}>
-                    <Text style={styles.rewardTitle}>Daily Reward</Text>
-                    <Text style={styles.rewardSub}>
-                        +{dailyReward[user?.daysLoggedIn % 7 || 1]} available
-                    </Text>
-                    <TouchableOpacity style={styles.claimBtn} onPress={handleClaimRewards}>
-                        <Text style={{ color: "#000", fontWeight: "bold" }} >Claim</Text>
-                    </TouchableOpacity>
+                    {/* DAILY REWARD */}
+                    <View style={styles.rewardCard}>
+
+                        {/* Top row: info + button */}
+                        <View style={styles.rewardTopRow}>
+                            <View>
+                                <View style={styles.rewardTag}>
+                                    <Icon name="calendar" size={11} color="#FFD67A" />
+                                    <Text style={styles.rewardTagText}>Daily Reward</Text>
+                                </View>
+                                <Text style={styles.rewardVal}>
+                                    {canClaim
+                                        ? dailyReward[user?.daysLoggedIn % 7 || 1]
+                                        : dailyReward[(user?.daysLoggedIn + 1) % 7 || 1]}
+                                </Text>
+                                <Text style={styles.rewardDesc}>
+                                    {canClaim
+                                        ? `Day ${user?.daysLoggedIn || 1} available`
+                                        : `Day ${(user?.daysLoggedIn || 1) + 1} up next`}
+                                </Text>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.claimBtn, !canClaim && styles.claimBtnOff]}
+                                onPress={handleClaimRewards}
+                                disabled={!canClaim}
+                            >
+                                <Icon name={canClaim ? "gift" : "clock"} size={13} color={canClaim ? "#1E1740" : "#A9A6C1"} />
+                                <Text style={[styles.claimBtnText, !canClaim && styles.claimBtnTextOff]}>
+                                    {canClaim ? "Claim" : "Tomorrow"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* 7-day pip tracker */}
+                        <View style={styles.daysTrack}>
+                            {[1, 2, 3, 4, 5, 6, 7].map((d, i) => {
+                                const done = d < (user?.daysLoggedIn || 1) || (d === user?.daysLoggedIn && !canClaim);
+                                const today = d === (user?.daysLoggedIn || 1) && canClaim;
+                                return (
+                                    <React.Fragment key={d}>
+                                        {i > 0 && (
+                                            <View style={[styles.dayLine, (d - 1) < (user?.daysLoggedIn || 1) && styles.dayLineDone]} />
+                                        )}
+                                        <View style={styles.dayItem}>
+                                            <View style={[styles.dayCircle, done && styles.dayCircleDone, today && styles.dayCircleToday]}>
+                                                {done
+                                                    ? <Icon name="check" size={10} color="#1E1740" />
+                                                    : <Text style={[styles.dayNum, today && { color: "#FFD67A" }]}>{d}</Text>}
+                                            </View>
+                                            <Text style={styles.dayLbl}>{"MTWTFSS"[i]}</Text>
+                                        </View>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </View>
+
+                        {/* Streak line */}
+                        <View style={styles.streakRow}>
+                            <View style={styles.streakDot} />
+                            <Text style={styles.streakText}>
+                                <Text style={{ color: GOLD }}>{user?.daysLoggedIn || 1}-day streak</Text>
+                                {" — keep it up!"}
+                            </Text>
+                        </View>
+
+                    </View>
                 </Pressable>
 
                 {/* HEADER */}
@@ -251,19 +315,79 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: 20,
     },
-    claimBtn: {
-        backgroundColor: "#FFD67A",
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 20,
-        height: 40,
-        width: 80,
-        fontSize: 26,
-        justifyContent: 'center',
-        alignItems: 'center',
-        alignSelf: 'center',
-        marginTop: 3
+    rewardCard: {
+        backgroundColor: CARD,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: BORDER,
+        overflow: "hidden",
+        marginBottom: 20,
     },
+    rewardTopRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#3A3460",
+    },
+    rewardTag: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        backgroundColor: "rgba(255,214,122,0.12)",
+        borderWidth: 0.5,
+        borderColor: "rgba(255,214,122,0.35)",
+        borderRadius: 20,
+        paddingHorizontal: 9,
+        paddingVertical: 2,
+        alignSelf: "flex-start",
+        marginBottom: 6,
+    },
+    rewardTagText: { color: "#FFD67A", fontSize: 11 },
+    rewardVal: { color: GOLD, fontSize: 20, fontWeight: "500", marginBottom: 2 },
+    rewardDesc: { color: SUB, fontSize: 12 },
+    claimBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        backgroundColor: GOLD,
+        borderRadius: 22,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+    },
+    claimBtnOff: { backgroundColor: "#3A3460" },
+    claimBtnText: { color: "#1E1740", fontSize: 13, fontWeight: "500" },
+    claimBtnTextOff: { color: SUB },
+    daysTrack: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        paddingTop: 12,
+        paddingBottom: 4,
+    },
+    dayItem: { alignItems: "center", gap: 4 },
+    dayLine: { flex: 1, height: 2, backgroundColor: "#3A3460", marginBottom: 14 },
+    dayLineDone: { backgroundColor: GOLD },
+    dayCircle: {
+        width: 30, height: 30, borderRadius: 15,
+        borderWidth: 1.5, borderColor: BORDER,
+        backgroundColor: "#1E1740",
+        alignItems: "center", justifyContent: "center",
+    },
+    dayCircleDone: { backgroundColor: GOLD, borderColor: GOLD },
+    dayCircleToday: { borderWidth: 2, borderColor: GOLD },
+    dayNum: { fontSize: 11, color: SUB },
+    dayLbl: { fontSize: 9, color: "#6B6790" },
+    streakRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingBottom: 12,
+    },
+    streakDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD },
+    streakText: { fontSize: 11, color: SUB },
     username: {
         color: TEXT,
         fontSize: 22,
@@ -373,18 +497,6 @@ const styles = StyleSheet.create({
     },
     playHint: { color: SUB, fontSize: 12 },
 
-    /* REWARD */
-    rewardCard: {
-        backgroundColor: CARD,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: BORDER,
-        marginBottom: 20,
-        alignItems: "center",
-    },
-    rewardTitle: { color: GOLD, fontWeight: "bold" },
-    rewardSub: { color: SUB, marginTop: 4 },
 
     actionsRow: {
         flexDirection: "row",

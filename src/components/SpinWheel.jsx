@@ -10,6 +10,7 @@ import {
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BACKEND_URL } from "../config/backend";
+import { useAuth } from "../context/AuthContext";
 
 const COLORS = [
     "#FF6B6B",
@@ -32,6 +33,7 @@ export default function SpinWheelModal({ isOpen, onClose }) {
     const [message, setMessage] = useState("");
     const spinAnim = useRef(new Animated.Value(0)).current;
     const currentRotation = useRef(0);
+    const { user, setUser } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
@@ -59,6 +61,11 @@ export default function SpinWheelModal({ isOpen, onClose }) {
         });
 
         const result = await res.json();
+        setUser(prev => ({
+            ...prev,
+            money: result.coins,
+            totalXp: result.TotalXp,
+        }));
 
         if (res.status !== 200) {
             setMessage(result.message);

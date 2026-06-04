@@ -203,7 +203,7 @@ const Dashboard = () => {
                                         style={styles.avatarContainer}
                                         onPress={() => setProfileModalVisible(true)}
                                     >
-                                        <View style={[styles.avatar, { backgroundColor: '#000' }]}>
+                                        <View style={[styles.avatar, { backgroundColor: '#000' ,justifyContent:"center",alignItems:"center" }]}>
                                             <Text style={{ fontSize: 30 }}>{user?.avatar}</Text>
                                         </View>
                                     </TouchableOpacity>
@@ -231,7 +231,7 @@ const Dashboard = () => {
 
                                 {/*Search Bar */}
                                 {(selected === 'home' || selected === 'search') &&
-                                    <View style={styles.searchBar}>
+                                    <View style={[styles.searchBar, { justifyContent: "space-between", marginBottom: 10, marginTop: 0 }]}>
                                         <Icon name="search" size={16} color="#C6C3E0" />
                                         <TextInput
                                             placeholder="Search by Player ID"
@@ -240,6 +240,9 @@ const Dashboard = () => {
                                             onChangeText={setQuery}
                                             style={styles.searchInput}
                                         />
+                                        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: "#C6C3E0", justifyContent: "center", alignItems: "center", opacity: query.length > 0 ? 1 : 0 }}>
+                                            <Icon name="cross" size={16} color="#C6C3E0" onPress={() => setQuery("")} />
+                                        </View>
                                     </View>
 
                                 }
