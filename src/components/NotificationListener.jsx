@@ -1,23 +1,60 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+import notifee, { AndroidImportance } from "@notifee/react-native";
 import { useSocket } from "../context/SocketContext";
 
 export default function NotificationListener() {
-    const socketRef = useSocket();
+  const socketRef = useSocket();
+  const channelCreated = useRef(false);
+
+  useEffect(() => {
     const socket = socketRef?.socket;
-    const [notifications, setNotifications] = useState([]);
-    const [hasUnread, setHasUnread] = useState(false);
+    if (!socket) return;
 
-    useEffect(() => {
-        
-        socket.on("newNotification", (notification) => {
-            setNotifications(prev => [notification, ...prev]);
-            setHasUnread(true); // red dot on bell
-            console.log("New Notification:", notification);
-        });
+    let handler;
 
-        return () => socket.off("newNotification");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [socket]);
+    const setup = async () => {
+      try {
+        // Create channel only once
+        if (!channelCreated.current) {
+          await notifee.createChannel({
+            id: "messages",
+            name: "Messages",
+            importance: AndroidImportance.HIGH,
+          });
+          channelCreated.current = true;
+        }
 
-    return { notifications, hasUnread, setHasUnread };
+        handler = async (data) => {
+          console.log("Notification received:", data);
+
+          try {
+            await notifee.displayNotification({
+              title: data.title,
+              body: data.body,
+              android: {
+                channelId: "messages",
+                pressAction: { id: "default" },
+              },
+            });
+          } catch (err) {
+            console.log("displayNotification error:", err);
+          }
+        };
+
+        socket.on("newNotification", handler);
+      } catch (err) {
+        console.log("NotificationListener error:", err);
+      }
+    };
+
+    setup();
+
+    return () => {
+      if (socket && handler) {
+        socket.off("newNotification", handler);
+      }
+    };
+  }, [socketRef?.socket]);
+
+  return null;
 }

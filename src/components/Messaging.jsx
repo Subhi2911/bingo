@@ -17,7 +17,7 @@ const Messaging = () => {
     const [loadingChats, setLoadingChats] = useState(true);
     const socketRef = useSocket();
     const socket = socketRef?.socket;
-    const onlineUsers= socketRef?.onlineUsers
+    const onlineUsers = socketRef?.onlineUsers
     //const [isOnline, setIsOnline] = useState(false);
 
     useEffect(() => {
@@ -335,7 +335,9 @@ const Messaging = () => {
                     </View>
 
                     <Text style={{ color: "#555" }}>
-                        {item?.lastMessage?.text || "No messages yet"}
+                        {item?.lastMessage?.text.length > 20
+                            ? `${item?.lastMessage?.text.substring(0, 20)}...`
+                            : item?.lastMessage?.text || "No messages yet"}
                     </Text>
                 </View>
 

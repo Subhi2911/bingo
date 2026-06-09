@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import { StyleSheet, Text, View, Image, Pressable, TextInput, ImageBackground } from 'react-native'
+import { StyleSheet, Text, View, Pressable, ImageBackground, StatusBar } from 'react-native'
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Signup from './Signup';
@@ -22,92 +22,184 @@ const Home = () => {
                 navigation.navigate("Dashboard");
             } else {
                 setLoggedIn(false);
-
             }
         };
-
         checkAuth();
     }, [navigation]);
 
-
     React.useEffect(() => {
-        const timer = setTimeout(() => {
-            setLoading(false);
-        }, 3000);
+        const timer = setTimeout(() => setLoading(false), 3000);
         return () => clearTimeout(timer);
     }, []);
 
     return (
-        <View >
-            {<>
-                {loading &&
-                    <Intro/>
-                }
-                {!loading && !loggedIn && (
-                    <ImageBackground
-                        source={require('../images/RegisterPage.png')}
-                        style={{ width: '100%', height: '100%' }}
-                    >
-                        <>
-                            <View style={styles.register}>
-                                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#F8B55F', maarginTop: '10' }}>Welcome to Bingo App!</Text>
-                                <View>
-                                    <View style={{ flexDirection: 'row', width: '100%' }}>
-                                        <Pressable style={[styles.view, view === 1 ? { backgroundColor: '#F8B55F' } : {}]} onPress={() => setView(1)}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500', color: '#FFFFFF' }}>Register</Text>
-                                        </Pressable>
-                                        <Pressable style={[styles.view, view === 2 ? { backgroundColor: '#F8B55F' } : {}]} onPress={() => setView(2)}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500', color: '#FFFFFF' }}>Login</Text>
-                                        </Pressable>
-                                    </View>
-                                    <View>
-                                        {view === 1 &&
-                                            <Signup />}
-                                        {view === 2 &&
-                                            <Login />}
-                                    </View>
-                                </View>
+        <View style={{ flex: 1 }}>
+            <StatusBar barStyle="light-content" backgroundColor="#4A2070" />
+            {loading && <Intro />}
+
+            {!loading && !loggedIn && (
+                <ImageBackground
+                    source={require('../images/RegisterPage.png')}
+                    style={styles.bg}
+                    imageStyle={{ opacity: 0.18 }}
+                >
+                    {/* Decorative orbs */}
+                    <View style={styles.orbTopRight} />
+                    <View style={styles.orbBottomLeft} />
+
+                    <SafeAreaView style={styles.safeArea}>
+                        {/* Brand header */}
+                        <View style={styles.brandHeader}>
+                            <View style={styles.logoBox}>
+                                <Text style={styles.logoEmoji}>🎱</Text>
                             </View>
-
-                        </>
-                    </ImageBackground>
-                )}
-                {
-                    loggedIn && (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000000' }}>You are logged in!</Text>
+                            <Text style={styles.tagline}>Let's get you started</Text>
+                            <Text style={styles.brandTitle}>Welcome to Bingo!</Text>
                         </View>
-                    )
-                }
-            </>}
-        </View>
-    )
-}
 
-export default Home
+                        {/* Tab switcher */}
+                        <View style={styles.tabPill}>
+                            <Pressable
+                                style={[styles.tabItem, view === 1 && styles.tabItemActive]}
+                                onPress={() => setView(1)}
+                            >
+                                <Text style={[styles.tabText, view === 1 && styles.tabTextActive]}>Register</Text>
+                            </Pressable>
+                            <Pressable
+                                style={[styles.tabItem, view === 2 && styles.tabItemActive]}
+                                onPress={() => setView(2)}
+                            >
+                                <Text style={[styles.tabText, view === 2 && styles.tabTextActive]}>Log in</Text>
+                            </Pressable>
+                        </View>
+
+                        {/* Form card */}
+                        <View style={styles.formCard}>
+                            {view === 1 ? <Signup /> : <Login />}
+                        </View>
+
+                        <Text style={styles.footerNote}>
+                            By continuing you agree to our Terms of Service
+                        </Text>
+                    </SafeAreaView>
+                </ImageBackground>
+            )}
+
+            {loggedIn && (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000' }}>You are logged in!</Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+export default Home;
 
 const styles = StyleSheet.create({
-    overlay: {
-        display: 'flex',
-        width: '100%',
-        height: '100%',
+    bg: {
+        flex: 1,
+        backgroundColor: '#5B2D8E',
+    },
+    orbTopRight: {
+        position: 'absolute',
+        top: -70,
+        right: -70,
+        width: 240,
+        height: 240,
+        borderRadius: 120,
+        backgroundColor: 'rgba(248,181,95,0.08)',
+    },
+    orbBottomLeft: {
+        position: 'absolute',
+        bottom: 80,
+        left: -90,
+        width: 260,
+        height: 260,
+        borderRadius: 130,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+    },
+    safeArea: {
+        flex: 1,
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        paddingBottom: 24,
+    },
+    brandHeader: {
+        alignItems: 'center',
+        marginBottom: 28,
+        marginTop: 8,
+    },
+    logoBox: {
+        width: 60,
+        height: 60,
+        borderRadius: 20,
+        backgroundColor: 'rgba(248,181,95,0.18)',
+        borderWidth: 1,
+        borderColor: 'rgba(248,181,95,0.3)',
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        //backgroundColor: '#3D365C',
-        zIndex: 10,
-
+        marginBottom: 14,
     },
-    register: {
-        height: '100%',
-        widht: '100%',
-        alignItems: 'center',
-        //backgroundColor: '#7C4585',
-        zIndex: 10,
-        paddingTop: 50
+    logoEmoji: {
+        fontSize: 30,
     },
-    view: {
-        marginTop: 20,
-        marginRight: 10,
-        padding: 10,
-    }
-})
+    tagline: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.45)',
+        letterSpacing: 0.3,
+        marginBottom: 4,
+    },
+    brandTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#F8B55F',
+        letterSpacing: -0.3,
+    },
+    tabPill: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: 14,
+        padding: 4,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    tabItem: {
+        flex: 1,
+        paddingVertical: 11,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    tabItemActive: {
+        backgroundColor: '#F8B55F',
+        shadowColor: '#F8B55F',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.45)',
+    },
+    tabTextActive: {
+        color: '#fff',
+    },
+    formCard: {
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        padding: 20,
+        flex: 1,
+    },
+    footerNote: {
+        textAlign: 'center',
+        color: 'rgba(255,255,255,0.25)',
+        fontSize: 11,
+        marginTop: 16,
+        letterSpacing: 0.2,
+    },
+});

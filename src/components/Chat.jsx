@@ -50,6 +50,16 @@ const Chat = ({ route }) => {
     }
     //const [text, setText] = useState("");
 
+    //active chat management
+    useEffect(() => {
+        socket.emit("active_chat", { chatId });
+
+        return () => {
+            socket.emit("leave_active_chat", { chatId });
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chatId]);
+
     useEffect(() => {
         if (!flatListRef.current) return;
 

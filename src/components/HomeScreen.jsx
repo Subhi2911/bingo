@@ -108,72 +108,72 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                 {/* DAILY REWARD */}
                 <Pressable style={styles.rewardCard} onPress={() => { setShowRewardsModal(true); }}>
                     {/* DAILY REWARD */}
-                    <View style={styles.rewardCard}>
 
-                        {/* Top row: info + button */}
-                        <View style={styles.rewardTopRow}>
-                            <View>
-                                <View style={styles.rewardTag}>
-                                    <Icon name="calendar" size={11} color="#FFD67A" />
-                                    <Text style={styles.rewardTagText}>Daily Reward</Text>
-                                </View>
-                                <Text style={styles.rewardVal}>
-                                    {canClaim
-                                        ? dailyReward[user?.daysLoggedIn % 7 || 1]
-                                        : dailyReward[(user?.daysLoggedIn + 1) % 7 || 1]}
-                                </Text>
-                                <Text style={styles.rewardDesc}>
-                                    {canClaim
-                                        ? `Day ${user?.daysLoggedIn || 1} available`
-                                        : `Day ${(user?.daysLoggedIn || 1) + 1} up next`}
-                                </Text>
+
+                    {/* Top row: info + button */}
+                    <View style={styles.rewardTopRow}>
+                        <View>
+                            <View style={styles.rewardTag}>
+                                <Icon name="calendar" size={11} color="#FFD67A" />
+                                <Text style={styles.rewardTagText}>Daily Reward</Text>
                             </View>
-
-                            <TouchableOpacity
-                                style={[styles.claimBtn, !canClaim && styles.claimBtnOff]}
-                                onPress={handleClaimRewards}
-                                disabled={!canClaim}
-                            >
-                                <Icon name={canClaim ? "gift" : "clock"} size={13} color={canClaim ? "#1E1740" : "#A9A6C1"} />
-                                <Text style={[styles.claimBtnText, !canClaim && styles.claimBtnTextOff]}>
-                                    {canClaim ? "Claim" : "Tomorrow"}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* 7-day pip tracker */}
-                        <View style={styles.daysTrack}>
-                            {[1, 2, 3, 4, 5, 6, 7].map((d, i) => {
-                                const done = d < (user?.daysLoggedIn || 1) || (d === user?.daysLoggedIn && !canClaim);
-                                const today = d === (user?.daysLoggedIn || 1) && canClaim;
-                                return (
-                                    <React.Fragment key={d}>
-                                        {i > 0 && (
-                                            <View style={[styles.dayLine, (d - 1) < (user?.daysLoggedIn || 1) && styles.dayLineDone]} />
-                                        )}
-                                        <View style={styles.dayItem}>
-                                            <View style={[styles.dayCircle, done && styles.dayCircleDone, today && styles.dayCircleToday]}>
-                                                {done
-                                                    ? <Icon name="check" size={10} color="#1E1740" />
-                                                    : <Text style={[styles.dayNum, today && { color: "#FFD67A" }]}>{d}</Text>}
-                                            </View>
-                                            <Text style={styles.dayLbl}>{"MTWTFSS"[i]}</Text>
-                                        </View>
-                                    </React.Fragment>
-                                );
-                            })}
-                        </View>
-
-                        {/* Streak line */}
-                        <View style={styles.streakRow}>
-                            <View style={styles.streakDot} />
-                            <Text style={styles.streakText}>
-                                <Text style={{ color: GOLD }}>{user?.daysLoggedIn || 1}-day streak</Text>
-                                {" — keep it up!"}
+                            <Text style={styles.rewardVal}>
+                                {canClaim
+                                    ? dailyReward[user?.daysLoggedIn % 7 || 1]
+                                    : dailyReward[(user?.daysLoggedIn + 1) % 7 || 1]}
+                            </Text>
+                            <Text style={styles.rewardDesc}>
+                                {canClaim
+                                    ? `Day ${user?.daysLoggedIn || 1} available`
+                                    : `Day ${(user?.daysLoggedIn || 1) + 1} up next`}
                             </Text>
                         </View>
 
+                        <TouchableOpacity
+                            style={[styles.claimBtn, !canClaim && styles.claimBtnOff]}
+                            onPress={handleClaimRewards}
+                            disabled={!canClaim}
+                        >
+                            <Icon name={canClaim ? "gift" : "clock"} size={13} color={canClaim ? "#1E1740" : "#A9A6C1"} />
+                            <Text style={[styles.claimBtnText, !canClaim && styles.claimBtnTextOff]}>
+                                {canClaim ? "Claim" : "Tomorrow"}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
+
+                    {/* 7-day pip tracker */}
+                    <View style={styles.daysTrack}>
+                        {[1, 2, 3, 4, 5, 6, 7].map((d, i) => {
+                            const done = d < (user?.daysLoggedIn || 1) || (d === user?.daysLoggedIn && !canClaim);
+                            const today = d === (user?.daysLoggedIn || 1) && canClaim;
+                            return (
+                                <React.Fragment key={d}>
+                                    {i > 0 && (
+                                        <View style={[styles.dayLine, (d - 1) < (user?.daysLoggedIn || 1) && styles.dayLineDone]} />
+                                    )}
+                                    <View style={styles.dayItem}>
+                                        <View style={[styles.dayCircle, done && styles.dayCircleDone, today && styles.dayCircleToday]}>
+                                            {done
+                                                ? <Icon name="check" size={10} color="#1E1740" />
+                                                : <Text style={[styles.dayNum, today && { color: "#FFD67A" }]}>{d}</Text>}
+                                        </View>
+                                        <Text style={styles.dayLbl}>{"MTWTFSS"[i]}</Text>
+                                    </View>
+                                </React.Fragment>
+                            );
+                        })}
+                    </View>
+
+                    {/* Streak line */}
+                    <View style={styles.streakRow}>
+                        <View style={styles.streakDot} />
+                        <Text style={styles.streakText}>
+                            <Text style={{ color: GOLD }}>{user?.daysLoggedIn || 1}-day streak</Text>
+                            {" — keep it up!"}
+                        </Text>
+                    </View>
+
+
                 </Pressable>
 
                 {/* HEADER */}
