@@ -24,19 +24,19 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
     vibration: true,
   });
 
-  await notifee.displayNotification({
-    title: remoteMessage.notification?.title || remoteMessage.data?.title || 'New Message',
-    body: remoteMessage.notification?.body || remoteMessage.data?.body || '',
-    android: {
-      channelId,
-      importance: AndroidImportance.HIGH,
-      sound: 'default',
-      pressAction: {
-        id: 'default',
-        launchActivity: 'default',
-      },
-    },
-  });
+  // await notifee.displayNotification({
+  //   title: remoteMessage.notification?.title || remoteMessage.data?.title || 'New Message',
+  //   body: remoteMessage.notification?.body || remoteMessage.data?.body || '',
+  //   android: {
+  //     channelId,
+  //     importance: AndroidImportance.HIGH,
+  //     sound: 'default',
+  //     pressAction: {
+  //       id: 'default',
+  //       launchActivity: 'default',
+  //     },
+  //   },
+  // });
 });
 
 AppRegistry.registerComponent(appName, () => App);

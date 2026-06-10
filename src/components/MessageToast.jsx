@@ -1,13 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Animated, StyleSheet } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { View, Text, Animated, StyleSheet, TouchableOpacity } from "react-native";
 import { useSocket } from "../context/SocketContext";
 
-const CARD   = "#4A1D52";  // Deep plum
+const CARD = "#4A1D52";  // Deep plum
 const BORDER = "#C026D3";  // Bright magenta
-const GOLD   = "#F9A8D4";  // Soft pink highlight
-const SUB    = "#F5D0FE";  // Light pink text
-const DEEP   = "#2A0E33";  // Very dark purple
+const GOLD = "#F9A8D4";  // Soft pink highlight
+const SUB = "#F5D0FE";  // Light pink text
+const DEEP = "#2A0E33";  // Very dark purple
 
 export default function MessageToast() {
     const socketRef = useSocket();
@@ -15,13 +16,16 @@ export default function MessageToast() {
 
     const [msg, setMsg] = useState(null);
     const slideAnim = useRef(new Animated.Value(-80)).current;
-    const fadeAnim  = useRef(new Animated.Value(0)).current;
-    const animRef   = useRef(null);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const animRef = useRef(null);
+    const navigation = useNavigation();
 
     useEffect(() => {
+        console.log('llll', socket, 'socketRef', socketRef);
         if (!socket) return;
 
         const handler = (data) => {
+            console.log("got data", data);
             if (data.type !== "message") return;
 
             // Cancel any running animation before starting a new one
@@ -78,6 +82,7 @@ export default function MessageToast() {
     if (!msg) return null;
 
     return (
+
         <Animated.View
             style={[
                 styles.toast,
@@ -86,30 +91,40 @@ export default function MessageToast() {
                     transform: [{ translateY: slideAnim }],
                 },
             ]}
+
         >
-            {/* Gold left accent bar */}
-            <View style={styles.accentBar} />
+            <TouchableOpacity
+                onPress={() => {
+                    console.log("Toast clicked", msg.chatId);
+                    navigation.navigate("Chat", { chatId: msg.chatId });
+                }}
+                style={styles.container}
+            >
+                {/* Gold left accent bar */}
+                <View style={styles.accentBar}   />
 
-            {/* Avatar */}
-            <View style={styles.avatarRing}>
-                <Text style={styles.avatarEmoji}>
-                    {msg.sender?.avatar || "🐟"}
-                </Text>
-            </View>
+                {/* Avatar */}
+                <View style={styles.avatarRing}>
+                    <Text style={styles.avatarEmoji}>
+                        {msg.sender?.avatar || "🐟"}
+                    </Text>
+                </View>
 
-            {/* Text */}
-            <View style={styles.textContainer}>
-                <Text style={styles.name} numberOfLines={1}>
-                    {msg.sender?.username || msg.title}
-                </Text>
-                <Text style={styles.message} numberOfLines={2}>
-                    {msg.body}
-                </Text>
-            </View>
+                {/* Text */}
+                <View style={styles.textContainer}>
+                    <Text style={styles.name} numberOfLines={1}>
+                        {msg.sender?.username || msg.title}
+                    </Text>
+                    <Text style={styles.message} numberOfLines={2}>
+                        {msg.body}
+                    </Text>
+                </View>
 
-            {/* Live dot */}
-            <View style={styles.liveDot} />
-        </Animated.View>
+                {/* Live dot */}
+                <View style={styles.liveDot} />
+            </TouchableOpacity>
+        </Animated.View >
+
     );
 }
 
@@ -133,9 +148,17 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },
-        zIndex: 9999,
+        zIndex: 99999,
         overflow: "hidden",
         marginHorizontal: 12,
+    },
+    container:{
+        flexDirection:'row',
+        alignItems: "center",
+        padding:0,
+        margin:0,
+        gap:12,
+
     },
     // Left gold bar
     accentBar: {
@@ -147,6 +170,7 @@ const styles = StyleSheet.create({
         backgroundColor: GOLD,
         borderTopLeftRadius: 18,
         borderBottomLeftRadius: 18,
+        marginRight:2,
     },
     avatarRing: {
         width: 44,

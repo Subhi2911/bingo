@@ -26,7 +26,6 @@ import { AuthProvider } from './src/context/AuthContext.js';
 import NotificationPanel from './src/components/NotificationPanel.jsx';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance } from '@notifee/react-native';
-import NotificationListener from './src/components/NotificationListener.jsx';
 import MessageToast from './src/components/MessageToast.jsx';
 
 const Stack = createNativeStackNavigator();
@@ -140,7 +139,6 @@ const App = () => {
       <SocketProvider>
         <NotificationProvider>
           <NavigationContainer>
-            <NotificationListener />
             <MessageToast />
             <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Home" component={Home} />

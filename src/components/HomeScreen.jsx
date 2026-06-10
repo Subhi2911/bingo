@@ -88,10 +88,19 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
             console.error(error);
         }
     };
+    const lastClaim = user?.lastDailyClaim
+        ? new Date(user.lastDailyClaim).getTime()
+        : null;
+
     const canClaim =
-        user &&
-        (!user.lastDailyClaim ||
-            Date.now() - user.lastDailyClaim >= 24 * 60 * 60 * 1000);
+        !lastClaim ||
+        Date.now() - lastClaim >= 24 * 60 * 60 * 1000;
+        
+    useEffect(() => {
+        console.log(user?.lastDailyClaim);
+        console.log(Date.now() - user?.lastDailyClaim);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
 

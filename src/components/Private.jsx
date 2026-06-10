@@ -19,6 +19,7 @@ import { useSocket } from '../context/SocketContext';
 import { BACKEND_URL } from '../config/backend';
 import GameScreen from './GameScreen';
 import PrivateRoomBoard from './PrivateRoomBoard';
+import GameScreenPower from './GameScreenPower';
 
 const PrivateRoom = () => {
     const navigation = useNavigation();
@@ -43,6 +44,7 @@ const PrivateRoom = () => {
     const [passwordDigits, setPasswordDigits] = useState(['', '', '', '']);
     const [ready, setReady] = useState(false);
     const [roomCreated, setRoomCreated] = useState(initialRoomCreated || false);
+    const [powerSelected, setPowerSelected] = useState(1);
 
     // ROOM
     const [roomCode, setRoomCode] = useState(initialRoomCode || null);
@@ -69,6 +71,145 @@ const PrivateRoom = () => {
     const finalPassword = usePassword ? passwordDigits.join('') : null;
     const joinFinalPassword = joinPasswordDigits.join('');
     const me = matchedPlayers.find(p => p.userId === user?._id);
+
+    const avatarPowers = {
+        "🐵": [
+            "Swift Dash",
+            "Tree Leap",
+            "Mischief Steal"
+        ],
+        "🐶": [
+            "Loyal Guard",
+            "Tracker Sense",
+            "Pack Howl"
+        ],
+        "🐱": [
+            "Shadow Step",
+            "Silent Claws",
+            "Nine Lives"
+        ],
+        "🦁": [
+            "King’s Roar",
+            "Dominance",
+            "Fear Aura"
+        ],
+        "🐯": [
+            "Ambush Pounce",
+            "Blood Frenzy",
+            "Predator Focus"
+        ],
+        "🦊": [
+            "Illusion Clone",
+            "Trick Swap",
+            "Mind Games"
+        ],
+        "🐮": [
+            "Iron Hide",
+            "Ground Slam",
+            "Steadfast"
+        ],
+        "🐭": [
+            "Quick Escape",
+            "Tiny Target",
+            "Sneak Bite"
+        ],
+        "🐴": [
+            "Charge Run",
+            "Endurance",
+            "Hoof Strike"
+        ],
+        "🐸": [
+            "Mega Jump",
+            "Sticky Tongue",
+            "Poison Skin"
+        ],
+        "🐔": [
+            "Panic Flap",
+            "Egg Bomb",
+            "Feather Shield"
+        ],
+        "🐍": [
+            "Venom Bite",
+            "Coil Trap",
+            "Heat Sense"
+        ]
+    };
+    const powerDetails = {
+        // 🐵 Monkey
+        "Swift Dash": "Instantly marks one random unmarked number on your board.",
+        "Tree Leap": "Marks two random unmarked numbers on your board.",
+        "Mischief Steal": "Copies the last number marked by an opponent.",
+
+        // 🐶 Dog
+        "Loyal Guard": "Protects you from all power effects for 15 seconds.",
+        "Tracker Sense": "Reveals the progress of a selected opponent's board.",
+        "Pack Howl": "Marks one additional random number on your board.",
+
+        // 🐱 Cat
+        "Shadow Step": "Instantly marks one unmarked number of your choice.",
+        "Silent Claws": "Removes one marked number from a random opponent.",
+        "Nine Lives": "Automatically cancels the first negative power used against you.",
+
+        // 🦁 Lion
+        "King’s Roar": "Disables all opponent powers for 10 seconds.",
+        "Dominance": "Marks two random unmarked numbers on your board.",
+        "Fear Aura": "Prevents a random opponent from marking numbers for 5 seconds.",
+
+        // 🐯 Tiger
+        "Ambush Pounce": "Removes one marked number from a selected opponent.",
+        "Blood Frenzy": "Marks two random numbers instantly.",
+        "Predator Focus": "Highlights the best available move toward completing a Bingo line.",
+
+        // 🦊 Fox
+        "Illusion Clone": "Hides your board progress from opponents for 15 seconds.",
+        "Trick Swap": "Swaps one marked and one unmarked number on an opponent's board.",
+        "Mind Games": "Disables a random opponent's power for one use.",
+
+        // 🐮 Cow
+        "Iron Hide": "Makes you immune to all power effects for 15 seconds.",
+        "Ground Slam": "Removes one marked number from every opponent.",
+        "Steadfast": "Prevents your marked numbers from being altered for 15 seconds.",
+
+        // 🐭 Mouse
+        "Quick Escape": "Removes any active negative effect on you.",
+        "Tiny Target": "Gives a 50% chance to ignore the next power used against you.",
+        "Sneak Bite": "Removes one marked number from a random opponent.",
+
+        // 🐴 Horse
+        "Charge Run": "Automatically marks the next number you choose.",
+        "Endurance": "Allows you to use your power twice in the same match.",
+        "Hoof Strike": "Freezes a selected opponent for 5 seconds.",
+
+        // 🐸 Frog
+        "Mega Jump": "Instantly marks any one number of your choice.",
+        "Sticky Tongue": "Steals one marked number from an opponent.",
+        "Poison Skin": "Reflects the next negative power back to its sender.",
+
+        // 🐔 Chicken
+        "Panic Flap": "Instantly marks one random number on your board.",
+        "Egg Bomb": "Removes one marked number from all opponents.",
+        "Feather Shield": "Protects one completed Bingo line from disruption.",
+
+        // 🐍 Snake
+        "Venom Bite": "Freezes a selected opponent for 5 seconds.",
+        "Coil Trap": "Blocks an opponent from using their power.",
+        "Heat Sense": "Reveals all opponents' board progress for 10 seconds."
+    };
+
+    const avatarEmojiVariants = {
+        "🐵": ["🙈", "🙉", "🙊"],
+        "🐶": ["🐕", "🦮", "🐕‍🦺"],
+        "🐱": ["🐈", "😾", "😺"],
+        "🦁": ["😺", "🐯", "👑"], // lion-styled vibe
+        "🐯": ["🐯", "🐅", "😾"],
+        "🦊": ["🦊", "🐕", "🧠"],
+        "🐮": ["🐄", "🐂", "🐃"],
+        "🐭": ["🐁", "🐀", "🐹"],
+        "🐴": ["🐎", "🦄", "🏇"],
+        "🐸": ["🐸‍⬛", "🐸", "🐸"],
+        "🐔": ["🐓", "🐣", "🐥"],
+        "🐍": ["🦎", "🐉", "🐲"]
+    };
 
     /* ===================== JOIN ROOM ===================== */
 
@@ -169,9 +310,9 @@ const PrivateRoom = () => {
             });
         };
 
-        const onPrivateRoomUpdated = ({ roomCode,players }) => {
+        const onPrivateRoomUpdated = ({ roomCode, players }) => {
             setMatchedPlayers(players);
-            console.log('aries',matchedPlayers)
+            console.log('aries', matchedPlayers)
         };
 
         socket.on('private_room_created', onRoomCreated);
@@ -196,7 +337,7 @@ const PrivateRoom = () => {
             socket.off('private_room_updated', onPrivateRoomUpdated);
             socket.off('private_game_started');
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket, user]);
 
     /* ===================== FETCH USER ===================== */
@@ -346,7 +487,7 @@ const PrivateRoom = () => {
     }, []);
 
     /* ===================== RENDER ===================== */
-    if (gameStarted && user) {
+    if (gameStarted && user && gameType!=='power') {
         return (
             <GameScreen
                 roomCode={roomCode}
@@ -355,6 +496,18 @@ const PrivateRoom = () => {
                 myId={user._id}
                 user={user}
                 gameType={gameType}
+            />
+        );
+    }else if (gameStarted && user && gameType === 'power') {
+        return (
+            <GameScreenPower
+                roomCode={roomCode}
+                players={playerCount}
+                matchedPlayers={matchedPlayers}
+                myId={user._id}
+                user={user}
+                gameType={gameType}
+                powerSelected={powerSelected}
             />
         );
     }
@@ -567,6 +720,39 @@ const PrivateRoom = () => {
                             onInviteFriend={handleInviteFriend}
                         />
 
+                        {/*powers*/}
+                        {gameType === 'power' && (
+                            <View style={styles.powerSelection}>
+                                <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
+                                    Powers:
+                                </Text>
+
+                                {avatarPowers[user?.avatar]?.map((powerName, index) => (
+                                    <View key={powerName} style={{ alignItems: "center", marginHorizontal: 8 }}>
+
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.power,
+                                                powerSelected === index && { backgroundColor: "#F8B55F" }
+                                            ]}
+                                            onPress={() => setPowerSelected(index)}
+                                            onLongPress={() =>
+                                                Alert.alert(powerName, powerDetails[powerName])
+                                            }
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={styles.powerEmoji}>
+                                                {avatarEmojiVariants[user.avatar]?.[index]}
+                                            </Text>
+                                        </TouchableOpacity>
+
+                                        <Text style={styles.powerText}>{powerName}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+
                         {/* INVITE */}
                         <View style={styles.inviteCard}>
                             <Text style={styles.roomCode}>ROOM CODE</Text>
@@ -582,15 +768,15 @@ const PrivateRoom = () => {
                         {/* READY BUTTON */}
                         {!isHost && !(matchedPlayers.find(p => p.userId === user?._id)?.ready) && (
                             <>
-                            {console.log(!isHost,matchedPlayers,!(matchedPlayers.find(p => p.userId === user?._id)?.ready) )}
-                            <TouchableOpacity
-                                style={[styles.mainBtn, { marginTop: 10 }]}
-                                onPress={handleReady}
-                            >
-                                <Text style={styles.mainText}>READY</Text>
-                            </TouchableOpacity>
-                            
-                        </>
+                                {console.log(!isHost, matchedPlayers, !(matchedPlayers.find(p => p.userId === user?._id)?.ready))}
+                                <TouchableOpacity
+                                    style={[styles.mainBtn, { marginTop: 10 }]}
+                                    onPress={handleReady}
+                                >
+                                    <Text style={styles.mainText}>READY</Text>
+                                </TouchableOpacity>
+
+                            </>
                         )}
 
                         {/* START GAME BUTTON FOR HOST */}
@@ -656,6 +842,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         backgroundColor: '#FFD36E',
         alignItems: 'center',
+        width: '70%',
     },
     mainText: {
         fontWeight: 'bold',
@@ -787,5 +974,32 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         color: '#FFD36E',
         fontSize: 16,
+    },
+
+    power: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#353432',
+        borderRadius: 25,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    powerSelection: {
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
+        alignItems: 'center',
+        width: '70%',
+        gap: 12,
+        marginTop: 10,
+        marginBottom: 10,
+    },
+    powerEmoji: {
+        fontSize: 24,
+    },
+    powerText: {
+        fontSize: 10,
+        textAlign: "center",
+        marginTop: 4,
+        color: "#fff",
     },
 });

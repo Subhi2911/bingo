@@ -203,7 +203,7 @@ const Dashboard = () => {
                                         style={styles.avatarContainer}
                                         onPress={() => setProfileModalVisible(true)}
                                     >
-                                        <View style={[styles.avatar, { backgroundColor: '#000' ,justifyContent:"center",alignItems:"center" }]}>
+                                        <View style={[styles.avatar, { backgroundColor: '#000', display:'flex' ,justifyContent:"center",alignItems:"center" }]}>
                                             <Text style={{ fontSize: 30 }}>{user?.avatar}</Text>
                                         </View>
                                     </TouchableOpacity>
@@ -385,6 +385,9 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignSelf: "center",
         marginBottom: 10,
+        display:'flex',
+        justifyContent:"center",
+        alignItems:"center"
     },
     name: {
         fontSize: 16,
