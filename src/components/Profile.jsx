@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { BACKEND_URL } from "../config/backend";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome5";
+import { showAlert2 } from "./CustomAlert2";
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const T = {
@@ -120,18 +121,22 @@ export default function Settings({ route }) {
 
     // ── Save avatar & reset stats ─────────────────────────────────────────────
     const confirmAvatarChange = () => {
-        Alert.alert(
-            "Reset your stats?",
-            "Changing your avatar will reset your wins, level, XP, stars, and streak to zero. This cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Change & Reset",
-                    style: "destructive",
-                    onPress: () => saveAvatar(),
-                },
-            ]
-        );
+        showAlert2({
+            type: 'confirm', title: "Reset your stats?", message: "Changing your avatar will reset your wins, level, XP, stars, and streak to zero. This cannot be undone.",
+            onConfirm: () => { saveAvatar() }
+        });
+        // Alert.alert(
+        //     "Reset your stats?",
+        //     "Changing your avatar will reset your wins, level, XP, stars, and streak to zero. This cannot be undone.",
+        //     [
+        //         { text: "Cancel", style: "cancel" },
+        //         {
+        //             text: "Change & Reset",
+        //             style: "destructive",
+        //             onPress: () => saveAvatar(),
+        //         },
+        //     ]
+        // );
     };
 
     const saveAvatar = async () => {
@@ -150,12 +155,13 @@ export default function Settings({ route }) {
             if (json.success) {
                 setUser((u) => ({ ...u, avatar: selectedAvatar }));
                 closeAvatarModal();
-                Alert.alert("Done!", "Avatar updated and stats reset.");
+                //Alert.alert("Done!", "Avatar updated and stats reset.");
+                showAlert2({ type: 'success', title: 'Done!', message: 'Avatar updated and stats reset' });
             } else {
-                Alert.alert("Error", json.error ?? "Something went wrong.");
+                showAlert2({ type: 'error', title: 'Error', message: json.error || 'Something went wrong' });
             }
         } catch (e) {
-            Alert.alert("Error", "Could not connect to server.");
+            showAlert2({ type: 'error', title: 'Error', message: 'Could not connect to server.' });
         } finally {
             setSaving(false);
         }
@@ -163,45 +169,67 @@ export default function Settings({ route }) {
 
     // ── Logout ────────────────────────────────────────────────────────────────
     const handleLogout = () => {
-        Alert.alert("Log out", "Are you sure you want to log out?", [
-            { text: "Cancel", style: "cancel" },
-            {
-                text: "Log out",
-                style: "destructive",
-                onPress: async () => {
-                    await AsyncStorage.removeItem("authToken");
-                    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-                },
+        showAlert2({
+            type: 'confirm', title: 'Log out', message: 'Are you sure you want to log out?', onConfirm: async () => {
+                await AsyncStorage.removeItem("authToken");
+                navigation.reset({ index: 0, routes: [{ name: "Login" }] });
             },
-        ]);
+        })
+        // Alert.alert("Log out", "Are you sure you want to log out?", [
+        //     { text: "Cancel", style: "cancel" },
+        //     {
+        //         text: "Log out",
+        //         style: "destructive",
+        //         onPress: async () => {
+        //             await AsyncStorage.removeItem("authToken");
+        //             navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+        //         },
+        //     },
+        // ]);
     };
 
     // ── Delete account ────────────────────────────────────────────────────────
     const handleDeleteAccount = () => {
-        Alert.alert(
-            "Delete account",
-            "This will permanently delete your account and all data. There is no going back.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const token = await AsyncStorage.getItem("authToken");
-                            await fetch(`${BACKEND_URL}/api/auth/delete-account`, {
-                                method: "DELETE",
-                                headers: { "auth-token": token },
-                            });
-                            await AsyncStorage.clear();
-                            navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-                        } catch {
-                            Alert.alert("Error", "Could not delete account.");
-                        }
-                    },
-                },
-            ]
-        );
+        showAlert2({
+            type: 'confirm', title: 'Delete account', message: 'This will permanently delete your account and all data. There is no going back.',
+            onConfirm: async () => {
+                try {
+                    const token = await AsyncStorage.getItem("authToken");
+                    await fetch(`${BACKEND_URL}/api/auth/delete-account`, {
+                        method: "DELETE",
+                        headers: { "auth-token": token },
+                    });
+                    await AsyncStorage.clear();
+                    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+                } catch {
+                    Alert.alert("Error", "Could not delete account.");
+                }
+            },
+        });
+        // Alert.alert(
+        //     "Delete account",
+        //     "This will permanently delete your account and all data. There is no going back.",
+        //     [
+        //         { text: "Cancel", style: "cancel" },
+        //         {
+        //             text: "Delete",
+        //             style: "destructive",
+        //             onPress: async () => {
+        //                 try {
+        //                     const token = await AsyncStorage.getItem("authToken");
+        //                     await fetch(`${BACKEND_URL}/api/auth/delete-account`, {
+        //                         method: "DELETE",
+        //                         headers: { "auth-token": token },
+        //                     });
+        //                     await AsyncStorage.clear();
+        //                     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+        //                 } catch {
+        //                     Alert.alert("Error", "Could not delete account.");
+        //                 }
+        //             },
+        //         },
+        //     ]
+        // );
     };
 
     // ─── Render ───────────────────────────────────────────────────────────────
@@ -448,9 +476,9 @@ export default function Settings({ route }) {
                                     ) : (
                                         <Text style={[styles.btnConfirmText]}>
                                             Save & reset stats{"  "}
-                                            <Text style={{ fontSize: 12, color: "#e1d11f" , marginLeft:4 }}>
-                                                <Icon name="coins" size={12} color="#e1d11f" style={{marginLeft:3}}/> 2000
-                                                </Text>
+                                            <Text style={{ fontSize: 12, color: "#e1d11f", marginLeft: 4 }}>
+                                                <Icon name="coins" size={12} color="#e1d11f" style={{ marginLeft: 3 }} /> 2000
+                                            </Text>
                                         </Text>
                                     )}
                                 </TouchableOpacity>

@@ -99,7 +99,9 @@ const Fast = () => {
                         name="sign-out-alt"
                         size={30}
                         style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
-                        onPress={() => { navigation.goBack(); }}
+                        onPress={() => { navigation.goBack();
+                            socket.emit("cancel_match",{userId: user._id})
+                         }}
                     />
 
 

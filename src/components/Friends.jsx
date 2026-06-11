@@ -211,7 +211,7 @@ const Friends = () => {
                 <Text style={styles.username}>{item.username}</Text>
                 <Text>{item.bio}</Text>
                 <Text style={styles.subText}>
-                    Wins: {item.wins?.classic + item.wins?.fast + item.wins?.power } · Level {item.level} ·XP: {item.xp}
+                    Wins: {(item.wins?.classic + item.wins?.fast + item.wins?.power) || 0 } · Level {item.level} ·XP: {item.totalXp}
                 </Text>
             </View>
             <View style={styles.removeChatContainer}>
@@ -241,7 +241,7 @@ const Friends = () => {
                 <Text style={styles.username}>{item.username}</Text>
                 <Text>{item.bio}</Text>
                 <Text style={styles.subText}>
-                    Wins: {item.wins?.classic + item.wins?.fast + item.wins?.power } · Level {item.level} ·XP: {item.xp}
+                    Wins: {(item.wins?.classic + item.wins?.fast + item.wins?.power) || 0 } · Level {item.level} ·XP: {item.totalXp}
                 </Text>
             </View>
 

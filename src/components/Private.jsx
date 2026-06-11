@@ -20,6 +20,7 @@ import { BACKEND_URL } from '../config/backend';
 import GameScreen from './GameScreen';
 import PrivateRoomBoard from './PrivateRoomBoard';
 import GameScreenPower from './GameScreenPower';
+import { showAlert2 } from './CustomAlert2';
 
 const PrivateRoom = () => {
     const navigation = useNavigation();
@@ -228,7 +229,7 @@ const PrivateRoom = () => {
             const roomData = await res.json();
 
             if (!res.ok || !roomData) {
-                Alert.alert('Room not found', 'Please check the room code.');
+                showAlert2({ type: 'info', title: "Room not found", message: "Please check your room code." });
                 return;
             }
             console.log(roomData);
@@ -243,7 +244,7 @@ const PrivateRoom = () => {
             // 🔐 STEP 2: Validate password
             if (roomData.passwordRequired && roomData.password !== parseInt(joinFinalPassword, 10)) {
                 console.log(roomData.passwordRequired, roomData.password, joinFinalPassword)
-                Alert.alert('Wrong password', 'Please enter correct room password.');
+                showAlert2({ type: 'error', title: "wrong password", message: "Please enter correct room password!" });
                 return;
             }
 
@@ -265,7 +266,7 @@ const PrivateRoom = () => {
 
         } catch (err) {
             console.error(err);
-            Alert.alert('Error', 'Unable to join room.');
+            showAlert2({ type: 'error', title: "Error", message: "Unable to join room." });
         }
     };
 
@@ -487,7 +488,7 @@ const PrivateRoom = () => {
     }, []);
 
     /* ===================== RENDER ===================== */
-    if (gameStarted && user && gameType!=='power') {
+    if (gameStarted && user && gameType !== 'power') {
         return (
             <GameScreen
                 roomCode={roomCode}
@@ -498,7 +499,7 @@ const PrivateRoom = () => {
                 gameType={gameType}
             />
         );
-    }else if (gameStarted && user && gameType === 'power') {
+    } else if (gameStarted && user && gameType === 'power') {
         return (
             <GameScreenPower
                 roomCode={roomCode}
@@ -507,7 +508,8 @@ const PrivateRoom = () => {
                 myId={user._id}
                 user={user}
                 gameType={gameType}
-                powerSelected={powerSelected}
+                powerSelected={avatarPowers[user?.avatar][powerSelected]}
+                selectedPowerAvatar={avatarEmojiVariants[user.avatar][powerSelected]}
             />
         );
     }
@@ -736,9 +738,9 @@ const PrivateRoom = () => {
                                                 powerSelected === index && { backgroundColor: "#F8B55F" }
                                             ]}
                                             onPress={() => setPowerSelected(index)}
-                                            onLongPress={() =>
-                                                Alert.alert(powerName, powerDetails[powerName])
-                                            }
+                                            onLongPress={() => {
+                                                showAlert2({ type: 'info', title: powerName, message: powerDetails[powerName] });
+                                            }}
                                             activeOpacity={0.7}
                                         >
                                             <Text style={styles.powerEmoji}>

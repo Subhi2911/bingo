@@ -488,6 +488,7 @@ const GameScreen = (props) => {
                 socket.emit('game_end', {
                     roomCode: props.roomCode,
                     winnerId: playerId,
+                    gameType: props.gameType
                 });
             }
 

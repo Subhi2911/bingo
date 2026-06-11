@@ -7,6 +7,7 @@ import React, { useState, useRef } from 'react';
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { showAlert2 } from './CustomAlert2';
 
 const STEPS = ['Email', 'Verify', 'Account'];
 
@@ -58,7 +59,7 @@ const Signup = () => {
     const onChange = (name, value) => setCredentials(prev => ({ ...prev, [name]: value }));
 
     const handleSendEmail = async () => {
-        if (!credentials.email) { Alert.alert("Error", "Email required"); return; }
+        if (!credentials.email) {showAlert2({ type: 'error', title: 'Error', message: 'Email required.' }); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/emailverification/sendemailotp`, {
@@ -68,12 +69,12 @@ const Signup = () => {
             });
             const data = await res.json();
             if (res.ok) { animateStep(() => setStep(2)); }
-            else { Alert.alert("Failed", data.message || "Something went wrong"); }
+            else {showAlert2({ type: 'error', title: 'Failed', message: data.error||'Something went wrong.' }); }
         } finally { setLoading(false); }
     };
 
     const handleVerifyOtp = async () => {
-        if (!otp) { Alert.alert("Error", "OTP required"); return; }
+        if (!otp) { showAlert2({ type: 'error', title: 'Error', message: 'OTP required' }); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/emailverification/verifyemailotp`, {
@@ -83,16 +84,16 @@ const Signup = () => {
             });
             const data = await res.json();
             if (res.ok) { animateStep(() => setStep(3)); }
-            else { Alert.alert("Invalid OTP", data.message || "Try again"); }
+            else { showAlert2({ type: 'error', title: 'Invalid OTP', message: data.error||'Try Again' });}
         } finally { setLoading(false); }
     };
 
     const handleSignup = async () => {
         if (!credentials.username || !credentials.password) {
-            Alert.alert("Error", "All fields required"); return;
+            showAlert2({ type: 'error', title: 'Error', message: 'All fields required.' }); return;
         }
         if (credentials.password !== credentials.cpassword) {
-            Alert.alert("Error", "Passwords do not match"); return;
+            showAlert2({ type: 'error', title: 'Error', message: 'Passwords do not match.' }); return;
         }
         setLoading(true);
         try {
@@ -108,10 +109,10 @@ const Signup = () => {
             const data = await res.json();
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
-                Alert.alert("Success", "Account created!");
+                showAlert2({ type: 'success', title: 'Account Created!' });
                 navigation.navigate("AvatarSelection");
             } else {
-                Alert.alert("Error", data.error || "Signup failed");
+                showAlert2({ type: 'error', title: 'Error!' ,message: "Signup failed."})
             }
         } catch (error) {
             console.log("Signup error:", error);

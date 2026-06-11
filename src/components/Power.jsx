@@ -12,6 +12,7 @@ import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from "react-native";
 import GameScreenPower from './GameScreenPower';
+import {showAlert2} from './CustomAlert2'
 
 const Power = () => {
     const socketRef = useSocket();
@@ -254,7 +255,10 @@ const Power = () => {
                         name="sign-out-alt"
                         size={30}
                         style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
-                        onPress={() => { navigation.goBack(); }}
+                        onPress={() => {
+                            navigation.goBack();
+                            socket.emit("cancel_match", { userId: user._id });
+                        }}
                     />
 
 
@@ -289,9 +293,9 @@ const Power = () => {
                                     ]}
                                     disabled={ready}
                                     onPress={() => setPowerSelected(index)}
-                                    onLongPress={() =>
-                                        Alert.alert(powerName, powerDetails[powerName])
-                                    }
+                                    onLongPress={() => {
+                                        showAlert2({ type: 'info', title: powerName, message: powerDetails[powerName] });
+                                    }}
                                 >
                                     <Text style={styles.powerEmoji}>
                                         {avatarEmojiVariants[user.avatar][index]}

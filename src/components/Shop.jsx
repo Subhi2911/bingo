@@ -11,7 +11,7 @@ import {
     FlatList,
     Alert
 } from 'react-native';
-
+import { showAlert2 } from './CustomAlert2';
 
 const items = [
     {
@@ -103,7 +103,7 @@ const items = [
 const Shop = () => {
     const buyItem = (name) => {
         console.log("Buying:", name);
-        Alert.alert("Purchase Successful", `You have purchased: ${name}`);
+        showAlert2({ type: 'success', title: 'Purchase Successful', message: `You have purchased ${name}` });
     };
 
     return (

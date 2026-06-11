@@ -1,4 +1,3 @@
-import { StyleSheet, Alert } from 'react-native';
 import React, { useEffect } from 'react';
 import Home from './src/components/Home';
 import Dashboard from './src/components/Dashboard';
@@ -29,6 +28,7 @@ import notifee, { AndroidImportance } from '@notifee/react-native';
 import MessageToast from './src/components/MessageToast.jsx';
 import TermsOfService from './src/components/TermsOfService.jsx';
 import PrivacyPolicy from './src/components/PrivacyPolicy.jsx';
+import { AlertProvider } from './src/components/CustomAlert2.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -140,30 +140,32 @@ const App = () => {
     <AuthProvider>
       <SocketProvider>
         <NotificationProvider>
-          <NavigationContainer>
-            <MessageToast />
-            <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Home" component={Home} />
-              <Stack.Screen name="Dashboard" component={Dashboard} />
-              <Stack.Screen name="Signup" component={Signup} />
-              <Stack.Screen name="Classic" component={Classic} />
-              <Stack.Screen name="Fast" component={Fast} />
-              <Stack.Screen name="Power" component={Power} />
-              <Stack.Screen name="Private" component={Private} />
-              <Stack.Screen name="Profile" component={Profile} />
-              <Stack.Screen name="HomeScreen" component={HomeScreen} />
-              <Stack.Screen name="Friends" component={Freinds} />
-              <Stack.Screen name="Ranking" component={Ranking} />
-              <Stack.Screen name="Missions" component={Missions} />
-              <Stack.Screen name="OtherProfile" component={OtherProfile} />
-              <Stack.Screen name="Messaging" component={Messaging} />
-              <Stack.Screen name="Chat" component={Chat} />
-              <Stack.Screen name="AvatarSelection" component={AvatarSelection} />
-              <Stack.Screen name="NotificationPanel" component={NotificationPanel} />
-              <Stack.Screen name="TermsOfService" component={TermsOfService} />
-              <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <AlertProvider>
+            <NavigationContainer>
+              <MessageToast />
+              <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="Home" component={Home} />
+                <Stack.Screen name="Dashboard" component={Dashboard} />
+                <Stack.Screen name="Signup" component={Signup} />
+                <Stack.Screen name="Classic" component={Classic} />
+                <Stack.Screen name="Fast" component={Fast} />
+                <Stack.Screen name="Power" component={Power} />
+                <Stack.Screen name="Private" component={Private} />
+                <Stack.Screen name="Profile" component={Profile} />
+                <Stack.Screen name="HomeScreen" component={HomeScreen} />
+                <Stack.Screen name="Friends" component={Freinds} />
+                <Stack.Screen name="Ranking" component={Ranking} />
+                <Stack.Screen name="Missions" component={Missions} />
+                <Stack.Screen name="OtherProfile" component={OtherProfile} />
+                <Stack.Screen name="Messaging" component={Messaging} />
+                <Stack.Screen name="Chat" component={Chat} />
+                <Stack.Screen name="AvatarSelection" component={AvatarSelection} />
+                <Stack.Screen name="NotificationPanel" component={NotificationPanel} />
+                <Stack.Screen name="TermsOfService" component={TermsOfService} />
+                <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </AlertProvider>
         </NotificationProvider>
       </SocketProvider>
     </AuthProvider>
@@ -171,5 +173,3 @@ const App = () => {
 };
 
 export default App;
-
-const styles = StyleSheet.create({});

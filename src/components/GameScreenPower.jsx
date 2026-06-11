@@ -323,7 +323,7 @@ const GameScreenPower = (props) => {
         setWinnerPlayerId(winnerId);
         setBingopop(true);
         updateXPFromServer(iWon);
-        socket?.emit('game_end', { roomCode: roomCodeRef.current, winnerId });
+        socket?.emit('game_end', { roomCode: roomCodeRef.current, winnerId , gameType: "power"});
         setTimeout(() => setWinModal(true), 2400);
     }, [socket]);
 

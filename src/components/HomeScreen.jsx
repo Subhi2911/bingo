@@ -17,6 +17,7 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScrollView } from "react-native";
+import { showAlert2 } from "./CustomAlert2";
 //import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 
@@ -83,7 +84,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
             const json = await response.json();
             console.log(json);
             setUser(json.user);
-            alert(json.message);
+            showAlert2({ type: 'reward', title: 'Daily reward claimed!' })
         } catch (error) {
             console.error(error);
         }

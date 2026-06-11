@@ -4,6 +4,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSocket } from '../context/SocketContext';
+import { showAlert2 } from './CustomAlert2';
 
 const MessageBubble = ({ message, isMe, seen, userData, type, roomCode, timeStamp, playerCount, gameType }) => {
     const navigation = useNavigation();
@@ -18,34 +19,56 @@ const MessageBubble = ({ message, isMe, seen, userData, type, roomCode, timeStam
 
     const handlePress = () => {
         if (type === 'private_room_invite') {
-            Alert.alert('Join Room?', message, [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Join',
-                    onPress: () => {
-                        // Emit join event to socket
-                        socket?.emit('join_private_room', {
-                            roomCode: roomCode,
-                            userId: userData._id,
-                            username: userData.username,
-                            avatar: userData.avatar,
-                            socketId: socket.id
-                        });
+            showAlert2({
+                type: 'confirm', title: 'Private room invite', message: 'Join private room?', 
+                onConfirm: () => {
+                    // Emit join event to socket
+                    socket?.emit('join_private_room', {
+                        roomCode: roomCode,
+                        userId: userData._id,
+                        username: userData.username,
+                        avatar: userData.avatar,
+                        socketId: socket.id
+                    });
 
-                        socket.once('private_room_updated', () => {
-                            navigation.navigate('Private', {
-                                roomCode,
-                                gameType,
-                                playerCount,
-                                initialRoomCreated: true,
-                            });
+                    socket.once('private_room_updated', () => {
+                        navigation.navigate('Private', {
+                            roomCode,
+                            gameType,
+                            playerCount,
+                            initialRoomCreated: true,
                         });
-                    },
+                    });
                 },
-            ]);
+            })
+            // Alert.alert('Join Room?', message, [
+            //     {
+            //         text: 'Cancel',
+            //         style: 'cancel',
+            //     },
+            //     {
+            //         text: 'Join',
+            //         onPress: () => {
+            //             // Emit join event to socket
+            //             socket?.emit('join_private_room', {
+            //                 roomCode: roomCode,
+            //                 userId: userData._id,
+            //                 username: userData.username,
+            //                 avatar: userData.avatar,
+            //                 socketId: socket.id
+            //             });
+
+            //             socket.once('private_room_updated', () => {
+            //                 navigation.navigate('Private', {
+            //                     roomCode,
+            //                     gameType,
+            //                     playerCount,
+            //                     initialRoomCreated: true,
+            //                 });
+            //             });
+            //         },
+            //     },
+            // ]);
         }
     };
     React.useEffect(() => {
