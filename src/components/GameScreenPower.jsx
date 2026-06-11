@@ -1035,6 +1035,8 @@ const GameScreenPower = (props) => {
                                 user={profileDetails}
                                 onClose={() => setProfileVisible(false)}
                                 myId={props.user._id}
+                                myUsername= {props.user.username}
+                                myAvatar= {props.user.avatar}
                             />
                         </Modal>
                     )}

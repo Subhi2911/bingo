@@ -31,6 +31,7 @@ import Bell from "./Bell";
 import NotificationPanel from "./NotificationPanel";
 import { useNotifications } from "../context/NotificationContext";
 import SpinWheelModal from "./SpinWheel";
+import Messaging from "./Messaging";
 
 const Dashboard = () => {
     const [loading, setLoading] = React.useState(true);
@@ -162,7 +163,7 @@ const Dashboard = () => {
     }, []);
 
     const openProfile = (item) => {
-        navigation.navigate("OtherProfile", { userId: item._id });
+        navigation.navigate("OtherProfile", { userId: item._id, myId: user._id, myUsername: user.username, myAvatar: user.avatar });
     }
 
     React.useEffect(() => {
@@ -216,14 +217,18 @@ const Dashboard = () => {
                                                 {panelVisible && <NotificationPanel onOpenNotification={(n) => { setPanelVisible(false); openNotification(n); }} />}
                                             </>
                                         </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
+                                        {/* <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
                                             <Icon name="paper-plane" size={28} color="#F8B55F" />
-                                        </TouchableOpacity>
+                                        </TouchableOpacity> */}
+                                        
                                         <TouchableOpacity onPress={() => { setOpenWheel(true) }}>
                                             <Image
                                                 source={require("../images/LuckySpin.png")}
                                                 style={{ width: 45, height: 45 }}
                                             />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+                                            <Icon name="user" size={28} color="#F8B55F" />
                                         </TouchableOpacity>
 
                                     </View>
@@ -253,8 +258,8 @@ const Dashboard = () => {
                     {selected === "home" && <HomeScreen />}
                     {selected === "shop" && <Shop />}
                     {selected === "leaderboard" && <Leaderboard />}
-                    {selected === "profile" && <Profile />}
                     {selected === 'play' && <Play />}
+                    {selected === 'messages' && <Messaging />}
                     {selected === 'search' && <Search searchResults={searchResults} onUserPress={(user) => openProfile(user)} />}
 
                     <NavBar selectedScreen={setSelected} />
@@ -284,7 +289,7 @@ const Dashboard = () => {
 
                         <TouchableOpacity style={styles.btn} onPress={() => {
                             setProfileModalVisible(false);
-                            setSelected("profile");
+                            navigation.navigate("Profile");
                         }}>
                             <Text style={styles.btnText}>Go to Profile</Text>
                         </TouchableOpacity>

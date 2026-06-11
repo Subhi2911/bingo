@@ -14,18 +14,25 @@ const NavBar = (props) => {
   const icons = [
     { name: 'home' },
     { name: 'dice', key: 'play' },
+    { name: 'paper-plane', key: 'messages'},
     { name: 'trophy', key: 'leaderboard' },
     { name: 'shopping-cart', key: 'shop' },
-    { name: 'user', key: 'profile' },
+    //{ name: 'user', key: 'profile' },
   ];
 
   return (
-    <View style={{ width: '100%', alignItems: 'center', position: 'absolute', bottom: 30 }}>
+    <View style={{
+      width: '100%',
+      alignItems: 'center',
+      position: 'absolute',
+      bottom: 30,
+
+    }}>
       <View style={styles.navbar}>
         {icons.map((item) => {
           const key = item.key || item.name; // fallback key
           return (
-            <View 
+            <View
               key={key}
               style={[
                 styles.iconWrapper,
@@ -59,6 +66,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     borderRadius: 30,
+    borderColor: "#FFD67A",
+    borderWidth: 0.5,
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8, // Android
+    zIndex: 99999
   },
   iconWrapper: {
     borderRadius: 50,
@@ -66,6 +86,6 @@ const styles = StyleSheet.create({
   },
   selectedIcon: {
     backgroundColor: '#7C4585',
-    borderRadius:'50%'
+    borderRadius: '50%'
   },
 });

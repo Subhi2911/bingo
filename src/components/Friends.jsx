@@ -198,7 +198,7 @@ const Friends = () => {
         }, 500); // smaller delay for smoother UI
     };
 
-    
+
 
     const renderItemFriends = ({ item }) => (
         <View style={styles.card}>
@@ -207,10 +207,11 @@ const Friends = () => {
             </View>
 
             <View style={{ flex: 1 }}>
+                {console.log(item)};
                 <Text style={styles.username}>{item.username}</Text>
                 <Text>{item.bio}</Text>
                 <Text style={styles.subText}>
-                    Wins: {item.wins} · Level {item.level} ·XP: {item.xp}
+                    Wins: {item.wins?.classic + item.wins?.fast + item.wins?.power } · Level {item.level} ·XP: {item.xp}
                 </Text>
             </View>
             <View style={styles.removeChatContainer}>
@@ -240,7 +241,7 @@ const Friends = () => {
                 <Text style={styles.username}>{item.username}</Text>
                 <Text>{item.bio}</Text>
                 <Text style={styles.subText}>
-                    Wins: {item.wins} · Level {item.level} ·XP: {item.xp}
+                    Wins: {item.wins?.classic + item.wins?.fast + item.wins?.power } · Level {item.level} ·XP: {item.xp}
                 </Text>
             </View>
 

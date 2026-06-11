@@ -15,7 +15,7 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { useSocket } from "../context/SocketContext";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -29,9 +29,10 @@ const MARGIN = 8;
 
 
 
-const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
+const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAvatar}) => {
   const [otherUser, setOtherUser] = React.useState(null);
-
+  const socketRef = useSocket();
+  const socket = socketRef?.socket;
   useEffect(() => {
     console.log("Fetching other user data for:", user);
 
@@ -64,6 +65,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
     console.log("User changed:", otherUser);
   }, [user]);
 
+
   const [sent, setSent] = React.useState(false);
 
   const sendFriendRequest = async () => {
@@ -83,6 +85,12 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
         const json = await response.json();
         setSent(true);
         console.log("Friend request response:", json);
+        socket.emit("sendFriendRequest", {
+          to: user.userId,
+          from: myId,
+          username: myUsername,
+          senderAvatar: myAvatar
+        });
       }
     } catch (error) {
       console.error("Friend request error:", error);
@@ -143,7 +151,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId }) => {
               {/* Header */}
               <View style={styles.header}>
                 <View style={styles.avatar}>
-                  <Text style={{fontSize:30}}> {otherUser?.avatar.trim()}</Text>
+                  <Text style={{ fontSize: 30 }}> {otherUser?.avatar.trim()}</Text>
                 </View>
                 <View>
                   <Text style={styles.name}>{otherUser.username}</Text>
@@ -237,10 +245,10 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     borderWidth: 2,
     borderColor: "#fff",
-    display:'flex',
-    justifyContent:'center',
-    alignItems:'center',
-    backgroundColor:'#000'
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000'
   },
   name: {
     color: "#fff",

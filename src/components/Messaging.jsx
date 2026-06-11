@@ -74,229 +74,15 @@ const Messaging = () => {
         fetchChats();
     }, [userData]);
 
+    const convertToDateAndDay = (timestamp) => {
+        if (!timestamp) return "";
+        const date = new Date(timestamp);
+        const options = { month: 'short', day: 'numeric' };
+        return date.toLocaleDateString(undefined, options);
+    }
 
-    const users = [
-        {
-            id: 1,
-            username: "ShadowFox",
-            avatar: "🦊",
-            money: 1200,
-            wins: 18,
-            xp: 2450,
-            level: 12,
-            lastMessage: "See you in the next match!",
-            seen: true
-        },
-        {
-            id: 2,
-            username: "PixelQueen",
-            avatar: "👑",
-            money: 980,
-            wins: 12,
-            xp: 1900,
-            level: 10,
-            lastMessage: "That was fun 😂",
-            seen: false
-        },
-        {
-            id: 3,
-            username: "ThunderWolf",
-            avatar: "🐺",
-            money: 1500,
-            wins: 25,
-            xp: 3200,
-            level: 15,
-            lastMessage: "Ready when you are",
-            seen: true
-        },
-        {
-            id: 4,
-            username: "NeonTiger",
-            avatar: "🐯",
-            money: 760,
-            wins: 9,
-            xp: 1400,
-            level: 8,
-            lastMessage: "I’ll join later",
-            seen: false
-        },
-        {
-            id: 5,
-            username: "IronEagle",
-            avatar: "🦅",
-            money: 2000,
-            wins: 30,
-            xp: 4100,
-            level: 18,
-            lastMessage: "Easy win 😎",
-            seen: true
-        },
-        {
-            id: 6,
-            username: "LunaCat",
-            avatar: "🐱",
-            money: 540,
-            wins: 6,
-            xp: 900,
-            level: 6,
-            lastMessage: "Good night 🌙",
-            seen: true
-        },
-        {
-            id: 7,
-            username: "FireDrake",
-            avatar: "🐲",
-            money: 1750,
-            wins: 22,
-            xp: 3500,
-            level: 16,
-            lastMessage: "Rematch?",
-            seen: false
-        },
-        {
-            id: 8,
-            username: "AquaKnight",
-            avatar: "🛡️",
-            money: 890,
-            wins: 11,
-            xp: 1650,
-            level: 9,
-            lastMessage: "Lag today 😕",
-            seen: true
-        },
-        {
-            id: 9,
-            username: "GhostByte",
-            avatar: "👻",
-            money: 430,
-            wins: 4,
-            xp: 720,
-            level: 5,
-            lastMessage: "Hello?",
-            seen: false
-        },
-        {
-            id: 10,
-            username: "SolarPhoenix",
-            avatar: "🔥",
-            money: 2200,
-            wins: 35,
-            xp: 4800,
-            level: 20,
-            lastMessage: "Legendary match!",
-            seen: true
-        },
-        {
-            id: 11,
-            username: "MysticOwl",
-            avatar: "🦉",
-            money: 610,
-            wins: 7,
-            xp: 1050,
-            level: 7,
-            lastMessage: "Thinking 🤔",
-            seen: true
-        },
-        {
-            id: 12,
-            username: "CyberNinja",
-            avatar: "🥷",
-            money: 1340,
-            wins: 19,
-            xp: 2700,
-            level: 13,
-            lastMessage: "Stealth mode on",
-            seen: false
-        },
-        {
-            id: 13,
-            username: "BlazeHawk",
-            avatar: "🔥",
-            money: 990,
-            wins: 14,
-            xp: 2000,
-            level: 11,
-            lastMessage: "Nice strategy!",
-            seen: true
-        },
-        {
-            id: 14,
-            username: "FrostBear",
-            avatar: "🐻‍❄️",
-            money: 860,
-            wins: 10,
-            xp: 1580,
-            level: 9,
-            lastMessage: "Cold but fun",
-            seen: false
-        },
-        {
-            id: 15,
-            username: "VioletViper",
-            avatar: "🐍",
-            money: 1450,
-            wins: 21,
-            xp: 2950,
-            level: 14,
-            lastMessage: "You almost won",
-            seen: true
-        },
-        {
-            id: 16,
-            username: "NovaStar",
-            avatar: "⭐",
-            money: 1120,
-            wins: 16,
-            xp: 2300,
-            level: 12,
-            lastMessage: "GG!",
-            seen: true
-        },
-        {
-            id: 17,
-            username: "StoneGiant",
-            avatar: "🗿",
-            money: 500,
-            wins: 5,
-            xp: 800,
-            level: 6,
-            lastMessage: "Slow but steady",
-            seen: false
-        },
-        {
-            id: 18,
-            username: "EchoPulse",
-            avatar: "📡",
-            money: 780,
-            wins: 8,
-            xp: 1300,
-            level: 8,
-            lastMessage: "Can you hear me?",
-            seen: true
-        },
-        {
-            id: 19,
-            username: "CrimsonBlade",
-            avatar: "🗡️",
-            money: 1680,
-            wins: 24,
-            xp: 3400,
-            level: 15,
-            lastMessage: "Sharp play!",
-            seen: false
-        },
-        {
-            id: 20,
-            username: "ZenPanda",
-            avatar: "🐼",
-            money: 640,
-            wins: 7,
-            xp: 1100,
-            level: 7,
-            lastMessage: "Peace ✌️",
-            seen: true
-        }
-    ];
+
+
     const renderusers = ({ item }) => {
         const otherUser = item.participants.find(
             (p) => p._id.toString() !== userData?._id?.toString()
@@ -325,7 +111,7 @@ const Messaging = () => {
 
                         <Text
                             style={{
-                                color: isOtherUserOnline ? "green" : "gray",
+                                color: isOtherUserOnline ? "green" : "red",
                                 fontSize: 12,
                                 marginLeft: 8,
                             }}
@@ -334,11 +120,15 @@ const Messaging = () => {
                         </Text>
                     </View>
 
-                    <Text style={{ color: "#555" }}>
+                    <Text style={{ color: "#2e2e2e" }}>
                         {item?.lastMessage?.text.length > 20
                             ? `${item?.lastMessage?.text.substring(0, 20)}...`
                             : item?.lastMessage?.text || "No messages yet"}
                     </Text>
+                </View>
+                {console.log("last message timestamp:", item)}
+                <View style={{ alignItems: "flex-end" ,marginRight: 10}}>
+                    <Text style={{ color: "#2e2e2e" }}>{convertToDateAndDay(item?.lastMessage?.createdAt)}</Text>
                 </View>
 
                 {!item.seen && (
@@ -359,47 +149,40 @@ const Messaging = () => {
 
 
     return (
-        <View>
-            <ImageBackground
-                source={require('../images/message_bg.png')}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-            >
-                <SafeAreaView>
-                    <View style={styles.header}>
-                        <Icon
+        <View >
+            <View style={styles.header}>
+                {/* <Icon
                             name="arrow-left"
                             size={26}
                             color="#000"
                             onPress={() => navigation.goBack()}
-                        />
-                        <Text style={styles.MessagesText}>Messages</Text>
+                        /> */}
+                <Text style={styles.MessagesText}>Messages</Text>
 
+                {/* 033519 */}
 
+            </View>
+            {loadingChats ? (
+                <View style={{ marginTop: 40, alignItems: "center" }}>
+                    <ActivityIndicator size="large" color="#F8B55F" />
+                </View>
+            ) : chats.length === 0 ? (
+                <View style={{ marginTop: 40, alignItems: "center" }}>
+                    <Text style={{ color: "#F8B55F" }}>
+                        No Chats yet. Start the conversation!
+                    </Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={chats}
+                    keyExtractor={(item) => item._id}
+                    renderItem={renderusers}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                />
+            )}
 
-                    </View>
-                    {loadingChats ? (
-                        <View style={{ marginTop: 40, alignItems: "center" }}>
-                            <ActivityIndicator size="large" color="#033519" />
-                        </View>
-                    ) : chats.length === 0 ? (
-                        <View style={{ marginTop: 40, alignItems: "center" }}>
-                            <Text style={{ color: "#033519" }}>
-                                No Chats yet. Start the conversation!
-                            </Text>
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={chats}
-                            keyExtractor={(item) => item._id}
-                            renderItem={renderusers}
-                            contentContainerStyle={{ paddingBottom: 100 }}
-                        />
-                    )}
-
-                </SafeAreaView>
-            </ImageBackground>
         </View>
+
     )
 }
 
@@ -409,23 +192,23 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
+        // padding: 15,
     },
     MessagesText: {
         fontSize: 20,
         fontWeight: 'bold',
         marginLeft: 16,
-        color: '#000',
+        color: '#ffffff',
     },
     userContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        backgroundColor: '#c9efc6',
+        backgroundColor: '#f4ddfc',
         marginHorizontal: 15,
         marginVertical: 5,
-        borderRadius: 8,
+        borderRadius: 10,
         borderBottomColor: '#ddd'
     }
 })

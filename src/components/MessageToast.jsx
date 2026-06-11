@@ -4,11 +4,26 @@ import { useNavigation } from "@react-navigation/native";
 import { View, Text, Animated, StyleSheet, TouchableOpacity } from "react-native";
 import { useSocket } from "../context/SocketContext";
 
-const CARD = "#4A1D52";  // Deep plum
-const BORDER = "#C026D3";  // Bright magenta
-const GOLD = "#F9A8D4";  // Soft pink highlight
-const SUB = "#F5D0FE";  // Light pink text
-const DEEP = "#2A0E33";  // Very dark purple
+// Color themes keyed by notification type
+const COLORS = {
+    message: {
+        CARD: "#4A1D52",   // Deep plum
+        BORDER: "#C026D3", // Bright magenta
+        GOLD: "#F9A8D4",   // Soft pink highlight
+        SUB: "#F5D0FE",    // Light pink text
+        DEEP: "#2A0E33",   // Very dark purple
+    },
+    friendRequest: {
+        CARD: "#134E4A",   // Deep teal
+        BORDER: "#14B8A6", // Bright teal
+        GOLD: "#5EEAD4",   // Soft mint highlight
+        SUB: "#CCFBF1",    // Light mint text
+        DEEP: "#042F2E",   // Very dark teal
+    },
+};
+
+// Fallback so styles never reference undefined if an unknown type arrives
+const FALLBACK_COLORS = COLORS.message;
 
 export default function MessageToast() {
     const socketRef = useSocket();
@@ -21,12 +36,10 @@ export default function MessageToast() {
     const navigation = useNavigation();
 
     useEffect(() => {
-        console.log('llll', socket, 'socketRef', socketRef);
         if (!socket) return;
 
         const handler = (data) => {
-            console.log("got data", data);
-            if (data.type !== "message") return;
+            if (data.type !== "message" && data.type !== "friendRequest") return;
 
             // Cancel any running animation before starting a new one
             if (animRef.current) animRef.current.stop();
@@ -81,68 +94,72 @@ export default function MessageToast() {
 
     if (!msg) return null;
 
-    return (
+    // Resolve the correct color set at render time based on msg.type
+    const c = COLORS[msg.type] ?? FALLBACK_COLORS;
 
+    return (
         <Animated.View
             style={[
                 styles.toast,
                 {
                     opacity: fadeAnim,
                     transform: [{ translateY: slideAnim }],
+                    backgroundColor: c.CARD,
+                    borderColor: c.BORDER,
                 },
             ]}
-
         >
             <TouchableOpacity
                 onPress={() => {
-                    console.log("Toast clicked", msg.chatId);
-                    navigation.navigate("Chat", { chatId: msg.chatId });
+                    if (msg.type === "message") {
+                        navigation.navigate("Chat", { chatId: msg.chatId });
+                    } else if (msg.type === "friendRequest") {
+                        navigation.navigate("Friends", {
+                            screen: "Requests",
+                            params: { userId: msg.senderId },
+                        });
+                    }
                 }}
                 style={styles.container}
             >
-                {/* Gold left accent bar */}
-                <View style={styles.accentBar}   />
+                {/* Left accent bar — color driven by type */}
+                <View style={[styles.accentBar, { backgroundColor: c.GOLD }]} />
 
-                {/* Avatar */}
-                <View style={styles.avatarRing}>
+                {/* Avatar with gold ring */}
+                <View style={[styles.avatarRing, { borderColor: c.GOLD, backgroundColor: c.DEEP }]}>
                     <Text style={styles.avatarEmoji}>
-                        {msg.sender?.avatar || "🐟"}
+                        {msg.sender?.avatar || msg.senderAvatar || "🐟"}
                     </Text>
                 </View>
 
-                {/* Text */}
+                {/* Text content */}
                 <View style={styles.textContainer}>
-                    <Text style={styles.name} numberOfLines={1}>
+                    <Text style={[styles.name, { color: c.GOLD }]} numberOfLines={1}>
                         {msg.sender?.username || msg.title}
                     </Text>
-                    <Text style={styles.message} numberOfLines={2}>
+                    <Text style={[styles.message, { color: c.SUB }]} numberOfLines={2}>
                         {msg.body}
                     </Text>
                 </View>
 
                 {/* Live dot */}
-                <View style={styles.liveDot} />
+                <View style={[styles.liveDot, { backgroundColor: c.GOLD }]} />
             </TouchableOpacity>
-        </Animated.View >
-
+        </Animated.View>
     );
 }
 
+// Static styles only — no color values here, those are applied inline above
 const styles = StyleSheet.create({
     toast: {
         position: "absolute",
         top: 56,
         left: 12,
         right: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: CARD,
         borderWidth: 1,
-        borderColor: BORDER,
         borderRadius: 18,
         paddingVertical: 10,
-        paddingHorizontal: 14,
-        gap: 12,
+        paddingRight: 14,
         elevation: 16,
         shadowColor: "#000",
         shadowOpacity: 0.4,
@@ -150,35 +167,27 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         zIndex: 99999,
         overflow: "hidden",
-        marginHorizontal: 12,
     },
-    container:{
-        flexDirection:'row',
+    container: {
+        flexDirection: "row",
         alignItems: "center",
-        padding:0,
-        margin:0,
-        gap:12,
-
+        gap: 12,
+        paddingLeft: 18,
     },
-    // Left gold bar
     accentBar: {
         position: "absolute",
         left: 0,
         top: 0,
         bottom: 0,
         width: 3,
-        backgroundColor: GOLD,
         borderTopLeftRadius: 18,
         borderBottomLeftRadius: 18,
-        marginRight:2,
     },
     avatarRing: {
         width: 44,
         height: 44,
         borderRadius: 22,
         borderWidth: 2,
-        borderColor: GOLD,
-        backgroundColor: DEEP,
         justifyContent: "center",
         alignItems: "center",
         flexShrink: 0,
@@ -191,22 +200,18 @@ const styles = StyleSheet.create({
         minWidth: 0,
     },
     name: {
-        color: GOLD,
         fontWeight: "700",
         fontSize: 14,
         marginBottom: 2,
     },
     message: {
-        color: SUB,
         fontSize: 13,
         lineHeight: 18,
     },
-    // Pulsing dot indicating live/unread
     liveDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: GOLD,
         flexShrink: 0,
         alignSelf: "flex-start",
         marginTop: 4,

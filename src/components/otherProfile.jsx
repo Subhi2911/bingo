@@ -14,19 +14,43 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { BACKEND_URL } from "../config/backend";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSocket } from "../context/SocketContext";
 
-const OtherProfile = () => {
+const OtherProfile = ({ myId, myUsername, myAvatar }) => {
     const route = useRoute();
     const navigation = useNavigation();
     const { userId } = route.params;
 
+    const socketRef = useSocket();
+    const socket = socketRef?.socket;
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [requestStatus, setRequestStatus] = useState("none");
+    const [myUser, setMyUser] = useState(null);
 
     useEffect(() => {
         fetchUserProfile();
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    React.useEffect(() => {
+        const getMyUser = async () => {
+            try {
+                const token = await AsyncStorage.getItem("authToken");
+                const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "auth-token": token,
+                    },
+                });
+                const json = await res.json();
+                setMyUser(json);
+            } catch (e) {
+                console.log(e);
+            }
+        };
+        getMyUser();
     }, []);
 
     const fetchUserProfile = async () => {
@@ -63,9 +87,17 @@ const OtherProfile = () => {
                     "auth-token": token,
                 },
             });
+            console.log(res);
 
             if (res.ok) {
                 setRequestStatus("sent");
+                socket.emit("sendFriendRequest", {
+                    receiverId: userId,
+                    senderId: myUser._id,
+                    senderName: myUser.username,
+                    senderAvatar: myUser.avatar
+                })
+                console.log(" socket sent", myUser._id, myUser.username, myUser.avatar);
             }
         } catch (err) {
             console.error(err);
@@ -209,7 +241,7 @@ const OtherProfile = () => {
                             <Icon name="check-circle" size={18} color="#00E676" />
                             <Text style={styles.friendText}>Friends</Text>
                         </View>
-                    ) : requestStatus === "sent" ? (
+                    ) : requestStatus === "sent" || user.pendingRequests?.some(id => id.toString() === myUser._id) ? (
                         <View style={styles.pendingBadge}>
                             <Icon name="clock" size={16} color="#FFD740" />
                             <Text style={styles.pendingText}>Request Sent</Text>

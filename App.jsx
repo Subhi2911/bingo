@@ -27,6 +27,8 @@ import NotificationPanel from './src/components/NotificationPanel.jsx';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import MessageToast from './src/components/MessageToast.jsx';
+import TermsOfService from './src/components/TermsOfService.jsx';
+import PrivacyPolicy from './src/components/PrivacyPolicy.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -158,6 +160,8 @@ const App = () => {
               <Stack.Screen name="Chat" component={Chat} />
               <Stack.Screen name="AvatarSelection" component={AvatarSelection} />
               <Stack.Screen name="NotificationPanel" component={NotificationPanel} />
+              <Stack.Screen name="TermsOfService" component={TermsOfService} />
+              <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
             </Stack.Navigator>
           </NavigationContainer>
         </NotificationProvider>
