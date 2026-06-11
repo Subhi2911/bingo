@@ -1,14 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
-import { FlatList, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useEffect } from 'react'
-import { useNavigation } from '@react-navigation/native';
+// import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { BACKEND_URL } from '../config/backend';
 
 const LeaderBoard = () => {
     const [selectedMode, setSelectedMode] = React.useState("world");
-    const navigation = useNavigation();
+    //const navigation = useNavigation();
     const [topUsers, setTopUsers] = React.useState(null);
     const [userRank, setUserRank] = React.useState(null);
     const [currentUser, setCurrentUser] = React.useState(null);
@@ -38,38 +38,7 @@ const LeaderBoard = () => {
         fetchLeaderboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    const dummyData = [
-        { "id": 1, "name": "Aarav", "level": 12, "xp": 11523 },
-        { "id": 2, "name": "Priya", "level": 7, "xp": 6734 },
-        { "id": 3, "name": "Rahul", "level": 20, "xp": 19512 },
-        { "id": 4, "name": "Sneha", "level": 3, "xp": 2478 },
-        { "id": 5, "name": "Vikram", "level": 15, "xp": 14321 },
-        { "id": 6, "name": "Maya", "level": 1, "xp": 512 },
-        { "id": 7, "name": "Omar", "level": 9, "xp": 8650 },
-        { "id": 8, "name": "Lina", "level": 27, "xp": 26890 },
-        { "id": 9, "name": "Jose", "level": 5, "xp": 4567 },
-        { "id": 10, "name": "Mei", "level": 18, "xp": 17643 },
-        { "id": 11, "name": "Fatima", "level": 13, "xp": 12678 },
-        { "id": 12, "name": "Leo", "level": 22, "xp": 21789 },
-        { "id": 13, "name": "Zoe", "level": 4, "xp": 3489 },
-        { "id": 14, "name": "Ethan", "level": 30, "xp": 29534 },
-        { "id": 15, "name": "Nisha", "level": 11, "xp": 10880 },
-        { "id": 16, "name": "Sam", "level": 2, "xp": 1850 },
-        { "id": 17, "name": "Chen", "level": 16, "xp": 15211 },
-        { "id": 18, "name": "Olga", "level": 14, "xp": 13654 },
-        { "id": 19, "name": "Amrita", "level": 8, "xp": 7462 },
-        { "id": 20, "name": "Diego", "level": 19, "xp": 18333 },
-        { "id": 21, "name": "Hana", "level": 6, "xp": 5234 },
-        { "id": 22, "name": "Luca", "level": 21, "xp": 20567 },
-        { "id": 23, "name": "Aisha", "level": 24, "xp": 23701 },
-        { "id": 24, "name": "Tom", "level": 10, "xp": 9544 },
-        { "id": 25, "name": "Kiran", "level": 17, "xp": 16620 },
-        { "id": 26, "name": "Sara", "level": 25, "xp": 24399 },
-        { "id": 27, "name": "Ivan", "level": 29, "xp": 28712 },
-        { "id": 28, "name": "Priyanka", "level": 23, "xp": 22110 },
-        { "id": 29, "name": "Arjun", "level": 26, "xp": 25345 },
-        { "id": 30, "name": "Bella", "level": 31, "xp": 30456 }
-    ]
+    
 
     return (
         <View style={styles.container}>
@@ -90,7 +59,7 @@ const LeaderBoard = () => {
 
             {/* 🔘 Tabs */}
             <View style={styles.tabs}>
-                {["world", "area", "friends"].map(mode => (
+                {["world", "friends"].map(mode => (
                     <TouchableOpacity
                         key={mode}
                         style={[
@@ -115,7 +84,7 @@ const LeaderBoard = () => {
                         <Text style={styles.rank}>#{index + 4}</Text>
 
                         <View style={styles.rowUser}>
-                            <Text style={{ fontSize: 20 }}>{item.avatar || "👤"}</Text>
+                            <Text style={{ fontSize: 20 }}>{item.avatar || "🐟"}</Text>
                             <Text style={styles.name}>{item.username}</Text>
                         </View>
 

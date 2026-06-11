@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     borderRadius: 50,
-    padding: 6,
+    padding: 10,
   },
   selectedIcon: {
     backgroundColor: '#7C4585',

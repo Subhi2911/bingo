@@ -103,7 +103,7 @@ export default function PrivacyPolicy() {
             resizeMode="cover">
             <SafeAreaView  style={styles.safe}>
                 {/* Sticky animated header */}
-                <Animated.View style={[styles.header, { backgroundColor: headerBg }]}>
+                <Animated.View style={[styles.header,]}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                         <Icon name="arrow-left" style={styles.backArrow} />
                     </TouchableOpacity>
