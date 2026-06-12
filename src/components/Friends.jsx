@@ -29,7 +29,6 @@ const Friends = () => {
         const getMyUserData = async () => {
             try {
                 const token = await AsyncStorage.getItem("authToken");
-                console.log("Auth Token:", token);
                 const response = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
                     method: "POST",
                     headers: {
@@ -39,7 +38,6 @@ const Friends = () => {
                 });
                 const json = await response.json();
                 setUserData(json);
-                console.log("My user data:", json);
             } catch (error) {
                 console.error("Error fetching my user data:", error);
             }
@@ -50,7 +48,6 @@ const Friends = () => {
     useEffect(() => {
         const fetchFriendsData = async () => {
             const token = await AsyncStorage.getItem("authToken");
-            console.log("Auth Token:", token);
             try {
                 const response = await fetch(`${BACKEND_URL}/api/auth/friends`, {
                     method: "GET",
@@ -61,7 +58,6 @@ const Friends = () => {
                 });
                 const json = await response.json();
                 setFriends(json);
-                console.log("Friends data:", json);
             } catch (error) {
                 console.error("Error fetching friends:", error);
             }
@@ -72,7 +68,6 @@ const Friends = () => {
     useEffect(() => {
         const fetchRequestsData = async () => {
             const token = await AsyncStorage.getItem("authToken");
-            console.log("Auth Token:", token);
             try {
                 const response = await fetch(`${BACKEND_URL}/api/auth/pending-requests`, {
                     method: "GET",
@@ -84,7 +79,6 @@ const Friends = () => {
                 if (response.ok) {
                     const json = await response.json();
                     setRequests(json);
-                    console.log("Requests data:", json);
                 }
 
             } catch (error) {
@@ -98,7 +92,6 @@ const Friends = () => {
 
     const handleAccept = async (userId) => {
         try {
-            console.log('haggue')
             const token = await AsyncStorage.getItem("authToken");
             const res = await fetch(`${BACKEND_URL}/api/auth/accept-request/${userId}`, {
                 method: "POST",
@@ -107,7 +100,6 @@ const Friends = () => {
                     "auth-token": token,
                 },
             });
-            console.log(res);
             if (res.ok) {
                 const data = await res.json();
                 setAcceptedRequests([...acceptedRequests, userId]);
@@ -121,7 +113,6 @@ const Friends = () => {
 
     const handleReject = async (userId) => {
         try {
-            console.log('bibhu nalla')
             const token = await AsyncStorage.getItem("authToken");
             const res = await fetch(`${BACKEND_URL}/api/auth/reject-request/${userId}`, {
                 method: "POST",
@@ -155,7 +146,6 @@ const Friends = () => {
     };
 
     const openChat = async (otherUserId, otherUsername) => {
-        console.log(userData);
         try {
             const response = await fetch(`${BACKEND_URL}/api/chat/findOrCreate`, {
                 method: "POST",
@@ -167,7 +157,6 @@ const Friends = () => {
                 }),
             });
             const chat = await response.json();
-            console.log(userData._id, otherUserId, chat);
             // Navigate to Chat screen with the chatId
             navigation.navigate("Chat", { chatId: chat._id });
         } catch (err) {
@@ -179,7 +168,6 @@ const Friends = () => {
     const BATCH_SIZE = 8; // how many users to load per scroll
 
     const [users, setUsers] = useState(screen === 'friends' ? friends?.slice(0, BATCH_SIZE) : requests?.slice(0, BATCH_SIZE));
-    console.log(users);
     const [loadingMore, setLoadingMore] = useState(false);
 
     const loadMoreUsers = () => {
@@ -207,7 +195,6 @@ const Friends = () => {
             </View>
 
             <View style={{ flex: 1 }}>
-                {console.log(item)};
                 <Text style={styles.username}>{item.username}</Text>
                 <Text>{item.bio}</Text>
                 <Text style={styles.subText}>

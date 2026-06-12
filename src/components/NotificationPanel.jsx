@@ -25,12 +25,9 @@ const NotificationScreen = () => {
             const res = await fetch(`${BACKEND_URL}/api/notifications`, {
                 headers: { "auth-token": token },
             });
-            console.log(res);
             if (!res.ok) return;
 
             const data = await res.json();
-            console.log(res);
-            console.log(data);
             setNotifications(data);
         } catch (err) {
             console.log("Notification fetch error:", err);

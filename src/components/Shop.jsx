@@ -102,7 +102,6 @@ const items = [
 
 const Shop = () => {
     const buyItem = (name) => {
-        console.log("Buying:", name);
         showAlert2({ type: 'success', title: 'Purchase Successful', message: `You have purchased ${name}` });
     };
 

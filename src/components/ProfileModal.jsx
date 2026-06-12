@@ -34,7 +34,6 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
   const socketRef = useSocket();
   const socket = socketRef?.socket;
   useEffect(() => {
-    console.log("Fetching other user data for:", user);
 
     const getOtherUserData = async () => {
       try {
@@ -50,9 +49,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
 
         if (res.ok) {
           const data = await res.json();
-          console.log("Fetched other user:", data);
           setOtherUser(data);
-          console.log("Other user data set:", otherUser);
         } else {
           console.log("Response not ok");
         }
@@ -62,7 +59,6 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
     };
 
     getOtherUserData();
-    console.log("User changed:", otherUser);
   }, [user]);
 
 
@@ -71,7 +67,6 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
   const sendFriendRequest = async () => {
     try {
       const token = await AsyncStorage.getItem("authToken");
-      console.log(token);
       const response = await fetch(`${BACKEND_URL}/api/auth/send-request/${user?.userId}`, {
         method: "POST",
         headers: {
@@ -80,7 +75,6 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
         },
         //body: JSON.stringify({ toUserId: otherUser._id }),
       });
-      console.log(response);
       if (response.ok) {
         const json = await response.json();
         setSent(true);

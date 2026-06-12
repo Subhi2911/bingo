@@ -65,10 +65,7 @@ const AvatarSelection = () => {
             });
 
             const data = await res.json();
-            console.log(res);
             if (!data.success) {
-                console.log(res);
-                //alert(data.error);
                 return;
             }
 

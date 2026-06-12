@@ -24,7 +24,6 @@ const Fast = () => {
     const [user, setUser] = React.useState(null);
 
     React.useEffect(() => {
-        //console.log(socket);
         const getUser = async () => {
             try {
                 const token = await AsyncStorage.getItem("authToken");
@@ -58,10 +57,8 @@ const Fast = () => {
 
     const handleReady = () => {
         if (!socket) {
-            console.log('jhuygy')
             return
         };
-        console.log(user)
         socket.emit("find_match", {
             socketId: socket.id,
             userId: user?._id,
@@ -79,7 +76,6 @@ const Fast = () => {
             // filter out self safely
             //const filteredPlayers = players.filter(p => p.userId !== (user?._id || ""));
             setMatchedPlayers(players);
-            console.log(players);
             setRoomCode(roomCode);
 
             setTimeout(() => setGameStarted(true), 2000);

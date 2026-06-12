@@ -23,7 +23,6 @@ export const NotificationProvider = ({ children }) => {
 
     useEffect(() => {
         const socket = socketRef?.socket;
-        console.log("NotificationProvider socket:", socket, socketRef);
         if (!socket) return;
 
         const handleNewNotification = (notification) => {

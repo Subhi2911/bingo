@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        console.log("Auth Token:", token);
 
         const response = await fetch(
           `${BACKEND_URL}/api/auth/getUser`,
@@ -34,7 +33,6 @@ export const AuthProvider = ({ children }) => {
 
         const json = await response.json();
         setUser(json);
-        console.log("My user data:", json);
       } catch (error) {
         console.error("Error fetching my user data:", error);
       } finally {

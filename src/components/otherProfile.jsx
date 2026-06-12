@@ -65,7 +65,6 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
             });
 
             const data = await res.json();
-            console.log("Fetched user:", data);
 
             setUser(data);
             setRequestStatus(data.requestStatus || "none");
@@ -87,7 +86,6 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                     "auth-token": token,
                 },
             });
-            console.log(res);
 
             if (res.ok) {
                 setRequestStatus("sent");
@@ -97,7 +95,6 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                     senderName: myUser.username,
                     senderAvatar: myUser.avatar
                 })
-                console.log(" socket sent", myUser._id, myUser.username, myUser.avatar);
             }
         } catch (err) {
             console.error(err);

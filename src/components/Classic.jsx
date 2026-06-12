@@ -56,10 +56,8 @@ const Classic = () => {
 
     const handleReady = () => {
         if (!socket) {
-            console.log('jhuygy')
             return
         };
-        console.log(user)
         socket.emit("find_match", {
             socketId: socket.id,
             userId: user?._id,
@@ -77,7 +75,6 @@ const Classic = () => {
             // filter out self safely
             //const filteredPlayers = players.filter(p => p.userId !== (user?._id || ""));
             setMatchedPlayers(players);
-            console.log(players);
             setRoomCode(roomCode);
 
             setTimeout(() => setGameStarted(true), 2000);
@@ -88,23 +85,7 @@ const Classic = () => {
         return () => socket.off("match_found", handleMatchFound);
     }, [socket, user]);
 
-    // React.useEffect(() => {
-    //     console.log(user);
-    //     if (!socket) return;
-    //     socket.on("match_found", ({ roomCode, players }) => {
-    //         // filter out yourself
-    //         setMatchedPlayers(players.filter(p => p.userId !== user.id));
-    //         setRoomCode(roomCode);
-
-    //         setTimeout(() => {
-    //             setGameStarted(true);
-    //         }, 2000);
-    //     });
-
-    //     return () => socket.off("match_found");
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, []);
-
+   
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             {!gameStarted &&

@@ -1,3 +1,4 @@
+/* eslint-disable no-shadow */
 /* eslint-disable react-native/no-inline-styles */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
@@ -232,7 +233,6 @@ const PrivateRoom = () => {
                 showAlert2({ type: 'info', title: "Room not found", message: "Please check your room code." });
                 return;
             }
-            console.log(roomData);
 
             // 🔑 STEP 1: Password required → ASK for password
             if (roomData.passwordRequired && !awaitingPassword) {
@@ -243,7 +243,6 @@ const PrivateRoom = () => {
 
             // 🔐 STEP 2: Validate password
             if (roomData.passwordRequired && roomData.password !== parseInt(joinFinalPassword, 10)) {
-                console.log(roomData.passwordRequired, roomData.password, joinFinalPassword)
                 showAlert2({ type: 'error', title: "wrong password", message: "Please enter correct room password!" });
                 return;
             }
@@ -257,12 +256,10 @@ const PrivateRoom = () => {
                 password: joinFinalPassword || null,
                 //socketId: socket.id,
             });
-            console.log(roomData);
             setRoomCode(roomData.roomCode);
             setGameType(roomData.gameType);
             setPlayerCount(roomData.size);
             setRoomCreated(true);
-            console.log(socket.id);
 
         } catch (err) {
             console.error(err);
@@ -271,9 +268,6 @@ const PrivateRoom = () => {
     };
 
     useEffect(() => {
-        console.log('qwerty', roomCode);
-        console.log('poppy', gameType);
-        console.log('hikle', playerCount);
     }, [gameType, roomCode, playerCount])
     /* ===================== CREATE ROOM ===================== */
     const handleCreateRoom = useCallback(() => {
@@ -281,7 +275,6 @@ const PrivateRoom = () => {
 
         setRoomCreated(true);
         setReady(true);
-        console.log(finalPassword);
         socket.emit('create_private_room', {
             userId: user._id,
             username: user.username,
@@ -313,7 +306,6 @@ const PrivateRoom = () => {
 
         const onPrivateRoomUpdated = ({ roomCode, players }) => {
             setMatchedPlayers(players);
-            console.log('aries', matchedPlayers)
         };
 
         socket.on('private_room_created', onRoomCreated);
@@ -338,7 +330,7 @@ const PrivateRoom = () => {
             socket.off('private_room_updated', onPrivateRoomUpdated);
             socket.off('private_game_started');
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        
     }, [socket, user]);
 
     /* ===================== FETCH USER ===================== */
@@ -770,7 +762,6 @@ const PrivateRoom = () => {
                         {/* READY BUTTON */}
                         {!isHost && !(matchedPlayers.find(p => p.userId === user?._id)?.ready) && (
                             <>
-                                {console.log(!isHost, matchedPlayers, !(matchedPlayers.find(p => p.userId === user?._id)?.ready))}
                                 <TouchableOpacity
                                     style={[styles.mainBtn, { marginTop: 10 }]}
                                     onPress={handleReady}

@@ -29,14 +29,12 @@ const LeaderBoard = () => {
                 setTopUsers(data.topUsers);
                 setUserRank(data.userRank);
                 setCurrentUser(data.currentUser);
-                console.log(data);
             } catch (err) {
                 console.log(err);
             }
         };
-        console.log(topUsers);
         fetchLeaderboard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
     }, [])
     
 

@@ -101,7 +101,6 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (!socket) return;
-        console.log(socketRef);
 
         socket.on("newNotification", (notification) => {
             // Update state of notifications in the drawer

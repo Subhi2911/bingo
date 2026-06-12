@@ -145,10 +145,6 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
         }
     };
 
-    useEffect(() => {
-        console.log("lastDailyClaim:", user?.lastDailyClaim);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     // ─── Next day reward label ───────────────────────────────────────────────
     const currentDayReward = dailyReward[todaySlot] || "Bonus";
