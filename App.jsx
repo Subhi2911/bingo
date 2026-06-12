@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import Home from './src/components/Home';
 import Dashboard from './src/components/Dashboard';
 import Signup from './src/components/Signup';
 import Classic from './src/components/Classic';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import Fast from './src/components/Fast';
 import Power from './src/components/Power';
 import Private from './src/components/Private';
@@ -32,12 +32,12 @@ import PrivacyPolicy from './src/components/PrivacyPolicy.jsx';
 import { AlertProvider } from './src/components/CustomAlert2.jsx';
 import { AlertToastProvider } from './src/components/AlertToast.jsx';
 import ChangePassword from './src/components/ChangePassword.jsx';
-import ForgotPassword from './src/components/ForgotPassword.jsx'; // ← uncomment when you create this
+import ForgotPassword from './src/components/ForgotPassword.jsx';
+import { createNavigationContainerRef } from '@react-navigation/native';
+
+export const navigationRef = createNavigationContainerRef();
 
 const Stack = createNativeStackNavigator();
-
-// ── navigationRef: lets us navigate outside of React components (FCM handlers) ──
-export const navigationRef = createNavigationContainerRef();
 
 const displayLocalNotification = async (remoteMessage) => {
   const channelId = await notifee.createChannel({
@@ -50,7 +50,7 @@ const displayLocalNotification = async (remoteMessage) => {
 
   await notifee.displayNotification({
     title: remoteMessage.notification?.title || remoteMessage.data?.title || 'New Message',
-    body: remoteMessage.notification?.body || remoteMessage.data?.body || '',
+    body:  remoteMessage.notification?.body  || remoteMessage.data?.body  || '',
     android: {
       channelId,
       importance: AndroidImportance.HIGH,
@@ -60,9 +60,43 @@ const displayLocalNotification = async (remoteMessage) => {
   });
 };
 
+// ── Inner component — lives INSIDE NavigationContainer so useNavigation works ──
+const AppNavigator = () => {
+  return (
+    <>
+      {/* FIX: MessageToast is now inside NavigationContainer so useNavigation() works */}
+      <MessageToast />
+
+      <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Home"              component={Home} />
+        <Stack.Screen name="Dashboard"         component={Dashboard} />
+        <Stack.Screen name="Signup"            component={Signup} />
+        <Stack.Screen name="Classic"           component={Classic} />
+        <Stack.Screen name="Fast"              component={Fast} />
+        <Stack.Screen name="Power"             component={Power} />
+        <Stack.Screen name="Private"           component={Private} />
+        <Stack.Screen name="Profile"           component={Profile} />
+        <Stack.Screen name="HomeScreen"        component={HomeScreen} />
+        <Stack.Screen name="Friends"           component={Freinds} />
+        <Stack.Screen name="Ranking"           component={Ranking} />
+        <Stack.Screen name="Missions"          component={Missions} />
+        <Stack.Screen name="OtherProfile"      component={OtherProfile} />
+        <Stack.Screen name="Messaging"         component={Messaging} />
+        <Stack.Screen name="Chat"              component={Chat} />
+        <Stack.Screen name="AvatarSelection"   component={AvatarSelection} />
+        <Stack.Screen name="NotificationPanel" component={NotificationPanel} />
+        <Stack.Screen name="TermsOfService"    component={TermsOfService} />
+        <Stack.Screen name="PrivacyPolicy"     component={PrivacyPolicy} />
+        <Stack.Screen name="ChangePassword"    component={ChangePassword} />
+        <Stack.Screen name="ForgotPassword"    component={ForgotPassword} />
+      </Stack.Navigator>
+    </>
+  );
+};
+
 const App = () => {
 
-  // ── Request permission + save FCM token ─────────────────────────────────────
+  // Request permission + save FCM token
   useEffect(() => {
     const requestPermission = async () => {
       const authStatus = await messaging().requestPermission();
@@ -71,9 +105,8 @@ const App = () => {
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        const fcmToken = await messaging().getToken();
-        const authToken = await AsyncStorage.getItem("authToken"); // ← fixed: was "token"
-        if (!authToken) return; // not logged in yet, skip
+        const fcmToken  = await messaging().getToken();
+        const authToken = await AsyncStorage.getItem("authToken");
         await fetch(`${BACKEND_URL}/api/auth/save-fcm-token`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "auth-token": authToken },
@@ -81,21 +114,18 @@ const App = () => {
         });
       }
     };
-
     requestPermission();
   }, []);
 
-  // ── Foreground messages ──────────────────────────────────────────────────────
+  // Foreground message handler
   useEffect(() => {
     const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
       await displayLocalNotification(remoteMessage);
     });
 
-    // App brought from BACKGROUND by tapping notification
+    // App opened by tapping notification from BACKGROUND state
     const unsubscribeBackground = messaging().onNotificationOpenedApp(remoteMessage => {
-      if (remoteMessage?.data?.chatId && navigationRef.isReady()) {
-        navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
-      }
+      navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
     });
 
     return () => {
@@ -104,13 +134,28 @@ const App = () => {
     };
   }, []);
 
-  // ── App opened from QUIT state by tapping notification ──────────────────────
+  // App opened from QUIT state
   useEffect(() => {
-    messaging().getInitialNotification().then(remoteMessage => {
-      if (remoteMessage?.data?.chatId && navigationRef.isReady()) {
-        navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage && navigationRef.isReady()) {
+          navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
+        }
+      });
+  }, []);
+
+  // Load token check
+  useEffect(() => {
+    const load = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (token) {
+        fetch(`${BACKEND_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
-    });
+    };
+    load();
   }, []);
 
   return (
@@ -120,32 +165,8 @@ const App = () => {
           <AlertToastProvider>
             <AlertProvider>
               <NavigationContainer ref={navigationRef}>
-                <MessageToast />
-                <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="Home" component={Home} />
-                  <Stack.Screen name="Login" component={Home} />  {/* alias so navigation.navigate("Login") works */}
-                  <Stack.Screen name="Dashboard" component={Dashboard} />
-                  <Stack.Screen name="Signup" component={Signup} />
-                  <Stack.Screen name="Classic" component={Classic} />
-                  <Stack.Screen name="Fast" component={Fast} />
-                  <Stack.Screen name="Power" component={Power} />
-                  <Stack.Screen name="Private" component={Private} />
-                  <Stack.Screen name="Profile" component={Profile} />
-                  <Stack.Screen name="HomeScreen" component={HomeScreen} />
-                  <Stack.Screen name="Friends" component={Freinds} />
-                  <Stack.Screen name="Ranking" component={Ranking} />
-                  <Stack.Screen name="Missions" component={Missions} />
-                  <Stack.Screen name="OtherProfile" component={OtherProfile} />
-                  <Stack.Screen name="Messaging" component={Messaging} />
-                  <Stack.Screen name="Chat" component={Chat} />
-                  <Stack.Screen name="AvatarSelection" component={AvatarSelection} />
-                  <Stack.Screen name="NotificationPanel" component={NotificationPanel} />
-                  <Stack.Screen name="TermsOfService" component={TermsOfService} />
-                  <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
-                  <Stack.Screen name="ChangePassword" component={ChangePassword} />
-                  
-                  <Stack.Screen name="ForgotPassword" component={ForgotPassword} /> 
-                </Stack.Navigator>
+                {/* AppNavigator renders MessageToast + Stack inside the container */}
+                <AppNavigator />
               </NavigationContainer>
             </AlertProvider>
           </AlertToastProvider>
