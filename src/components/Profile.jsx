@@ -4,8 +4,8 @@ import React, { useState, useRef } from "react";
 import {
     View, Text, StyleSheet, TouchableOpacity,
     ScrollView, Switch, Alert, Modal, Animated,
-    ActivityIndicator,
-    ImageBackground
+    ActivityIndicator, ImageBackground, TextInput,
+    KeyboardAvoidingView, Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -14,43 +14,59 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { showAlert2 } from "./CustomAlert2";
 
-// ─── Theme ───────────────────────────────────────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-    BG: "#7DC20A",          // lime green background
-    CARD: "#4A7C00",        // dark green card
-    BORDER: "#5A9400",      // medium green border
-    GOLD: "#462700",        // primary gold accent — avatar ring, stat values
-    GOLD_DIM: "#7e6500",    // lighter gold
-    WHITE: "#FFFFFF",
-    SUB: "#D9F99D",         // light yellow-green — readable on dark green cards
-    DANGER: "#900101",      // red for destructive
-    DANGER_BG: "#1A0000",
-    NAV: "#2D5A00",         // dark green nav
-    DIVIDER: "#3D6B0066",   // dark green divider
+    // Dark glass cards — deep forest green at ~80% opacity
+    GLASS: "rgba(15,35,5,0.78)",
+    GLASS_DARK: "rgba(10,25,3,0.88)",
+    GLASS_BORDER: "rgba(255,255,255,0.10)",
+    GLASS_INNER: "rgba(255,255,255,0.06)",
+
+    // Text on dark glass — cream/ivory scale
+    INK: "#F0EDD8",           // warm cream — primary text
+    INK_MED: "#C8C4A0",       // muted cream — subtitles, labels
+    INK_LIGHT: "#8A9070",     // dim sage — sub-labels, placeholders
+
+    // Accent — same gold, richer against dark
+    GOLD: "#E8920A",
+    GOLD_LIGHT: "#FDE68A",
+    GOLD_BG: "rgba(232,146,10,0.18)",
+
+    // Danger
+    DANGER: "#F87171",
+    DANGER_BG: "rgba(248,113,113,0.12)",
+
+    // Section label
+    LABEL: "#A8C878",         // soft lime — section titles
+
+    // Divider
+    DIV: "rgba(255,255,255,0.08)",
 };
 
-// ─── Avatar pool (same emoji set the app uses) ───────────────────────────────
-const AVATARS =
-    [
-        '🐵', '🐶', '🐱', '🦁',
-        '🐯', '🦊', '🐮', '🐭',
-        '🐴', '🐸', '🐔', '🐍'
-    ];
+const AVATARS = ['🐵', '🐶', '🐱', '🦁', '🐯', '🦊', '🐮', '🐭', '🐴', '🐸', '🐔', '🐍'];
 
-// ─── Reusable section card ────────────────────────────────────────────────────
-function SettingCard({ children }) {
-    return <View style={styles.card}>{children}</View>;
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function GlassCard({ children, style }) {
+    return <View style={[styles.card, style]}>{children}</View>;
 }
 
-// ─── Single row ──────────────────────────────────────────────────────────────
+function SectionTitle({ label }) {
+    return (
+        <View style={styles.sectionTitleRow}>
+            <View style={styles.sectionTitleBar} />
+            <Text style={styles.sectionTitle}>{label}</Text>
+        </View>
+    );
+}
+
 function SettingRow({ icon, label, sub, right, onPress, danger, isLast }) {
     return (
         <TouchableOpacity
             onPress={onPress}
-            activeOpacity={onPress ? 0.7 : 1}
+            activeOpacity={onPress ? 0.65 : 1}
             style={[styles.row, isLast && styles.rowLast]}
         >
-            <View style={styles.rowIcon}>
+            <View style={[styles.rowIconWrap, danger && { backgroundColor: T.DANGER_BG }]}>
                 <Text style={styles.rowIconText}>{icon}</Text>
             </View>
             <View style={styles.rowContent}>
@@ -66,77 +82,115 @@ function Divider() {
     return <View style={styles.divider} />;
 }
 
-function SectionTitle({ label }) {
-    return <Text style={styles.sectionTitle}>{label}</Text>;
+// ─── Edit field modal ─────────────────────────────────────────────────────────
+function EditModal({ visible, title, placeholder, value, onClose, onSave, multiline }) {
+    const [text, setText] = useState(value ?? "");
+    const slideAnim = useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+        if (visible) {
+            setText(value ?? "");
+            Animated.spring(slideAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 220 }).start();
+        } else {
+            Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+        }
+    }, [visible]);
+
+    return (
+        <Modal visible={visible} transparent animationType="none">
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+                <View style={styles.editOverlay}>
+                    <Animated.View style={[styles.editSheet, {
+                        transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }],
+                        opacity: slideAnim,
+                    }]}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.editTitle}>{title}</Text>
+                        <TextInput
+                            style={[styles.editInput, multiline && { height: 90, textAlignVertical: "top" }]}
+                            value={text}
+                            onChangeText={setText}
+                            placeholder={placeholder}
+                            placeholderTextColor={T.INK_LIGHT}
+                            multiline={multiline}
+                            autoFocus
+                            maxLength={multiline ? 160 : 24}
+                        />
+                        {multiline && (
+                            <Text style={styles.charCount}>{text.length}/160</Text>
+                        )}
+                        <View style={styles.editActions}>
+                            <TouchableOpacity style={styles.editBtnCancel} onPress={onClose}>
+                                <Text style={styles.editBtnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.editBtnSave, !text.trim() && { opacity: 0.4 }]}
+                                onPress={() => { if (text.trim()) onSave(text.trim()); }}
+                                disabled={!text.trim()}
+                            >
+                                <Text style={styles.editBtnSaveText}>Save</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                </View>
+            </KeyboardAvoidingView>
+        </Modal>
+    );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function Settings({ route }) {
+export default function Profile() {
     const navigation = useNavigation();
 
-    // Pull user from route params or refetch
     const [user, setUser] = useState(null);
     const [notifications, setNotifications] = useState(true);
     const [soundFx, setSoundFx] = useState(true);
     const [haptics, setHaptics] = useState(true);
 
-    // Avatar picker modal
+    // Avatar modal
     const [avatarModal, setAvatarModal] = useState(false);
-    const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar ?? "🐟");
+    const [selectedAvatar, setSelectedAvatar] = useState("🐟");
     const [saving, setSaving] = useState(false);
-    const modalAnim = useRef(new Animated.Value(0)).current;
+    const avatarAnim = useRef(new Animated.Value(0)).current;
+
+    // Edit modals
+    const [editNameVisible, setEditNameVisible] = useState(false);
+    const [editBioVisible, setEditBioVisible] = useState(false);
+    const [savingField, setSavingField] = useState(false);
 
     React.useEffect(() => {
-        const getMyUser = async () => {
+        (async () => {
             try {
                 const token = await AsyncStorage.getItem("authToken");
                 const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
+                    headers: { "Content-Type": "application/json", "auth-token": token },
                 });
                 const json = await res.json();
                 setUser(json);
-            } catch (e) {
-                console.log(e);
-            }
-        };
-        getMyUser();
+                setSelectedAvatar(json?.avatar ?? "🐟");
+            } catch (e) { console.log(e); }
+        })();
     }, []);
 
+    // ── Avatar modal ──────────────────────────────────────────────────────────
     const openAvatarModal = () => {
         setAvatarModal(true);
-        Animated.spring(modalAnim, {
-            toValue: 1, useNativeDriver: true, damping: 18, stiffness: 200,
-        }).start();
+        Animated.spring(avatarAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 200 }).start();
     };
 
     const closeAvatarModal = () => {
-        Animated.timing(modalAnim, {
-            toValue: 0, duration: 200, useNativeDriver: true,
-        }).start(() => setAvatarModal(false));
+        Animated.timing(avatarAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+            .start(() => setAvatarModal(false));
     };
 
-    // ── Save avatar & reset stats ─────────────────────────────────────────────
     const confirmAvatarChange = () => {
         showAlert2({
-            type: 'confirm', title: "Reset your stats?", message: "Changing your avatar will reset your wins, level, XP, stars, and streak to zero. This cannot be undone.",
-            onConfirm: () => { saveAvatar() }
+            type: "confirm",
+            title: "Reset your stats?",
+            message: "Changing your avatar resets wins, level, XP, stars and streak to zero.",
+            onConfirm: saveAvatar,
         });
-        // Alert.alert(
-        //     "Reset your stats?",
-        //     "Changing your avatar will reset your wins, level, XP, stars, and streak to zero. This cannot be undone.",
-        //     [
-        //         { text: "Cancel", style: "cancel" },
-        //         {
-        //             text: "Change & Reset",
-        //             style: "destructive",
-        //             onPress: () => saveAvatar(),
-        //         },
-        //     ]
-        // );
     };
 
     const saveAvatar = async () => {
@@ -145,59 +199,69 @@ export default function Settings({ route }) {
             const token = await AsyncStorage.getItem("authToken");
             const res = await fetch(`${BACKEND_URL}/api/auth/change-avatar`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "auth-token": token,
-                },
+                headers: { "Content-Type": "application/json", "auth-token": token },
                 body: JSON.stringify({ avatar: selectedAvatar }),
             });
             const json = await res.json();
             if (json.success) {
-                setUser((u) => ({ ...u, avatar: selectedAvatar }));
+                setUser(u => ({ ...u, avatar: selectedAvatar }));
                 closeAvatarModal();
-                //Alert.alert("Done!", "Avatar updated and stats reset.");
-                showAlert2({ type: 'success', title: 'Done!', message: 'Avatar updated and stats reset' });
+                showAlert2({ type: "success", title: "Done!", message: "Avatar updated and stats reset." });
             } else {
-                showAlert2({ type: 'error', title: 'Error', message: json.error || 'Something went wrong' });
+                showAlert2({ type: "error", title: "Error", message: json.error || "Something went wrong." });
             }
-        } catch (e) {
-            showAlert2({ type: 'error', title: 'Error', message: 'Could not connect to server.' });
+        } catch {
+            showAlert2({ type: "error", title: "Error", message: "Could not connect to server." });
         } finally {
             setSaving(false);
         }
     };
 
-    // ── Logout ────────────────────────────────────────────────────────────────
+    // ── Save name / bio ───────────────────────────────────────────────────────
+    const saveField = async (field, value) => {
+        setSavingField(true);
+        try {
+            const token = await AsyncStorage.getItem("authToken");
+            const res = await fetch(`${BACKEND_URL}/api/auth/update-profile`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "auth-token": token },
+                body: JSON.stringify({ [field]: value }),
+            });
+            const json = await res.json();
+            if (json.success) {
+                setUser(u => ({ ...u, [field]: value }));
+                setEditNameVisible(false);
+                setEditBioVisible(false);
+            } else {
+                showAlert2({ type: "error", title: "Error", message: json.error || "Update failed." });
+            }
+        } catch {
+            showAlert2({ type: "error", title: "Error", message: "Could not connect to server." });
+        } finally {
+            setSavingField(false);
+        }
+    };
+
+    // ── Logout / delete ───────────────────────────────────────────────────────
     const handleLogout = () => {
         showAlert2({
-            type: 'confirm', title: 'Log out', message: 'Are you sure you want to log out?', onConfirm: async () => {
+            type: "confirm", title: "Log out", message: "Are you sure you want to log out?",
+            onConfirm: async () => {
                 await AsyncStorage.removeItem("authToken");
                 navigation.reset({ index: 0, routes: [{ name: "Login" }] });
             },
-        })
-        // Alert.alert("Log out", "Are you sure you want to log out?", [
-        //     { text: "Cancel", style: "cancel" },
-        //     {
-        //         text: "Log out",
-        //         style: "destructive",
-        //         onPress: async () => {
-        //             await AsyncStorage.removeItem("authToken");
-        //             navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-        //         },
-        //     },
-        // ]);
+        });
     };
 
-    // ── Delete account ────────────────────────────────────────────────────────
     const handleDeleteAccount = () => {
         showAlert2({
-            type: 'confirm', title: 'Delete account', message: 'This will permanently delete your account and all data. There is no going back.',
+            type: "confirm", title: "Delete account",
+            message: "This permanently deletes your account and all data. There is no going back.",
             onConfirm: async () => {
                 try {
                     const token = await AsyncStorage.getItem("authToken");
                     await fetch(`${BACKEND_URL}/api/auth/delete-account`, {
-                        method: "DELETE",
-                        headers: { "auth-token": token },
+                        method: "DELETE", headers: { "auth-token": token },
                     });
                     await AsyncStorage.clear();
                     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
@@ -206,107 +270,131 @@ export default function Settings({ route }) {
                 }
             },
         });
-        // Alert.alert(
-        //     "Delete account",
-        //     "This will permanently delete your account and all data. There is no going back.",
-        //     [
-        //         { text: "Cancel", style: "cancel" },
-        //         {
-        //             text: "Delete",
-        //             style: "destructive",
-        //             onPress: async () => {
-        //                 try {
-        //                     const token = await AsyncStorage.getItem("authToken");
-        //                     await fetch(`${BACKEND_URL}/api/auth/delete-account`, {
-        //                         method: "DELETE",
-        //                         headers: { "auth-token": token },
-        //                     });
-        //                     await AsyncStorage.clear();
-        //                     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-        //                 } catch {
-        //                     Alert.alert("Error", "Could not delete account.");
-        //                 }
-        //             },
-        //         },
-        //     ]
-        // );
     };
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <ImageBackground
             source={require("../images/message_bg.png")}
-            style={styles.background}
-            resizeMode="cover">
+            style={styles.bg}
+            resizeMode="cover"
+        >
+            {/* Frosted tint over the background */}
+            <View style={styles.bgTint} />
+
             <SafeAreaView style={styles.safe}>
                 <ScrollView
-                    style={styles.scroll}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Header */}
+                    {/* ── Header ── */}
                     <View style={styles.header}>
-                        <Icon
-                            name="arrow-left"
-                            size={26}
-                            color="#000"
-                            onPress={() => navigation.goBack()}
-                        />
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                            <Icon name="arrow-left" size={16} color={T.INK} />
+                        </TouchableOpacity>
                         <Text style={styles.headerTitle}>Settings</Text>
                         <View style={{ width: 36 }} />
                     </View>
 
-                    {/* Profile summary */}
-                    <View style={styles.profileRow}>
-                        <TouchableOpacity onPress={openAvatarModal} style={styles.avatarWrap}>
-                            <Text style={styles.avatarEmoji}>{user?.avatar || "🐟"}</Text>
-                            <View style={styles.avatarEditBadge}>
-                                <Text style={styles.avatarEditIcon}>✏️</Text>
+                    {/* ── Hero profile card ── */}
+                    <GlassCard style={styles.heroCard}>
+                        {/* Avatar */}
+                        <TouchableOpacity onPress={openAvatarModal} style={styles.heroAvatarWrap}>
+                            <Text style={styles.heroAvatarEmoji}>{user?.avatar ?? "🐟"}</Text>
+                            <View style={styles.heroAvatarBadge}>
+                                <Icon name="pen" size={9} color="#fff" />
                             </View>
                         </TouchableOpacity>
-                        <View style={styles.profileInfo}>
-                            <Text style={styles.profileName}>{user?.username ?? "—"}</Text>
-                            <Text style={styles.profileEmail}>{user?.email ?? "—"}</Text>
-                            <View style={styles.profileBadge}>
-                                <Text style={styles.profileBadgeText}>Level {user?.level ?? 1}</Text>
-                            </View>
+
+                        {/* Name row */}
+                        <View style={styles.heroNameRow}>
+                            <Text style={styles.heroName}>{user?.username ?? "—"}</Text>
+                            <TouchableOpacity onPress={() => setEditNameVisible(true)} style={styles.heroEditBtn}>
+                                <Icon name="pen" size={11} color={T.GOLD} />
+                            </TouchableOpacity>
                         </View>
+
+                        {/* Email */}
+                        <Text style={styles.heroEmail}>{user?.email ?? "—"}</Text>
+
+                        {/* Bio row */}
+                        <TouchableOpacity onPress={() => setEditBioVisible(true)} style={styles.heroBioWrap}>
+                            <Text style={[styles.heroBio, !user?.bio && { color: T.INK_LIGHT, fontStyle: "italic" }]}>
+                                {user?.bio || "Tap to add a bio…"}
+                            </Text>
+                            <Icon name="pen" size={10} color={T.INK_LIGHT} style={{ marginLeft: 6 }} />
+                        </TouchableOpacity>
+
+                        {/* Level badge */}
+                        <View style={styles.heroLevelBadge}>
+                            <Text style={styles.heroLevelText}>⭐ Level {user?.level ?? 1}</Text>
+                        </View>
+                    </GlassCard>
+
+                    {/* ── Stats ── */}
+                    <SectionTitle label="Your stats" />
+                    <View style={styles.statsGrid}>
+                        {[
+                            { icon: "🏆", label: "Wins", value: (user?.wins?.classic+ user?.wins?.fast+ user?.wins?.power)?? 0 },
+                            { icon: "✨", label: "Stars", value: `${user?.stars ?? 0}/5` },
+                            { icon: "⚡", label: "Total XP", value: user?.totalXp ?? 0 },
+                            { icon: "📅", label: "Days in", value: user?.daysLoggedIn ?? 0 },
+                        ].map(stat => (
+                            <GlassCard key={stat.label} style={styles.statCard}>
+                                <Text style={styles.statIcon}>{stat.icon}</Text>
+                                <Text style={styles.statValue}>{stat.value}</Text>
+                                <Text style={styles.statLabel}>{stat.label}</Text>
+                            </GlassCard>
+                        ))}
                     </View>
 
                     {/* ── Account ── */}
                     <SectionTitle label="Account" />
-                    <SettingCard>
+                    <GlassCard>
                         <SettingRow
                             icon="🎭"
                             label="Change avatar"
                             sub="Resets all stats to zero"
                             onPress={openAvatarModal}
-                            right={<Text style={styles.chevron}>›</Text>}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
+                        />
+                        <Divider />
+                        <SettingRow
+                            icon="✏️"
+                            label="Edit name"
+                            sub={user?.username ?? "—"}
+                            onPress={() => setEditNameVisible(true)}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
+                        />
+                        <Divider />
+                        <SettingRow
+                            icon="💬"
+                            label="Edit bio"
+                            sub={user?.bio ? user.bio.slice(0, 30) + (user.bio.length > 30 ? "…" : "") : "Not set"}
+                            onPress={() => setEditBioVisible(true)}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
                         />
                         <Divider />
                         <SettingRow
                             icon="🔑"
                             label="Change password"
                             onPress={() => navigation.navigate("ChangePassword")}
-                            right={<Text style={styles.chevron}>›</Text>}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
                             isLast
                         />
-                    </SettingCard>
+                    </GlassCard>
 
-                    {/* ── Game ── */}
+                    {/* ── Game settings ── */}
                     <SectionTitle label="Game" />
-                    <SettingCard>
+                    <GlassCard>
                         <SettingRow
                             icon="🔔"
                             label="Notifications"
-                            sub="Friend requests and messages"
+                            sub="Friend requests & messages"
                             right={
-                                <Switch
-                                    value={notifications}
-                                    onValueChange={setNotifications}
-                                    trackColor={{ false: T.GOLD_DIM, true: T.GOLD }}
-                                    thumbColor={T.WHITE}
-                                />
+                                <Switch value={notifications} onValueChange={setNotifications}
+                                    trackColor={{ false: "#ccc", true: T.GOLD }}
+                                    thumbColor="#fff" />
                             }
                         />
                         <Divider />
@@ -314,12 +402,9 @@ export default function Settings({ route }) {
                             icon="🎵"
                             label="Sound effects"
                             right={
-                                <Switch
-                                    value={soundFx}
-                                    onValueChange={setSoundFx}
-                                    trackColor={{ false: T.GOLD_DIM, true: T.GOLD }}
-                                    thumbColor={T.WHITE}
-                                />
+                                <Switch value={soundFx} onValueChange={setSoundFx}
+                                    trackColor={{ false: "#ccc", true: T.GOLD }}
+                                    thumbColor="#fff" />
                             }
                         />
                         <Divider />
@@ -327,70 +412,48 @@ export default function Settings({ route }) {
                             icon="📳"
                             label="Haptic feedback"
                             right={
-                                <Switch
-                                    value={haptics}
-                                    onValueChange={setHaptics}
-                                    trackColor={{ false: T.GOLD_DIM, true: T.GOLD }}
-                                    thumbColor={T.WHITE}
-                                />
+                                <Switch value={haptics} onValueChange={setHaptics}
+                                    trackColor={{ false: "#ccc", true: T.GOLD }}
+                                    thumbColor="#fff" />
                             }
                             isLast
                         />
-                    </SettingCard>
-
-                    {/* ── Stats ── */}
-                    <SectionTitle label="Stats" />
-                    <SettingCard>
-                        <View style={styles.statsGrid}>
-                            {[
-                                { label: "Total XP", value: user?.totalXp ?? 0, icon: "⭐" },
-                                { label: "Rank", value: `#${user?.rank ?? "—"}`, icon: "🏆" },
-                                { label: "Stars", value: `${user?.stars ?? 0} / 5`, icon: "✨" },
-                                { label: "Days logged in", value: user?.daysLoggedIn ?? 0, icon: "📅" },
-                            ].map((stat) => (
-                                <View key={stat.label} style={styles.statBox}>
-                                    <Text style={styles.statIcon}>{stat.icon}</Text>
-                                    <Text style={styles.statValue}>{stat.value}</Text>
-                                    <Text style={styles.statLabel}>{stat.label}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </SettingCard>
+                    </GlassCard>
 
                     {/* ── About ── */}
                     <SectionTitle label="About" />
-                    <SettingCard>
+                    <GlassCard>
                         <SettingRow
                             icon="📋"
                             label="Terms of service"
                             onPress={() => navigation.navigate("TermsOfService")}
-                            right={<Text style={styles.chevron}>›</Text>}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
                         />
                         <Divider />
                         <SettingRow
                             icon="🔒"
                             label="Privacy policy"
                             onPress={() => navigation.navigate("PrivacyPolicy")}
-                            right={<Text style={styles.chevron}>›</Text>}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
                         />
                         <Divider />
                         <SettingRow
                             icon="ℹ️"
                             label="App version"
-                            right={<Text style={styles.versionText}>1.0.0</Text>}
+                            right={<Text style={styles.versionBadge}>1.0.0</Text>}
                             isLast
                         />
-                    </SettingCard>
+                    </GlassCard>
 
                     {/* ── Danger zone ── */}
                     <SectionTitle label="Account actions" />
-                    <SettingCard>
+                    <GlassCard>
                         <SettingRow
                             icon="🚪"
                             label="Log out"
                             danger
                             onPress={handleLogout}
-                            right={<Text style={[styles.chevron, { color: T.DANGER }]}>›</Text>}
+                            right={<Icon name="chevron-right" size={13} color={T.DANGER} />}
                         />
                         <Divider />
                         <SettingRow
@@ -399,418 +462,365 @@ export default function Settings({ route }) {
                             sub="Permanently removes all data"
                             danger
                             onPress={handleDeleteAccount}
-                            right={<Text style={[styles.chevron, { color: T.DANGER }]}>›</Text>}
+                            right={<Icon name="chevron-right" size={13} color={T.DANGER} />}
                             isLast
                         />
-                    </SettingCard>
+                    </GlassCard>
 
-                    <View style={{ height: 40 }} />
+                    <View style={{ height: 48 }} />
                 </ScrollView>
+            </SafeAreaView>
 
-                {/* ── Avatar picker modal ── */}
-                <Modal visible={avatarModal} transparent animationType="none">
-                    <View style={styles.modalOverlay}>
-                        <Animated.View
-                            style={[
-                                styles.modalSheet,
-                                {
-                                    transform: [{
-                                        translateY: modalAnim.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: [400, 0],
-                                        }),
-                                    }],
-                                    opacity: modalAnim,
-                                },
-                            ]}
-                        >
-                            <View style={styles.modalHandle} />
-                            <Text style={styles.modalTitle}>Pick an avatar</Text>
-                            <Text style={styles.modalSub}>
-                                Changing your avatar resets all stats to zero.
-                            </Text>
+            {/* ── Avatar picker modal ── */}
+            <Modal visible={avatarModal} transparent animationType="none">
+                <View style={styles.modalOverlay}>
+                    <Animated.View style={[styles.avatarSheet, {
+                        transform: [{ translateY: avatarAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) }],
+                        opacity: avatarAnim,
+                    }]}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>Choose an avatar</Text>
+                        <Text style={styles.modalWarn}>⚠️ Changing avatar resets all your stats</Text>
 
-                            {/* Grid */}
-                            <View style={styles.avatarGrid}>
-                                {AVATARS.map((emoji) => (
-                                    <TouchableOpacity
-                                        key={emoji}
-                                        onPress={() => setSelectedAvatar(emoji)}
-                                        style={[
-                                            styles.avatarOption,
-                                            selectedAvatar === emoji && styles.avatarOptionSelected,
-                                        ]}
-                                    >
-                                        <Text style={styles.avatarOptionEmoji}>{emoji}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {/* Preview */}
-                            <View style={styles.previewRow}>
-                                <View style={styles.previewCircle}>
-                                    <Text style={styles.previewEmoji}>{selectedAvatar}</Text>
-                                </View>
-                                <Text style={styles.previewLabel}>
-                                    {selectedAvatar === user?.avatar
-                                        ? "Current avatar"
-                                        : "New avatar selected"}
-                                </Text>
-                            </View>
-
-                            {/* Actions */}
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity onPress={closeAvatarModal} style={styles.btnCancel}>
-                                    <Text style={styles.btnCancelText}>Cancel</Text>
-                                </TouchableOpacity>
+                        <View style={styles.avatarGrid}>
+                            {AVATARS.map(emoji => (
                                 <TouchableOpacity
-                                    onPress={confirmAvatarChange}
-                                    style={[
-                                        styles.btnConfirm,
-                                        selectedAvatar === user?.avatar && styles.btnDisabled,
-                                    ]}
-                                    disabled={selectedAvatar === user?.avatar || saving}
+                                    key={emoji}
+                                    onPress={() => setSelectedAvatar(emoji)}
+                                    style={[styles.avatarOption, selectedAvatar === emoji && styles.avatarOptionSel]}
                                 >
-                                    {saving ? (
-                                        <ActivityIndicator color={T.NAV} />
-                                    ) : (
-                                        <Text style={[styles.btnConfirmText]}>
-                                            Save & reset stats{"  "}
-                                            <Text style={{ fontSize: 12, color: "#e1d11f", marginLeft: 4 }}>
-                                                <Icon name="coins" size={12} color="#e1d11f" style={{ marginLeft: 3 }} /> 2000
-                                            </Text>
-                                        </Text>
+                                    <Text style={styles.avatarEmoji}>{emoji}</Text>
+                                    {selectedAvatar === emoji && (
+                                        <View style={styles.avatarCheck}>
+                                            <Icon name="check" size={8} color="#fff" />
+                                        </View>
                                     )}
                                 </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {/* Preview */}
+                        <View style={styles.previewRow}>
+                            <View style={styles.previewCircle}>
+                                <Text style={{ fontSize: 32 }}>{selectedAvatar}</Text>
                             </View>
-                        </Animated.View>
-                    </View>
-                </Modal>
-            </SafeAreaView>
+                            <Text style={styles.previewLabel}>
+                                {selectedAvatar === user?.avatar ? "Current avatar" : "New avatar selected"}
+                            </Text>
+                        </View>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={styles.btnCancel} onPress={closeAvatarModal}>
+                                <Text style={styles.btnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.btnConfirm, (selectedAvatar === user?.avatar || saving) && styles.btnDisabled]}
+                                onPress={confirmAvatarChange}
+                                disabled={selectedAvatar === user?.avatar || saving}
+                            >
+                                {saving
+                                    ? <ActivityIndicator color="#fff" />
+                                    : <Text style={styles.btnConfirmText}>Save & reset  🪙 2000</Text>
+                                }
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                </View>
+            </Modal>
+
+            {/* ── Edit name modal ── */}
+            <EditModal
+                visible={editNameVisible}
+                title="Edit name"
+                placeholder="Your display name"
+                value={user?.username}
+                onClose={() => setEditNameVisible(false)}
+                onSave={v => saveField("username", v)}
+            />
+
+            {/* ── Edit bio modal ── */}
+            <EditModal
+                visible={editBioVisible}
+                title="Edit bio"
+                placeholder="Tell people a bit about yourself…"
+                value={user?.bio}
+                onClose={() => setEditBioVisible(false)}
+                onSave={v => saveField("bio", v)}
+                multiline
+            />
         </ImageBackground>
     );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
+    bg: { flex: 1 },
+    bgTint: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(5,18,2,0.84)",  // deep dark overlay — kills the bright lime
+    },
+    safe: { flex: 1 },
 
     scrollContent: {
         paddingHorizontal: 16,
         paddingBottom: 24,
     },
 
-    // Header
+    // ── Header ──
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        paddingLeft: 12,
-        color: '#000',
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 14,
+        paddingHorizontal: 4,
     },
     backBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: T.CARD,
-        justifyContent: "center",
-        alignItems: "center",
+        width: 36, height: 36, borderRadius: 18,
+        backgroundColor: "rgba(255,255,255,0.10)",
+        justifyContent: "center", alignItems: "center",
+        borderWidth: 1, borderColor: "rgba(255,255,255,0.15)",
+        shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 2,
     },
-    backArrow: {
-        color: T.GOLD,
-        fontSize: 20,
-        lineHeight: 22,
+    headerTitle: {
+        fontSize: 20, fontWeight: "800", color: T.INK,
+        letterSpacing: 0.3,
     },
 
-    // Profile row
-    profileRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: T.CARD,
-        borderWidth: 1,
-        borderColor: T.BORDER,
-        borderRadius: 20,
-        padding: 16,
-        marginBottom: 24,
-        gap: 16,
-    },
-    avatarWrap: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: "#000",
-        borderWidth: 2,
-        borderColor: T.GOLD,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    avatarEmoji: {
-        fontSize: 40,
-    },
-    avatarEditBadge: {
-        position: "absolute",
-        bottom: -2,
-        right: -2,
-        backgroundColor: T.GOLD,
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    avatarEditIcon: {
-        fontSize: 11,
-    },
-    profileInfo: {
-        flex: 1,
-        gap: 2,
-    },
-    profileName: {
-        color: T.WHITE,
-        fontSize: 18,
-        fontWeight: "700",
-    },
-    profileEmail: {
-        color: T.SUB,
-        fontSize: 13,
-    },
-    profileBadge: {
-        marginTop: 4,
-        alignSelf: "flex-start",
-        backgroundColor: "#7C3AED55",
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-    },
-    profileBadgeText: {
-        color: T.GOLD,
-        fontSize: 12,
-        fontWeight: "600",
-    },
-
-    // Section title
-    sectionTitle: {
-        color: T.GOLD,
-        fontSize: 12,
-        fontWeight: "700",
-        letterSpacing: 1.2,
-        textTransform: "uppercase",
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-
-    // Card
+    // ── Glass card ──
     card: {
-        backgroundColor: T.CARD,
+        backgroundColor: T.GLASS,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: T.BORDER,
-        borderRadius: 18,
-        marginBottom: 20,
+        borderColor: T.GLASS_BORDER,
+        marginBottom: 16,
         overflow: "hidden",
+        shadowColor: "#000",
+        shadowOpacity: 0.4,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 12,
+        elevation: 6,
     },
 
-    // Row
-    row: {
-        flexDirection: "row",
+    // ── Hero card ──
+    heroCard: {
         alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        gap: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: T.DIVIDER,
+        paddingTop: 24,
+        paddingBottom: 20,
+        paddingHorizontal: 20,
+        marginBottom: 24,
+        gap: 6,
     },
-    rowLast: {
-        borderBottomWidth: 0,
+    heroAvatarWrap: {
+        width: 82, height: 82, borderRadius: 41,
+        backgroundColor: "rgba(0,0,0,0.06)",
+        borderWidth: 3, borderColor: T.GOLD,
+        justifyContent: "center", alignItems: "center",
+        marginBottom: 4,
+        shadowColor: T.GOLD, shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
     },
-    rowIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: "#7C3AED33",
-        justifyContent: "center",
-        alignItems: "center",
+    heroAvatarEmoji: { fontSize: 46 },
+    heroAvatarBadge: {
+        position: "absolute", bottom: 0, right: 0,
+        width: 24, height: 24, borderRadius: 12,
+        backgroundColor: T.GOLD,
+        justifyContent: "center", alignItems: "center",
+        borderWidth: 2, borderColor: "#fff",
     },
-    rowIconText: {
-        fontSize: 18,
+    heroNameRow: {
+        flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4,
     },
-    rowContent: {
-        flex: 1,
+    heroName: {
+        fontSize: 22, fontWeight: "800", color: T.INK,
+        letterSpacing: 0.2,
     },
-    rowLabel: {
-        color: T.WHITE,
-        fontSize: 15,
-        fontWeight: "500",
+    heroEditBtn: {
+        width: 26, height: 26, borderRadius: 13,
+        backgroundColor: T.GOLD_BG,
+        borderWidth: 1, borderColor: T.GOLD,
+        justifyContent: "center", alignItems: "center",
     },
-    rowSub: {
-        color: T.SUB,
-        fontSize: 12,
-        marginTop: 2,
+    heroEmail: {
+        fontSize: 13, color: T.INK_MED, marginBottom: 2,
     },
-    rowRight: {
-        flexShrink: 0,
+    heroBioWrap: {
+        flexDirection: "row", alignItems: "center",
+        maxWidth: "90%",
     },
-    chevron: {
-        color: T.SUB,
-        fontSize: 22,
-        lineHeight: 24,
+    heroBio: {
+        fontSize: 13, color: T.INK_MED,
+        textAlign: "center", lineHeight: 18, flexShrink: 1,
     },
-    versionText: {
-        color: T.SUB,
-        fontSize: 14,
+    heroLevelBadge: {
+        marginTop: 10,
+        backgroundColor: T.GOLD_BG,
+        borderWidth: 1, borderColor: T.GOLD,
+        borderRadius: 20,
+        paddingHorizontal: 14, paddingVertical: 4,
     },
-    divider: {
-        height: 1,
-        backgroundColor: T.DIVIDER,
-        marginLeft: 64,
+    heroLevelText: {
+        color: T.GOLD, fontWeight: "700", fontSize: 13,
     },
 
-    // Stats grid
+    // ── Section title ──
+    sectionTitleRow: {
+        flexDirection: "row", alignItems: "center", gap: 8,
+        marginBottom: 10, marginTop: 4, marginLeft: 2,
+    },
+    sectionTitleBar: {
+        width: 4, height: 14, borderRadius: 2,
+        backgroundColor: T.GOLD,
+    },
+    sectionTitle: {
+        color: T.LABEL, fontSize: 12, fontWeight: "800",
+        letterSpacing: 1.1, textTransform: "uppercase",
+    },
+
+    // ── Stats grid ──
     statsGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        padding: 12,
-        gap: 10,
+        flexDirection: "row", flexWrap: "wrap",
+        gap: 10, marginBottom: 16,
     },
-    statBox: {
-        width: "47%",
-        backgroundColor: "#7C3AED22",
-        borderRadius: 14,
-        padding: 12,
+    statCard: {
+        width: "47.5%",
         alignItems: "center",
+        paddingVertical: 16,
+        paddingHorizontal: 8,
         gap: 4,
     },
-    statIcon: {
-        fontSize: 22,
+    statIcon: { fontSize: 22 },
+    statValue: { fontSize: 20, fontWeight: "800", color: T.GOLD },
+    statLabel: { fontSize: 11, color: T.INK_MED, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+
+    // ── Setting row ──
+    row: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 16, paddingVertical: 13,
+        gap: 12,
+        borderBottomWidth: 1, borderBottomColor: T.DIV,
     },
-    statValue: {
-        color: T.GOLD,
-        fontSize: 18,
-        fontWeight: "700",
+    rowLast: { borderBottomWidth: 0 },
+    rowIconWrap: {
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: "rgba(255,255,255,0.08)",
+        justifyContent: "center", alignItems: "center",
     },
-    statLabel: {
-        color: T.SUB,
-        fontSize: 12,
-        textAlign: "center",
+    rowIconText: { fontSize: 17 },
+    rowContent: { flex: 1 },
+    rowLabel: { color: T.INK, fontSize: 15, fontWeight: "600" },
+    rowSub: { color: T.INK_LIGHT, fontSize: 12, marginTop: 1 },
+    rowRight: { flexShrink: 0 },
+
+    divider: { height: 1, backgroundColor: T.DIV, marginLeft: 64 },
+
+    versionBadge: {
+        backgroundColor: "rgba(255,255,255,0.08)",
+        color: T.INK_MED, fontSize: 13, fontWeight: "600",
+        paddingHorizontal: 10, paddingVertical: 3,
+        borderRadius: 10,
     },
 
-    // Modal
+    // ── Avatar modal ──
     modalOverlay: {
-        flex: 1,
-        backgroundColor: "#00000088",
-        justifyContent: "flex-end",
+        flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end",
     },
-    modalSheet: {
-        backgroundColor: T.CARD,
-        borderTopLeftRadius: 28,
-        borderTopRightRadius: 28,
-        borderWidth: 1,
-        borderColor: T.BORDER,
-        padding: 20,
-        paddingBottom: 36,
+    avatarSheet: {
+        backgroundColor: "rgba(18,40,8,0.97)",
+        borderTopLeftRadius: 28, borderTopRightRadius: 28,
+        borderTopWidth: 1, borderColor: "rgba(255,255,255,0.10)",
+        padding: 20, paddingBottom: 36,
     },
     modalHandle: {
-        width: 40,
-        height: 4,
-        backgroundColor: T.BORDER,
-        borderRadius: 2,
-        alignSelf: "center",
-        marginBottom: 16,
+        width: 40, height: 4, backgroundColor: "#ccc",
+        borderRadius: 2, alignSelf: "center", marginBottom: 16,
     },
     modalTitle: {
-        color: T.WHITE,
-        fontSize: 20,
-        fontWeight: "700",
-        textAlign: "center",
+        color: T.INK, fontSize: 20, fontWeight: "800",
+        textAlign: "center", marginBottom: 4,
     },
-    modalSub: {
-        color: T.DANGER,
-        fontSize: 13,
-        textAlign: "center",
-        marginTop: 6,
-        marginBottom: 16,
+    modalWarn: {
+        color: T.DANGER, fontSize: 13, textAlign: "center", marginBottom: 16,
     },
     avatarGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 10,
-        justifyContent: "center",
-        marginBottom: 16,
+        flexDirection: "row", flexWrap: "wrap", gap: 10,
+        justifyContent: "center", marginBottom: 16,
     },
     avatarOption: {
-        width: 52,
-        height: 52,
-        borderRadius: 14,
-        backgroundColor: "#7C3AED22",
-        justifyContent: "center",
-        alignItems: "center",
-        borderWidth: 2,
-        borderColor: "transparent",
+        width: 54, height: 54, borderRadius: 16,
+        backgroundColor: "rgba(255,255,255,0.07)",
+        justifyContent: "center", alignItems: "center",
+        borderWidth: 2, borderColor: "transparent",
     },
-    avatarOptionSelected: {
+    avatarOptionSel: {
         borderColor: T.GOLD,
-        backgroundColor: "#F8B55F22",
+        backgroundColor: T.GOLD_BG,
     },
-    avatarOptionEmoji: {
-        fontSize: 28,
+    avatarEmoji: { fontSize: 28 },
+    avatarCheck: {
+        position: "absolute", top: -4, right: -4,
+        width: 16, height: 16, borderRadius: 8,
+        backgroundColor: T.GOLD,
+        justifyContent: "center", alignItems: "center",
     },
     previewRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-        marginBottom: 20,
+        flexDirection: "row", alignItems: "center",
+        justifyContent: "center", gap: 12, marginBottom: 20,
     },
     previewCircle: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: "#000",
-        borderWidth: 2,
-        borderColor: T.GOLD,
-        justifyContent: "center",
-        alignItems: "center",
+        width: 56, height: 56, borderRadius: 28,
+        backgroundColor: "rgba(0,0,0,0.05)",
+        borderWidth: 2, borderColor: T.GOLD,
+        justifyContent: "center", alignItems: "center",
     },
-    previewEmoji: {
-        fontSize: 28,
-    },
-    previewLabel: {
-        color: T.SUB,
-        fontSize: 14,
-    },
-    modalActions: {
-        flexDirection: "row",
-        gap: 12,
-    },
+    previewLabel: { color: T.INK_MED, fontSize: 14, fontWeight: "600" },
+
+    modalActions: { flexDirection: "row", gap: 12 },
     btnCancel: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: T.BORDER,
-        alignItems: "center",
+        flex: 1, paddingVertical: 14, borderRadius: 14,
+        borderWidth: 1.5, borderColor: "#ddd", alignItems: "center",
     },
-    btnCancelText: {
-        color: T.SUB,
-        fontSize: 15,
-        fontWeight: "600",
-    },
+    btnCancelText: { color: T.INK_MED, fontSize: 15, fontWeight: "600" },
     btnConfirm: {
-        flex: 2,
-        paddingVertical: 14,
+        flex: 2, paddingVertical: 14, borderRadius: 14,
+        backgroundColor: T.GOLD, alignItems: "center",
+        shadowColor: T.GOLD, shadowOpacity: 0.4, shadowRadius: 8, elevation: 4,
+    },
+    btnDisabled: { opacity: 0.38 },
+    btnConfirmText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+
+    // ── Edit modal ──
+    editOverlay: {
+        flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end",
+    },
+    editSheet: {
+        backgroundColor: "rgba(18,40,8,0.97)",
+        borderTopLeftRadius: 28, borderTopRightRadius: 28,
+        padding: 20, paddingBottom: 36,
+    },
+    editTitle: {
+        color: T.INK, fontSize: 18, fontWeight: "800",
+        textAlign: "center", marginBottom: 16,
+    },
+    editInput: {
+        backgroundColor: "rgba(255,255,255,0.07)",
+        borderWidth: 1.5, borderColor: "rgba(255,255,255,0.12)",
         borderRadius: 14,
-        backgroundColor: T.GOLD,
-        alignItems: "center",
+        paddingHorizontal: 14, paddingVertical: 12,
+        fontSize: 15, color: T.INK,
+        marginBottom: 4,
     },
-    btnDisabled: {
-        opacity: 0.4,
+    charCount: {
+        color: T.INK_LIGHT, fontSize: 11, textAlign: "right",
+        marginBottom: 16, marginRight: 4,
     },
-    btnConfirmText: {
-        color: T.WHITE,
-        fontSize: 15,
-        fontWeight: "700",
+    editActions: { flexDirection: "row", gap: 12, marginTop: 12 },
+    editBtnCancel: {
+        flex: 1, paddingVertical: 13, borderRadius: 14,
+        borderWidth: 1.5, borderColor: "#ddd", alignItems: "center",
     },
+    editBtnCancelText: { color: T.INK_MED, fontSize: 15, fontWeight: "600" },
+    editBtnSave: {
+        flex: 2, paddingVertical: 13, borderRadius: 14,
+        backgroundColor: T.GOLD, alignItems: "center",
+    },
+    editBtnSaveText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

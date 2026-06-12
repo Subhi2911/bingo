@@ -1,14 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 import {
     StyleSheet, Text, TextInput, TouchableOpacity,
-    View, Modal, Pressable, Alert, Animated, KeyboardAvoidingView,
+    View, Modal, Pressable, Animated, KeyboardAvoidingView,
     Platform, ScrollView
 } from 'react-native';
 import React, { useState, useRef } from 'react';
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import { showAlert2 } from './CustomAlert2';
+import { useAlertToast } from './AlertToast';
 
 const MODAL_STEPS = ['Email', 'Verify', 'Reset'];
 
@@ -54,6 +54,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const navigation = useNavigation();
+    const { showToast } = useAlertToast();
 
     const onChange = (name, value) => setCredentials(prev => ({ ...prev, [name]: value }));
 
@@ -75,7 +76,7 @@ const Login = () => {
 
     const handleLogin = async () => {
         if (!credentials.email || !credentials.password) {
-            showAlert2({ type: 'error', title: 'Error', message: 'All fields required' });
+           showToast('error', 'Error', 'All fields are required.');
             return;
         }
         setLoading(true);
@@ -89,9 +90,9 @@ const Login = () => {
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
                 navigation.navigate("Dashboard");
-                showAlert2({ type: 'success', title: 'Login Successful!' });
+                showToast('success', 'Welcome back', 'Lets play!');
             } else {
-                showAlert2({ type: 'error', title: 'Login Failed!', msg: data.error|| "Please Try again after sometime." });
+                showToast('error', 'Login failed', data.error|| 'Invalid email or password. Please try again.');
             }
         } catch (err) {
             console.log(err);
@@ -99,7 +100,7 @@ const Login = () => {
     };
 
     const handleSendEmail = async () => {
-        if (!otpEmail) { showAlert2({ type: 'error', title: 'Error!', msg: "Email required" });; return; }
+        if (!otpEmail) { showToast('error', 'Error', 'Email required.'); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/auth/forgot-password`, {
@@ -108,13 +109,16 @@ const Login = () => {
                 body: JSON.stringify({ email: otpEmail })
             });
             const data = await res.json();
-            if (res.ok) { animateStep(() => setStep(2)); }
-            else { showAlert2({ type: 'error', title: 'Failed!', msg: data.error|| "Something went wrong" });}
+            if (res.ok) { 
+                showToast('info', 'OTP sent', 'Check your email for the 6-digit code.');
+                animateStep(() => setStep(2)); 
+            }
+            else { showToast('error', 'Failed', data.error|| 'Something went wrong');}
         } finally { setLoading(false); }
     };
 
     const handleVerifyOtp = async () => {
-        if (!otp) { showAlert2({ type: 'error', title: 'Failed!', msg: "OTP required" }); return; }
+        if (!otp) { showToast('error', 'Failed', 'OTP required.'); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
@@ -124,13 +128,13 @@ const Login = () => {
             });
             const data = await res.json();
             if (res.ok) { animateStep(() => setStep(3)); }
-            else { showAlert2({ type: 'error', title: 'Invalid OTP!', msg: "Try again" }); }
+            else { showToast('error', 'Invalid OTP', data.error|| 'Please try again.');}
         } finally { setLoading(false); }
     };
 
     const handleResetPassword = async () => {
-        if (!password) {showAlert2({ type: 'error', title: 'Error', msg:"Password required." }); return; }
-        if (password !== cpassword) { showAlert2({ type: 'error', title: 'Error', msg: "Passwords do not match." }); return; }
+        if (!password) {showToast('error', 'Error', 'Password Required.'); return; }
+        if (password !== cpassword) { showToast('error', 'Error', 'Passwords do not match.'); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/auth/reset-password`, {
@@ -140,10 +144,10 @@ const Login = () => {
             });
             const data = await res.json();
             if (res.ok) {
-                showAlert2({ type: 'success', title: 'Password changed successfully!' });
+                showToast('success', 'Password changed successfully.', 'Continue Loging in!');
                 closeModal();
             } else {
-                showAlert2({ type: 'error', title: 'Error', msg:data.error||"Something went wrong." });
+                showToast('error', 'Error', data.error|| 'Something went Wrong.');
             }
         } catch (err) {
             console.log(err);

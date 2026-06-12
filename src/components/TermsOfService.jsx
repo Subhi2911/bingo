@@ -1,27 +1,33 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useRef } from "react";
 import {
-    View, Text, StyleSheet, ScrollView,
-    TouchableOpacity, Animated, ImageBackground
+    View, Text, StyleSheet, TouchableOpacity,
+    Animated, ImageBackground,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import Icon from 'react-native-vector-icons/FontAwesome5';
+import Icon from "react-native-vector-icons/FontAwesome5";
 
+// ─── Same tokens as Profile ───────────────────────────────────────────────────
 const T = {
-    BG: "#7DC20A",
-    CARD: "#4A7C00",
-    BORDER: "#5A9400",
-    GOLD: "#F8B55F",
-    WHITE: "#FFFFFF",
-    SUB: "#D9F99D",
-    DARK: "#1A3D00",
-    DIVIDER: "#3D6B0066",
+    GLASS: "rgba(15,35,5,0.78)",
+    GLASS_DARK: "rgba(10,25,3,0.88)",
+    GLASS_BORDER: "rgba(255,255,255,0.10)",
+
+    INK: "#F0EDD8",
+    INK_MED: "#C8C4A0",
+    INK_LIGHT: "#8A9070",
+
+    GOLD: "#E8920A",
+    GOLD_BG: "rgba(232,146,10,0.18)",
+
+    LABEL: "#A8C878",
+    DIV: "rgba(255,255,255,0.08)",
 };
 
-const LAST_UPDATED = "June 1, 2025";
-const APP_NAME = "Bingo Blitz";
-const CONTACT_EMAIL = "support@bingoblitz.app";
+const LAST_UPDATED = "June 1, 2026";
+const APP_NAME = "Bingo Bing";
+const CONTACT_EMAIL = "littleaalu.appie@gmail.com";
 
 const sections = [
     {
@@ -80,27 +86,24 @@ export default function TermsOfService() {
     const navigation = useNavigation();
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const headerBg = scrollY.interpolate({
-        inputRange: [0, 60],
-        outputRange: ["#7DC20Aff", "#4A7C00ff"],
-        extrapolate: "clamp",
-    });
-
     return (
         <ImageBackground
             source={require("../images/message_bg.png")}
-            style={{ flex: 1 }}
-            resizeMode="cover">
-            <SafeAreaView style={styles.safe}>
+            style={styles.bg}
+            resizeMode="cover"
+        >
+            {/* Same dark overlay as Profile */}
+            <View style={styles.bgTint} />
 
-                {/* Sticky animated header */}
-                <Animated.View style={[styles.header, ]}>
+            <SafeAreaView style={styles.safe}>
+                {/* Header */}
+                <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Icon name="arrow-left" style={styles.backArrow} />
+                        <Icon name="arrow-left" size={16} color={T.INK} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Terms of Service</Text>
                     <View style={{ width: 36 }} />
-                </Animated.View>
+                </View>
 
                 <Animated.ScrollView
                     style={styles.scroll}
@@ -114,7 +117,9 @@ export default function TermsOfService() {
                 >
                     {/* Hero */}
                     <View style={styles.hero}>
-                        <Text style={styles.heroEmoji}>📜</Text>
+                        <View style={styles.heroIconWrap}>
+                            <Text style={styles.heroEmoji}>📜</Text>
+                        </View>
                         <Text style={styles.heroTitle}>Terms of Service</Text>
                         <Text style={styles.heroSub}>Last updated: {LAST_UPDATED}</Text>
                         <View style={styles.heroPill}>
@@ -122,7 +127,13 @@ export default function TermsOfService() {
                         </View>
                     </View>
 
-                    {/* Sections */}
+                    {/* Section label */}
+                    <View style={styles.sectionTitleRow}>
+                        <View style={styles.sectionTitleBar} />
+                        <Text style={styles.sectionTitle}>Sections</Text>
+                    </View>
+
+                    {/* Cards */}
                     {sections.map((s, i) => (
                         <View key={i} style={styles.card}>
                             <View style={styles.cardHeader}>
@@ -136,6 +147,7 @@ export default function TermsOfService() {
                         </View>
                     ))}
 
+                    {/* Footer */}
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>
                             By using {APP_NAME} you agree to these terms.
@@ -143,146 +155,133 @@ export default function TermsOfService() {
                         <Text style={styles.footerEmail}>{CONTACT_EMAIL}</Text>
                     </View>
 
-                    <View style={{ height: 40 }} />
+                    <View style={{ height: 48 }} />
                 </Animated.ScrollView>
-
-
-            </SafeAreaView >
-        </ImageBackground >
-
+            </SafeAreaView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    safe: {
-        flex: 1,
-
+    bg: { flex: 1 },
+    bgTint: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(5,18,2,0.84)",
     },
+    safe: { flex: 1 },
+
+    // ── Header ──
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 14,
     },
     backBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: T.CARD,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    backArrow: {
-        color: T.GOLD,
-        fontSize: 20,
-        lineHeight: 22,
+        width: 36, height: 36, borderRadius: 18,
+        backgroundColor: "rgba(255,255,255,0.10)",
+        justifyContent: "center", alignItems: "center",
+        borderWidth: 1, borderColor: "rgba(255,255,255,0.15)",
     },
     headerTitle: {
-        color: T.WHITE,
-        fontSize: 18,
-        fontWeight: "700",
-    },
-    scroll: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 16,
+        fontSize: 20, fontWeight: "800", color: T.INK,
+        letterSpacing: 0.3,
     },
 
-    // Hero
+    scroll: { flex: 1 },
+    scrollContent: { paddingHorizontal: 16, paddingBottom: 24 },
+
+    // ── Hero ──
     hero: {
         alignItems: "center",
         paddingVertical: 28,
         gap: 8,
     },
-    heroEmoji: {
-        fontSize: 56,
+    heroIconWrap: {
+        width: 80, height: 80, borderRadius: 40,
+        backgroundColor: T.GLASS,
+        borderWidth: 1, borderColor: T.GLASS_BORDER,
+        justifyContent: "center", alignItems: "center",
+        marginBottom: 4,
+        shadowColor: T.GOLD, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6,
     },
+    heroEmoji: { fontSize: 40 },
     heroTitle: {
-        color: T.DARK,
-        fontSize: 26,
-        fontWeight: "800",
+        color: T.INK, fontSize: 24, fontWeight: "800", letterSpacing: 0.2,
     },
     heroSub: {
-        color: T.DARK,
-        fontSize: 13,
-        opacity: 0.7,
+        color: T.INK_LIGHT, fontSize: 13,
     },
     heroPill: {
         marginTop: 4,
-        backgroundColor: T.CARD,
+        backgroundColor: T.GOLD_BG,
         borderRadius: 20,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        borderWidth: 1,
-        borderColor: T.BORDER,
+        paddingHorizontal: 14, paddingVertical: 6,
+        borderWidth: 1, borderColor: T.GOLD,
     },
     heroPillText: {
-        color: T.GOLD,
-        fontSize: 12,
-        fontWeight: "600",
+        color: T.GOLD, fontSize: 12, fontWeight: "600",
     },
 
-    // Card
+    // ── Section label (same as Profile) ──
+    sectionTitleRow: {
+        flexDirection: "row", alignItems: "center", gap: 8,
+        marginBottom: 10, marginTop: 4, marginLeft: 2,
+    },
+    sectionTitleBar: {
+        width: 4, height: 14, borderRadius: 2,
+        backgroundColor: T.GOLD,
+    },
+    sectionTitle: {
+        color: T.LABEL, fontSize: 12, fontWeight: "800",
+        letterSpacing: 1.1, textTransform: "uppercase",
+    },
+
+    // ── Card (same glass as Profile) ──
     card: {
-        backgroundColor: T.CARD,
+        backgroundColor: T.GLASS,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: T.BORDER,
-        borderRadius: 18,
-        padding: 16,
+        borderColor: T.GLASS_BORDER,
         marginBottom: 14,
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOpacity: 0.4,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 12,
+        elevation: 6,
+        padding: 16,
     },
     cardHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        marginBottom: 10,
+        flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10,
     },
     iconBox: {
-        width: 38,
-        height: 38,
-        borderRadius: 10,
-        backgroundColor: "#2D5A0044",
-        justifyContent: "center",
-        alignItems: "center",
+        width: 38, height: 38, borderRadius: 10,
+        backgroundColor: "rgba(255,255,255,0.07)",
+        justifyContent: "center", alignItems: "center",
+        borderWidth: 1, borderColor: T.GLASS_BORDER,
     },
-    iconEmoji: {
-        fontSize: 20,
-    },
+    iconEmoji: { fontSize: 20 },
     cardTitle: {
-        color: T.GOLD,
-        fontSize: 15,
-        fontWeight: "700",
-        flex: 1,
-        flexWrap: "wrap",
+        color: T.GOLD, fontSize: 15, fontWeight: "700",
+        flex: 1, flexWrap: "wrap",
     },
     cardDivider: {
-        height: 1,
-        backgroundColor: T.DIVIDER,
-        marginBottom: 12,
+        height: 1, backgroundColor: T.DIV, marginBottom: 12,
     },
     cardBody: {
-        color: T.SUB,
-        fontSize: 14,
-        lineHeight: 22,
+        color: T.INK_MED, fontSize: 14, lineHeight: 22,
     },
 
-    // Footer
+    // ── Footer ──
     footer: {
-        alignItems: "center",
-        paddingVertical: 24,
-        gap: 6,
+        alignItems: "center", paddingVertical: 24, gap: 6,
     },
     footerText: {
-        color: T.DARK,
-        fontSize: 13,
-        textAlign: "center",
-        fontWeight: "600",
+        color: T.INK_LIGHT, fontSize: 13, textAlign: "center", fontWeight: "600",
     },
     footerEmail: {
-        color: T.CARD,
-        fontSize: 13,
-        textDecorationLine: "underline",
+        color: T.GOLD, fontSize: 13, textDecorationLine: "underline",
     },
 });

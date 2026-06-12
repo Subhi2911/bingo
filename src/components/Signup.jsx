@@ -1,13 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
 import {
     StyleSheet, Text, View, TextInput,
-    TouchableOpacity, Alert, Animated, ScrollView
+    TouchableOpacity, Animated, ScrollView
 } from 'react-native';
 import React, { useState, useRef } from 'react';
 import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { showAlert2 } from './CustomAlert2';
+import { useAlertToast } from './AlertToast';
+
+
 
 const STEPS = ['Email', 'Verify', 'Account'];
 
@@ -48,6 +50,7 @@ const Signup = () => {
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
     const fadeAnim = useRef(new Animated.Value(1)).current;
+    const { showToast } = useAlertToast();
 
     const animateStep = (fn) => {
         Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
@@ -59,7 +62,7 @@ const Signup = () => {
     const onChange = (name, value) => setCredentials(prev => ({ ...prev, [name]: value }));
 
     const handleSendEmail = async () => {
-        if (!credentials.email) {showAlert2({ type: 'error', title: 'Error', message: 'Email required.' }); return; }
+        if (!credentials.email) {showToast('error', 'Error', 'Email required.'); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/emailverification/sendemailotp`, {
@@ -68,13 +71,16 @@ const Signup = () => {
                 body: JSON.stringify({ email: credentials.email })
             });
             const data = await res.json();
-            if (res.ok) { animateStep(() => setStep(2)); }
-            else {showAlert2({ type: 'error', title: 'Failed', message: data.error||'Something went wrong.' }); }
+            if (res.ok) { 
+                showToast('info', 'OTP sent', 'Check your email for the 6-digit code.');
+                animateStep(() => setStep(2)); 
+            }
+            else {showToast('error', 'Failed', data.error|| 'Something went wrong.'); }
         } finally { setLoading(false); }
     };
 
     const handleVerifyOtp = async () => {
-        if (!otp) { showAlert2({ type: 'error', title: 'Error', message: 'OTP required' }); return; }
+        if (!otp) { showToast('error', 'Error', 'OTP required.'); return; }
         setLoading(true);
         try {
             const res = await fetch(`${BACKEND_URL}/api/emailverification/verifyemailotp`, {
@@ -84,16 +90,16 @@ const Signup = () => {
             });
             const data = await res.json();
             if (res.ok) { animateStep(() => setStep(3)); }
-            else { showAlert2({ type: 'error', title: 'Invalid OTP', message: data.error||'Try Again' });}
+            else { showToast( "error", "Invalid OTP",  data.error||"Try Again" );}
         } finally { setLoading(false); }
     };
 
     const handleSignup = async () => {
         if (!credentials.username || !credentials.password) {
-            showAlert2({ type: 'error', title: 'Error', message: 'All fields required.' }); return;
+            showToast('error', 'Error', 'All fields required.'); return;
         }
         if (credentials.password !== credentials.cpassword) {
-            showAlert2({ type: 'error', title: 'Error', message: 'Passwords do not match.' }); return;
+            showToast('error', 'Error', 'Passwords do not match'); return;
         }
         setLoading(true);
         try {
@@ -109,10 +115,10 @@ const Signup = () => {
             const data = await res.json();
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
-                showAlert2({ type: 'success', title: 'Account Created!' });
+               showToast('Succcess', 'Account created', 'Welcome abroad!');
                 navigation.navigate("AvatarSelection");
             } else {
-                showAlert2({ type: 'error', title: 'Error!' ,message: "Signup failed."})
+                showToast('error', 'Signup failed', data.error||'Invalid email or password. Please try again.');
             }
         } catch (error) {
             console.log("Signup error:", error);

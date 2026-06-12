@@ -241,15 +241,65 @@ const GameScreen = (props) => {
 
         socket.on('turn_order', handleTurnOrder);
 
-        socket.emit('join_room', {
-            roomCode: props.roomCode,
-            userId: props?.user?._id,
-            username: props?.user?.username,
-            avatar: props?.user?.avatar,
-            gameType: props.gameType,
-        });
+
 
         return () => socket.off('turn_order', handleTurnOrder);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket]);
+
+    // ─── CHECK FOR REJOIN on mount ────────────────────────────────────────────
+    useEffect(() => {
+        if (!socket || !props?.user?._id) return;
+
+        socket.emit("check_rejoin", { userId: props.user._id });
+
+        const handleRejoin = ({ roomCode, gameType, players, pickedNumbers, currentTurn, turnOrder }) => {
+            // Restore state from server snapshot
+            setPickedNumbers(pickedNumbers || []);
+            setTurnOrder(turnOrder || []);
+            setCurrentTurn(currentTurn?.userId || null);
+            setMe(turnOrder?.find(p => p.userId === props.user._id));
+
+            // Rebuild boards for all players
+            if (turnOrder?.length) {
+                const boards = {};
+                const wins = {};
+                turnOrder.forEach(player => {
+                    const arr = Array.from({ length: 25 }, (_, i) => i + 1);
+                    shuffle(arr);
+                    boards[player.userId] = arr;
+                    wins[player.userId] = {
+                        B: false, I: false, N: false, G: false, O: false,
+                        claimedPatterns: [], completed: false,
+                    };
+                });
+                setPlayerBoards(boards);
+                setPlayerWins(wins);
+            }
+
+            if (!gameStartTimeRef.current) {
+                gameStartTimeRef.current = Date.now();
+            }
+        };
+
+        const handleNoRejoin = () => {
+            // Normal flow — emit join_room as usual
+            socket.emit("join_room", {
+                roomCode: props.roomCode,
+                userId: props?.user?._id,
+                username: props?.user?.username,
+                avatar: props?.user?.avatar,
+                gameType: props.gameType,
+            });
+        };
+
+        socket.on("rejoin_available", handleRejoin);
+        socket.on("no_rejoin_available", handleNoRejoin);
+
+        return () => {
+            socket.off("rejoin_available", handleRejoin);
+            socket.off("no_rejoin_available", handleNoRejoin);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket]);
 
@@ -578,7 +628,7 @@ const GameScreen = (props) => {
                                                     size={55}
                                                     duration={TURN_TIME}
                                                     gameEnded={gameEndedRef.current}
-                                                    //onComplete={handleTimerComplete}
+                                                //onComplete={handleTimerComplete}
                                                 />
                                             )}
 
@@ -744,8 +794,8 @@ const GameScreen = (props) => {
                                 user={profileDetails}
                                 onClose={() => setProfileVisible(false)}
                                 myId={props.user._id}
-                                myUsername= {props.user.username}
-                                myAvatar= {props.user.avatar}
+                                myUsername={props.user.username}
+                                myAvatar={props.user.avatar}
                             />
                         </Modal>
                     )}

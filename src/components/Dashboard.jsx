@@ -166,6 +166,8 @@ const Dashboard = () => {
         navigation.navigate("OtherProfile", { userId: item._id, myId: user._id, myUsername: user.username, myAvatar: user.avatar });
     }
 
+    const isHomeSelected = selected === 'home';
+
     React.useEffect(() => {
         const getUser = async () => {
             try {
@@ -184,7 +186,7 @@ const Dashboard = () => {
             }
         };
         getUser();
-    }, []);
+    }, [isHomeSelected]);
 
 
     return (
@@ -204,7 +206,7 @@ const Dashboard = () => {
                                         style={styles.avatarContainer}
                                         onPress={() => setProfileModalVisible(true)}
                                     >
-                                        <View style={[styles.avatar, { backgroundColor: '#000', display:'flex' ,justifyContent:"center",alignItems:"center" }]}>
+                                        <View style={[styles.avatar, { backgroundColor: '#000', display: 'flex', justifyContent: "center", alignItems: "center" }]}>
                                             <Text style={{ fontSize: 30 }}>{user?.avatar}</Text>
                                         </View>
                                     </TouchableOpacity>
@@ -220,7 +222,7 @@ const Dashboard = () => {
                                         {/* <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
                                             <Icon name="paper-plane" size={28} color="#F8B55F" />
                                         </TouchableOpacity> */}
-                                        
+
                                         <TouchableOpacity onPress={() => { setOpenWheel(true) }}>
                                             <Image
                                                 source={require("../images/LuckySpin.png")}
@@ -390,9 +392,9 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignSelf: "center",
         marginBottom: 10,
-        display:'flex',
-        justifyContent:"center",
-        alignItems:"center"
+        display: 'flex',
+        justifyContent: "center",
+        alignItems: "center"
     },
     name: {
         fontSize: 16,
