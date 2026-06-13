@@ -1,11 +1,6 @@
-import DeviceInfo from "react-native-device-info";
 
-let BACKEND_URL;
 
-if (DeviceInfo.isEmulatorSync()) {
-  BACKEND_URL = "http://10.0.2.2:5000";
-} else {
-  BACKEND_URL = "http://192.168.29.114:5000"; // your hotspot IPv4
-}
+
+const BACKEND_URL = "https://bingo-backend-10og.onrender.com";
 
 export { BACKEND_URL };

@@ -96,6 +96,10 @@ const AppNavigator = () => {
 
 const App = () => {
 
+  useEffect(()=>{
+    console.log(BACKEND_URL);
+  },[])
+
   // Request permission + save FCM token
   useEffect(() => {
     const requestPermission = async () => {

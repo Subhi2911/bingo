@@ -1,4 +1,10 @@
 {
   "name": "Bingobing",
-  "displayName": "Bingobing"
+  "displayName": "bingo Bing",
+  "extra": {
+    "eas": {
+      "projectId": "5db8ceed-fefd-47e4-80f2-3c97efe56974"
+    }
+  },
+  "owner": "subhasmita2911"
 }
