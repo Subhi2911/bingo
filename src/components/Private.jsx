@@ -262,7 +262,7 @@ const PrivateRoom = () => {
             setRoomCreated(true);
 
         } catch (err) {
-            console.error(err);
+            console.log(err);
             showAlert2({ type: 'error', title: "Error", message: "Unable to join room." });
         }
     };
@@ -363,7 +363,7 @@ const PrivateRoom = () => {
                 const json = await response.json();
                 setFriends(json);
             } catch (error) {
-                console.error('Error fetching friends:', error);
+                console.log('Error fetching friends:', error);
             }
         };
         fetchFriendsData();
@@ -391,7 +391,7 @@ const PrivateRoom = () => {
                 if (roomData.gameType) setGameType(roomData.gameType);
                 if (typeof roomData.size === 'number') setPlayerCount(roomData.size);
             } catch (err) {
-                console.error('Error fetching room:', err);
+                console.log('Error fetching room:', err);
             }
         };
         fetchRoom();
@@ -424,7 +424,7 @@ const PrivateRoom = () => {
             const chat = await res.json();
             return chat._id;
         } catch (err) {
-            console.error('Error getting chatId:', err);
+            console.log('Error getting chatId:', err);
             return null;
         }
     };
@@ -459,7 +459,7 @@ const PrivateRoom = () => {
                 fromUser: { _id: user._id, username: user.username },
             });
         } catch (err) {
-            console.error('Error sending invite message:', err);
+            console.log('Error sending invite message:', err);
         }
     };
 

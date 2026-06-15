@@ -69,7 +69,7 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
             setUser(data);
             setRequestStatus(data.requestStatus || "none");
         } catch (err) {
-            console.error(err);
+            console.log(err);
         } finally {
             setLoading(false);
         }
@@ -97,7 +97,7 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                 })
             }
         } catch (err) {
-            console.error(err);
+            console.log(err);
         }
     };
 

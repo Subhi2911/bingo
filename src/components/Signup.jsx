@@ -134,6 +134,8 @@ const Signup = () => {
             const data = await res.json();
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
+                await AsyncStorage.setItem("equippedBoard","classic");
+                await AsyncStorage.setItem("equippedDaub","daub (2)");
                 showToast('success', 'Account created', 'Welcome aboard!');
                 navigation.navigate("AvatarSelection");
             } else {

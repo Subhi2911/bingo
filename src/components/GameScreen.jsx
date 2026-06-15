@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-shadow */
 /* eslint-disable react-native/no-inline-styles */
 import {
     BackHandler,
@@ -85,6 +87,8 @@ const GameScreen = (props) => {
     const playerBoardsRef = useRef(playerBoards);
     const pickedNumbersRef = useRef(pickedNumbers);
 
+
+
     useEffect(() => { playerBoardsRef.current = playerBoards; }, [playerBoards]);
     useEffect(() => { pickedNumbersRef.current = pickedNumbers; }, [pickedNumbers]);
 
@@ -97,6 +101,55 @@ const GameScreen = (props) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
         return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    //_____________________
+    //bingo board and daub
+    //_____________________
+    const boardImages = {
+        classic: require("../images/boards/classic.png"),
+        ocean: require("../images/boards/ocean.png"),
+        forest: require("../images/boards/forest.png"),
+        galaxy: require("../images/boards/galaxy.png"),
+        candy: require("../images/boards/candy.png"),
+        lava: require("../images/boards/lava.png"),
+        barbie: require("../images/boards/barbie.png")
+    };
+    const daubImages = {
+        daub: require("../images/daubs/daub (2).png"),
+        crown: require("../images/daubs/crown.png"),
+        flame: require("../images/daubs/flame.png"),
+        ice: require("../images/daubs/ice.png"),
+        skull: require("../images/daubs/skull.png"),
+        star: require("../images/daubs/star.png"),
+        thunder: require("../images/daubs/thunder.png"),
+    }
+
+    const [equippedBoard, setEquippedBoard] = useState("classic");
+    const [equippedDaub, setEquippedDaub] = useState("daub")
+
+    useEffect(() => {
+        const loadBoard = async () => {
+            const board = await AsyncStorage.getItem("equippedBoard");
+            if (board) setEquippedBoard(board);
+        };
+        const loadDaub = async () => {
+            const daub = await AsyncStorage.getItem("equippedDaub");
+            if (daub) setEquippedDaub(daub);
+        }
+
+        loadBoard();
+        loadDaub();
+    }, []);
+
+    const boardThemes = {
+        classic: { bg: '#F8B55F', border: '#8B5E0A', text: '#000000', daubed: '#FFD700', numberColor: '#3B1F00', pickedNumberColor: '#cf0603' },
+        ocean: { bg: '#1A8FD1', border: '#0D5F8F', text: '#E0F4FF', daubed: '#00E5FF', numberColor: '#002B45', pickedNumberColor: '#1A8FD1' },
+        forest: { bg: '#4A7C3F', border: '#2E5228', text: '#E8FFE0', daubed: '#A8FF78', numberColor: '#1A3A15', pickedNumberColor: '#4A7C3F' },
+        galaxy: { bg: '#4B2D8F', border: '#2A1A5E', text: '#E8D5FF', daubed: '#C77DFF', numberColor: '#E8D5FF', pickedNumberColor: '#9B59B6' },
+        candy: { bg: '#D94F8A', border: '#9C1F5E', text: '#FFE4F3', daubed: '#FF9ECD', numberColor: '#6B0033', pickedNumberColor: '#D94F8A' },
+        lava: { bg: '#C03A00', border: '#7A2200', text: '#FFE8D0', daubed: '#FF6B00', numberColor: '#FFE8D0', pickedNumberColor: '#C03A00' },
+        barbie: { bg: '#E0307A', border: '#A01050', text: '#FFE4F3', daubed: '#FF80C0', numberColor: '#6B0033', pickedNumberColor: '#E0307A' },
     };
 
     useEffect(() => {
@@ -182,7 +235,6 @@ const GameScreen = (props) => {
     useEffect(() => {
         if (!socket || !props.roomCode) return;
         socket.emit('join_chat_room', props.roomCode);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket, props.roomCode]);
 
     const sendMessage = () => {
@@ -389,31 +441,7 @@ const GameScreen = (props) => {
 
         setFloatingNumbers(prev => [...prev, num]);
         socket.emit('select_number', { roomCode: props.roomCode, number: num });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentTurn, socket, props.roomCode, props?.user?._id]);
-
-    // ─── KEY FIX: stable callback for the AvatarTimer ───────────────────────────
-    // Using useCallback with an empty dep array means this function reference
-    // never changes between renders. It reads the board/pickedNumbers via refs
-    // (kept in sync above) so it always has fresh data without being re-created.
-    // Previously this was an inline arrow function in JSX, which created a new
-    // function on every render and caused AvatarTimer's useEffect([duration, onComplete])
-    // to fire on every render — resetting the animation continuously.
-    // const handleTimerComplete = useCallback(() => {
-    //     if (gameEndedRef.current) return;
-
-    //     const myBoard = playerBoardsRef.current[props?.user?._id];
-    //     const picked = pickedNumbersRef.current;
-
-    //     const availableNumbers = myBoard?.filter(n => !picked.includes(n));
-    //     if (!availableNumbers?.length) return;
-
-    //     const randomNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
-
-    //     setFloatingNumbers(prev => [...prev, randomNumber]);
-    //     socket.emit('select_number', { roomCode: props.roomCode, number: randomNumber });
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, []); // ← intentionally empty: reads everything via refs
 
     useEffect(() => {
         if (!floatingNumbers?.length) return;
@@ -674,7 +702,7 @@ const GameScreen = (props) => {
                             </View>
 
                             <ImageBackground
-                                source={require('../images/BingoBoard (2).png')}
+                                source={boardImages[equippedBoard] || boardImages.classic}
                                 style={styles.board}
                             >
                                 <View style={styles.grid}>
@@ -682,6 +710,7 @@ const GameScreen = (props) => {
                                         if (!num) return null;
                                         const isPicked = pickedNumbers.includes(num);
                                         const disabled = currentTurn !== props?.user?._id || isPicked;
+                                        const theme = boardThemes[equippedBoard] || boardThemes.classic;
 
                                         return (
                                             <TouchableOpacity
@@ -696,37 +725,58 @@ const GameScreen = (props) => {
                                             >
                                                 {isPicked && (
                                                     <Image
-                                                        source={require('../images/daub (2).png')}
+                                                        source={daubImages[equippedDaub] || daubImages.daub}
                                                         style={{
                                                             width: 40, height: 40,
                                                             position: 'absolute', opacity: 0.5,
                                                         }}
                                                     />
                                                 )}
-                                                <Text style={styles.numberText}>{num}</Text>
+                                                <Text style={[
+                                                    styles.numberText,
+                                                    { color: isPicked ? theme.pickedNumberColor : theme.numberColor },
+                                                    isPicked && {
+                                                        textShadowColor: 'rgba(0,0,0,0.3)',
+                                                        textShadowOffset: { width: 1, height: 1 },
+                                                        textShadowRadius: 2,
+                                                    },
+                                                ]}>
+                                                    {num}
+                                                </Text>
                                             </TouchableOpacity>
                                         );
                                     })}
                                 </View>
                             </ImageBackground>
 
-                            {playerWins[props?.user?._id] && (
-                                <View style={styles.bingowin}>
-                                    {letters.map((letter, index) => {
-                                        const daubed = playerWins[props?.user?._id]?.[letter];
-                                        return (
-                                            <View key={index} style={styles.bingoLetterContainer}>
-                                                <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
-                                                    <Text style={[styles.letterText, daubed && styles.daubedText]}>
-                                                        {letter}
-                                                    </Text>
+                            {playerWins[props?.user?._id] && (() => {
+                                const theme = boardThemes[equippedBoard] || boardThemes.classic;
+                                return (
+                                    <View style={styles.bingowin}>
+                                        {letters.map((letter, index) => {
+                                            const daubed = playerWins[props?.user?._id]?.[letter];
+                                            return (
+                                                <View key={index} style={styles.bingoLetterContainer}>
+                                                    <View style={[
+                                                        styles.bingoLetter,
+                                                        { backgroundColor: theme.bg, borderColor: theme.border, borderWidth: 2 },
+                                                        daubed && { backgroundColor: theme.daubed, borderColor: '#fff', borderWidth: 2.5 },
+                                                    ]}>
+                                                        <Text style={[
+                                                            styles.letterText,
+                                                            { color: theme.text },
+                                                            daubed && { color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+                                                        ]}>
+                                                            {letter}
+                                                        </Text>
+                                                    </View>
+                                                    <FloatingBingoGhost letter={letter} trigger={daubed} />
                                                 </View>
-                                                <FloatingBingoGhost letter={letter} trigger={daubed} />
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            )}
+                                            );
+                                        })}
+                                    </View>
+                                );
+                            })()}
                         </View>
 
                         {/* INPUT BAR */}
@@ -878,11 +928,12 @@ const styles = StyleSheet.create({
     },
     bingoLetter: {
         width: 50, height: 50, borderRadius: 25,
-        backgroundColor: '#F8B55F', justifyContent: 'center', alignItems: 'center',
+        justifyContent: 'center', alignItems: 'center',
+        // NO hardcoded backgroundColor here anymore — set dynamically via theme
     },
-    daubedLetter: { backgroundColor: '#FFD700', borderWidth: 2, borderColor: '#000' },
-    letterText: { fontSize: 22, fontWeight: 'bold', color: '#F00', borderColor: '#F00' },
-    daubedText: { color: '#000' },
+    daubedLetter: {}, // kept for compat but logic now handled inline
+    letterText: { fontSize: 22, fontWeight: 'bold' },
+    daubedText: {},   // kept for compat
     daubIcon: { width: 30, height: 30, position: 'absolute', opacity: 0.5 },
     box: { width: '20%', height: '20%', justifyContent: 'center', alignItems: 'center' },
     numberText: { fontSize: 19, fontWeight: 'bold', color: '#000' },
@@ -899,4 +950,5 @@ const styles = StyleSheet.create({
         fontSize: 16, color: '#000', marginRight: 10,
     },
     sendIcon: { marginRight: 12 },
+
 });

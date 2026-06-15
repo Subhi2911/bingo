@@ -89,6 +89,8 @@ const Login = () => {
             const data = await res.json();
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
+                await AsyncStorage.setItem("equippedBoard","classic");
+                await AsyncStorage.setItem("equippedDaub","daub (2)");
                 navigation.navigate("Dashboard");
                 showToast('success', 'Welcome back', 'Lets play!');
             } else {

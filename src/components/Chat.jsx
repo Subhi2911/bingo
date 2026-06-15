@@ -80,7 +80,7 @@ const Chat = ({ route }) => {
                     headers: { 'Content-Type': 'application/json', 'auth-token': token },
                 });
                 setUserData(await res.json());
-            } catch (e) { console.error('getUser error:', e); }
+            } catch (e) { console.log('getUser error:', e); }
         };
         getMyUserData();
     }, []);
@@ -94,7 +94,7 @@ const Chat = ({ route }) => {
                 if (!res.ok) return;
                 const data = await res.json();
                 setOtherUser(data.participants.find(p => p._id !== userData._id));
-            } catch (e) { console.error('fetchChat error:', e); }
+            } catch (e) { console.log('fetchChat error:', e); }
         };
         fetchChat();
     }, [chatId, userData]);
@@ -133,7 +133,7 @@ const Chat = ({ route }) => {
                 setHasMore(data.length === PAGE_SIZE);
             }
         } catch (e) {
-            console.error('fetchMessages error:', e);
+            console.log('fetchMessages error:', e);
         } finally {
             setLoadingMore(false);
         }
@@ -239,7 +239,7 @@ const Chat = ({ route }) => {
             // Broadcast to the other user's socket so their tick updates live
             socket?.emit('mark_seen', { messageId, chatId, seenBy: userData._id });
         } catch (e) {
-            console.error('markSeen error:', e);
+            console.log('markSeen error:', e);
         }
     }, [userData, chatId, socket]);
 
@@ -270,7 +270,7 @@ const Chat = ({ route }) => {
             // Scroll to bottom
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
         } catch (e) {
-            console.error('sendMessage error:', e);
+            console.log('sendMessage error:', e);
         }
     };
 

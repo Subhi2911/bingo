@@ -54,7 +54,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
           console.log("Response not ok");
         }
       } catch (error) {
-        console.error("Fetch error:", error);
+        console.log("Fetch error:", error);
       }
     };
 
@@ -87,7 +87,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
         });
       }
     } catch (error) {
-      console.error("Friend request error:", error);
+      console.log("Friend request error:", error);
     }
   };
 

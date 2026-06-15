@@ -34,6 +34,7 @@ import { AlertToastProvider } from './src/components/AlertToast.jsx';
 import ChangePassword from './src/components/ChangePassword.jsx';
 import ForgotPassword from './src/components/ForgotPassword.jsx';
 import { createNavigationContainerRef } from '@react-navigation/native';
+import CustomizeScreen from './src/components/CustomizeScreen.jsx'
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -89,6 +90,7 @@ const AppNavigator = () => {
         <Stack.Screen name="PrivacyPolicy"     component={PrivacyPolicy} />
         <Stack.Screen name="ChangePassword"    component={ChangePassword} />
         <Stack.Screen name="ForgotPassword"    component={ForgotPassword} />
+        <Stack.Screen name="CustomizeScreen"   component={CustomizeScreen}/>
       </Stack.Navigator>
     </>
   );

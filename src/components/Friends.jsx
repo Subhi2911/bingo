@@ -39,7 +39,7 @@ const Friends = () => {
                 const json = await response.json();
                 setUserData(json);
             } catch (error) {
-                console.error("Error fetching my user data:", error);
+                console.log("Error fetching my user data:", error);
             }
         };
         getMyUserData();
@@ -59,7 +59,7 @@ const Friends = () => {
                 const json = await response.json();
                 setFriends(json);
             } catch (error) {
-                console.error("Error fetching friends:", error);
+                console.log("Error fetching friends:", error);
             }
         };
         fetchFriendsData();
@@ -82,7 +82,7 @@ const Friends = () => {
                 }
 
             } catch (error) {
-                console.error("Error fetching requests:", error);
+                console.log("Error fetching requests:", error);
             }
         };
         fetchRequestsData();
@@ -107,7 +107,7 @@ const Friends = () => {
                 setFriends([...friends, data.safeUser]);
             }
         } catch (err) {
-            console.error(err);
+            console.log(err);
         }
     };
 
@@ -124,7 +124,7 @@ const Friends = () => {
             await res.json();
             setRequests(requests.filter(r => r._id !== userId));
         } catch (err) {
-            console.error(err);
+            console.log(err);
         }
     };
 
@@ -141,7 +141,7 @@ const Friends = () => {
             await res.json();
             setFriends(friends.filter(f => f._id !== userId));
         } catch (err) {
-            console.error(err);
+            console.log(err);
         }
     };
 
@@ -160,7 +160,7 @@ const Friends = () => {
             // Navigate to Chat screen with the chatId
             navigation.navigate("Chat", { chatId: chat._id });
         } catch (err) {
-            console.error(err);
+            console.log(err);
         }
     };
 

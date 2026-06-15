@@ -266,7 +266,7 @@ export default function Profile() {
                     await AsyncStorage.clear();
                     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
                 } catch {
-                    Alert.alert("Error", "Could not delete account.");
+                    showAlert2({type:'error',title:'Error',message:'Could not delete account.'});
                 }
             },
         });

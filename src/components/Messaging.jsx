@@ -29,7 +29,7 @@ const Messaging = () => {
                 const json = await response.json();
                 setUserData(json);
             } catch (error) {
-                console.error("Error fetching user data:", error);
+                console.log("Error fetching user data:", error);
             }
         };
         getMyUserData();
@@ -49,7 +49,7 @@ const Messaging = () => {
             const data     = await response.json();
             setChats(data);
         } catch (error) {
-            console.error("Error fetching chats:", error);
+            console.log("Error fetching chats:", error);
         } finally {
             setLoadingChats(false);
         }

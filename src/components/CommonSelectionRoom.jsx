@@ -22,7 +22,7 @@ const CommonSelectionRoom = (props) => {
                 const json = await response.json();
                 setUser(json);
             } catch (error) {
-                console.error(error);
+                console.log(error);
             }
         };
         getUser();

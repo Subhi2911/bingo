@@ -72,7 +72,7 @@ const AvatarSelection = () => {
             //alert(`Avatar locked: ${avatar}`);
 
         } catch (err) {
-            console.error(err);
+            console.log(err);
         }
     };
 

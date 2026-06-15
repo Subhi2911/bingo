@@ -19,8 +19,6 @@ import { ScrollView } from "react-native";
 import { showAlert2 } from "./CustomAlert2";
 
 // ─── Day labels anchored to real calendar day ────────────────────────────────
-// JS getDay(): 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-// We want Mon=0 … Sun=6 (streak day index)
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 // Returns 0 (Mon) … 6 (Sun) for today
@@ -29,16 +27,6 @@ const getTodayIndex = () => {
     return (jsDay + 6) % 7;            // shift so Mon=0
 };
 
-// Mystery box possible prizes
-const MYSTERY_BOX_PRIZES = [
-    { label: "50 coins",  type: "coins",  value: 50 },
-    { label: "200 coins", type: "coins",  value: 200 },
-    { label: "500 coins", type: "coins",  value: 500 },
-    { label: "2 XP",      type: "xp",     value: 2 },
-    { label: "10 XP",     type: "xp",     value: 10 },
-    { label: "25 XP",     type: "xp",     value: 25 },
-    { label: "+1 Day",    type: "days",   value: 1 },
-];
 
 const HomeScreen = ({ setSelected, setSearchResults }) => {
     const navigation = useNavigation();
@@ -54,6 +42,28 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
         navigation.navigate(mode);
     };
 
+    const isSameWeek = (dateA, dateB) => {
+        // Get Monday of each date's week
+        const getMondayOf = (d) => {
+            const date = new Date(d);
+            const day = date.getDay();             // 0=Sun…6=Sat
+            const diff = (day + 6) % 7;             // days since Mon
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() - diff);
+            return date.getTime();
+        };
+        return getMondayOf(dateA) === getMondayOf(dateB);
+    };
+
+    const getSlotFromDate = (date) => {
+        const jsDay = new Date(date).getDay();
+        return (jsDay + 6) % 7 + 1; // Mon=1 … Sun=7
+    };
+
+    const lastClaimedSlot = user?.lastDailyClaim
+        ? getSlotFromDate(user.lastDailyClaim)
+        : null;
+
     React.useEffect(() => {
         const getUser = async () => {
             try {
@@ -68,7 +78,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                 const json = await response.json();
                 setUser(json);
             } catch (error) {
-                console.error(error);
+                console.log(error);
             }
         };
         getUser();
@@ -98,16 +108,13 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
     // ─── Which day slot to highlight (1-indexed, 1–7) ───────────────────────
     // BUG FIX: use real calendar weekday, not daysLoggedIn count
     const todayIndex = getTodayIndex();        // 0–6, Mon=0
-    const todaySlot  = todayIndex + 1;         // 1–7
+    const todaySlot = todayIndex + 1;         // 1–7
 
     // A slot is "done" if user claimed it already today or on a prior streak day
-    // We compare against daysLoggedIn so past days stay checked
     const isSlotDone = (slot) => {
-        if (!user) return false;
-        const days = user.daysLoggedIn || 0;
-        if (days === 0) return false;
-        // If streak covers this slot and today's slot is past it
-        return slot < todaySlot && days >= slot;
+        if (!lastClaimedSlot || !user?.lastDailyClaim) return false;
+        if (!isSameWeek(user.lastDailyClaim, new Date())) return false;
+        return slot <= lastClaimedSlot;
     };
 
     const isSlotToday = (slot) => slot === todaySlot;
@@ -141,15 +148,15 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                 showAlert2({ type: "reward", title: "Daily reward claimed!" });
             }
         } catch (error) {
-            console.error(error);
+            console.log(error);
         }
     };
 
 
     // ─── Next day reward label ───────────────────────────────────────────────
     const currentDayReward = dailyReward[todaySlot] || "Bonus";
-    const nextDaySlot       = (todaySlot % 7) + 1;
-    const nextDayReward     = dailyReward[nextDaySlot] || "Bonus";
+    const nextDaySlot = (todaySlot % 7) + 1;
+    const nextDayReward = dailyReward[nextDaySlot] || "Bonus";
 
     return (
         <View style={styles.container}>
@@ -165,7 +172,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                     style={styles.modalOverlay}
                     onPress={() => setShowMysteryModal(false)}
                 >
-                    <Pressable style={styles.mysteryBox} onPress={() => {}}>
+                    <Pressable style={styles.mysteryBox} onPress={() => { }}>
                         <Text style={styles.mysteryEmoji}>🎁</Text>
                         <Text style={styles.mysteryTitle}>Mystery Box!</Text>
                         <Text style={styles.mysterySubtitle}>You won</Text>
@@ -229,7 +236,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                     {/* 7-day pip tracker — anchored to Mon–Sun */}
                     <View style={styles.daysTrack}>
                         {[1, 2, 3, 4, 5, 6, 7].map((slot, i) => {
-                            const done  = isSlotDone(slot);
+                            const done = isSlotDone(slot);
                             const today = isSlotToday(slot);
                             return (
                                 <React.Fragment key={slot}>
@@ -239,7 +246,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                                     <View style={styles.dayItem}>
                                         <View style={[
                                             styles.dayCircle,
-                                            done  && styles.dayCircleDone,
+                                            done && styles.dayCircleDone,
                                             today && styles.dayCircleToday,
                                         ]}>
                                             {done
@@ -327,17 +334,18 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
 
                 {/* PLAY GRID */}
                 <View style={styles.playGrid}>
-                    <PlayCard icon="dot-circle" label="Classic"      entryFee={20} onPress={() => launchGame("Classic")} />
-                    <PlayCard icon="bolt"       label="Fast"          entryFee={15} onPress={() => launchGame("Fast")} />
-                    <PlayCard icon="magic"      label="Power Bingo"  entryFee={40} onPress={() => launchGame("Power")} />
-                    <PlayCard icon="lock"       label="Private Room" entryFee={0}  onPress={() => launchGame("Private")} />
+                    <PlayCard icon="dot-circle" label="Classic" entryFee={20} onPress={() => launchGame("Classic")} />
+                    <PlayCard icon="bolt" label="Fast" entryFee={15} onPress={() => launchGame("Fast")} />
+                    <PlayCard icon="magic" label="Power Bingo" entryFee={40} onPress={() => launchGame("Power")} />
+                    <PlayCard icon="lock" label="Private Room" entryFee={0} onPress={() => launchGame("Private")} />
                 </View>
 
                 {/* ACTIONS */}
                 <View style={styles.actionsRow}>
-                    <Action icon="tasks"        label="Missions" onPress={() => navigation.navigate("Missions")} />
-                    <Action icon="medal"        label="Ranking"  onPress={() => navigation.navigate("Ranking")} />
-                    <Action icon="user-friends" label="Friends"  onPress={() => navigation.navigate("Friends")} />
+                    <Action icon="tasks" label="Missions" onPress={() => navigation.navigate("Missions")} />
+                    <Action icon="medal" label="Ranking" onPress={() => navigation.navigate("Ranking")} />
+                    <Action icon="user-friends" label="Friends" onPress={() => navigation.navigate("Friends")} />
+                    <Action icon="palette" label="Customize" onPress={()=>navigation.navigate("CustomizeScreen")} />
                 </View>
 
             </ScrollView>
@@ -372,11 +380,11 @@ const Action = ({ icon, label, onPress }) => (
 
 export default HomeScreen;
 
-const CARD   = "#2A244A";
+const CARD = "#2A244A";
 const BORDER = "#4A4370";
-const GOLD   = "#FFD67A";
-const TEXT   = "#FFFFFF";
-const SUB    = "#A9A6C1";
+const GOLD = "#FFD67A";
+const TEXT = "#FFFFFF";
+const SUB = "#A9A6C1";
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
@@ -397,9 +405,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
         width: 280,
     },
-    mysteryEmoji:     { fontSize: 52, marginBottom: 8 },
-    mysteryTitle:     { color: GOLD, fontSize: 22, fontWeight: "700", marginBottom: 4 },
-    mysterySubtitle:  { color: SUB,  fontSize: 14, marginBottom: 6 },
+    mysteryEmoji: { fontSize: 52, marginBottom: 8 },
+    mysteryTitle: { color: GOLD, fontSize: 22, fontWeight: "700", marginBottom: 4 },
+    mysterySubtitle: { color: SUB, fontSize: 14, marginBottom: 6 },
     mysteryPrizeText: { color: TEXT, fontSize: 28, fontWeight: "800", marginBottom: 24 },
     mysteryBtn: {
         backgroundColor: GOLD,
@@ -440,8 +448,8 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     rewardTagText: { color: "#FFD67A", fontSize: 11 },
-    rewardVal:  { color: GOLD, fontSize: 20, fontWeight: "500", marginBottom: 2 },
-    rewardDesc: { color: SUB,  fontSize: 12 },
+    rewardVal: { color: GOLD, fontSize: 20, fontWeight: "500", marginBottom: 2 },
+    rewardDesc: { color: SUB, fontSize: 12 },
     claimBtn: {
         flexDirection: "row",
         alignItems: "center",
@@ -451,8 +459,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18,
         paddingVertical: 10,
     },
-    claimBtnOff:     { backgroundColor: "#3A3460" },
-    claimBtnText:    { color: "#1E1740", fontSize: 13, fontWeight: "500" },
+    claimBtnOff: { backgroundColor: "#3A3460" },
+    claimBtnText: { color: "#1E1740", fontSize: 13, fontWeight: "500" },
     claimBtnTextOff: { color: SUB },
 
     // ── Day tracker ────────────────────────────────────────────────────────
@@ -463,19 +471,19 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         paddingBottom: 4,
     },
-    dayItem:       { alignItems: "center", gap: 4 },
-    dayLine:       { flex: 1, height: 2, backgroundColor: "#3A3460", marginBottom: 14 },
-    dayLineDone:   { backgroundColor: GOLD },
+    dayItem: { alignItems: "center", gap: 4 },
+    dayLine: { flex: 1, height: 2, backgroundColor: "#3A3460", marginBottom: 14 },
+    dayLineDone: { backgroundColor: GOLD },
     dayCircle: {
         width: 30, height: 30, borderRadius: 15,
         borderWidth: 1.5, borderColor: BORDER,
         backgroundColor: "#1E1740",
         alignItems: "center", justifyContent: "center",
     },
-    dayCircleDone:  { backgroundColor: GOLD, borderColor: GOLD },
+    dayCircleDone: { backgroundColor: GOLD, borderColor: GOLD },
     dayCircleToday: { borderWidth: 2, borderColor: GOLD },
-    dayNum:  { fontSize: 11, color: SUB },
-    dayLbl:  { fontSize: 9,  color: "#6B6790" },
+    dayNum: { fontSize: 11, color: SUB },
+    dayLbl: { fontSize: 9, color: "#6B6790" },
     streakRow: {
         flexDirection: "row",
         alignItems: "center",
@@ -483,7 +491,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingBottom: 12,
     },
-    streakDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD },
+    streakDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD },
     streakText: { fontSize: 11, color: SUB },
 
     // ── Header ─────────────────────────────────────────────────────────────
@@ -502,9 +510,9 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     statBoxLevel: { flexDirection: "row", gap: 6, alignItems: "center", marginBottom: 10 },
-    statIcon:  { width: 20, height: 20 },
-    xpText:    { color: "#39D353", fontWeight: "bold" },
-    coinText:  { color: GOLD,      fontWeight: "bold" },
+    statIcon: { width: 20, height: 20 },
+    xpText: { color: "#39D353", fontWeight: "bold" },
+    coinText: { color: GOLD, fontWeight: "bold" },
 
     // ── Level card ─────────────────────────────────────────────────────────
     levelCard: {
@@ -520,12 +528,12 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
     },
-    levelTitle:   { color: GOLD, fontWeight: "bold", marginBottom: 10 },
-    progressBar:  { height: 10, backgroundColor: BORDER, borderRadius: 10, overflow: "hidden" },
+    levelTitle: { color: GOLD, fontWeight: "bold", marginBottom: 10 },
+    progressBar: { height: 10, backgroundColor: BORDER, borderRadius: 10, overflow: "hidden" },
     progressFill: { height: "100%", backgroundColor: GOLD },
-    starRow:      { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
-    starWrapper:  { alignItems: "center" },
-    starText:     { color: SUB, fontSize: 10 },
+    starRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
+    starWrapper: { alignItems: "center" },
+    starText: { color: SUB, fontSize: 10 },
 
     // ── Play grid ──────────────────────────────────────────────────────────
     playGrid: {
@@ -543,14 +551,14 @@ const styles = StyleSheet.create({
         borderWidth: 1.2,
         borderColor: BORDER,
     },
-    cardTop:  { flexDirection: "row", justifyContent: "space-between" },
+    cardTop: { flexDirection: "row", justifyContent: "space-between" },
     feeBadge: { borderWidth: 1, borderColor: GOLD, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
-    feeText:  { color: GOLD, fontSize: 12 },
-    playLabel:{ marginTop: 14, color: TEXT, fontSize: 18, fontWeight: "bold" },
+    feeText: { color: GOLD, fontSize: 12 },
+    playLabel: { marginTop: 14, color: TEXT, fontSize: 18, fontWeight: "bold" },
     playHint: { color: SUB, fontSize: 12 },
 
     // ── Actions ────────────────────────────────────────────────────────────
     actionsRow: { flexDirection: "row", justifyContent: "space-around", marginBottom: 30 },
-    actionBox:  { alignItems: "center" },
+    actionBox: { alignItems: "center" },
     actionText: { color: TEXT, marginTop: 4 },
 });

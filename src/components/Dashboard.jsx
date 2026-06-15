@@ -146,7 +146,7 @@ const Dashboard = () => {
             setSearchResults(data);
 
         } catch (error) {
-            console.error("Search error:", error);
+            console.log("Search error:", error);
         }
     };
 

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable no-shadow */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
@@ -388,6 +389,55 @@ const GameScreenPower = (props) => {
     useEffect(() => { playerWinsRef.current = playerWins; }, [playerWins]);
     useEffect(() => { turnOrderRef.current = turnOrder; }, [turnOrder]);
 
+    //_____________________
+    //bingo board and daub
+    //_____________________
+    const boardImages = {
+        classic: require("../images/boards/classic.png"),
+        ocean: require("../images/boards/ocean.png"),
+        forest: require("../images/boards/forest.png"),
+        galaxy: require("../images/boards/galaxy.png"),
+        candy: require("../images/boards/candy.png"),
+        lava: require("../images/boards/lava.png"),
+        barbie: require("../images/boards/barbie.png")
+    };
+    const daubImages = {
+        daub: require("../images/daubs/daub (2).png"),
+        crown: require("../images/daubs/crown.png"),
+        flame: require("../images/daubs/flame.png"),
+        ice: require("../images/daubs/ice.png"),
+        skull: require("../images/daubs/skull.png"),
+        star: require("../images/daubs/star.png"),
+        thunder: require("../images/daubs/thunder.png"),
+    }
+
+    const [equippedBoard, setEquippedBoard] = useState("classic");
+    const [equippedDaub, setEquippedDaub] = useState("daub")
+
+    useEffect(() => {
+        const loadBoard = async () => {
+            const board = await AsyncStorage.getItem("equippedBoard");
+            if (board) setEquippedBoard(board);
+        };
+        const loadDaub = async () => {
+            const daub = await AsyncStorage.getItem("equippedDaub");
+            if (daub) setEquippedDaub(daub);
+        }
+
+        loadBoard();
+        loadDaub();
+    }, []);
+
+    const boardThemes = {
+        classic: { bg: '#C8860A', border: '#8B5E0A', text: '#FFF8E7', daubed: '#FFD700', numberColor: '#3B1F00', pickedNumberColor: '#8B5E0A' },
+        ocean: { bg: '#1A8FD1', border: '#0D5F8F', text: '#E0F4FF', daubed: '#00E5FF', numberColor: '#002B45', pickedNumberColor: '#1A8FD1' },
+        forest: { bg: '#4A7C3F', border: '#2E5228', text: '#E8FFE0', daubed: '#A8FF78', numberColor: '#1A3A15', pickedNumberColor: '#4A7C3F' },
+        galaxy: { bg: '#4B2D8F', border: '#2A1A5E', text: '#E8D5FF', daubed: '#C77DFF', numberColor: '#E8D5FF', pickedNumberColor: '#9B59B6' },
+        candy: { bg: '#D94F8A', border: '#9C1F5E', text: '#FFE4F3', daubed: '#FF9ECD', numberColor: '#6B0033', pickedNumberColor: '#D94F8A' },
+        lava: { bg: '#C03A00', border: '#7A2200', text: '#FFE8D0', daubed: '#FF6B00', numberColor: '#FFE8D0', pickedNumberColor: '#C03A00' },
+        barbie: { bg: '#E0307A', border: '#A01050', text: '#FFE4F3', daubed: '#FF80C0', numberColor: '#6B0033', pickedNumberColor: '#E0307A' },
+    };
+
     // ─────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────
@@ -744,7 +794,8 @@ const GameScreenPower = (props) => {
                 const board = [...(playerBoardsRef.current[props.user._id] || [])];
                 // Seeded Fisher-Yates
                 let seed = shuffleSeed;
-                const rand = () => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 0xffffffff; };
+                // Avoid bitwise operators to satisfy lint rules; use modulo to keep 32-bit range
+                const rand = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967295; };
                 for (let i = board.length - 1; i > 0; i--) {
                     const j = Math.floor(rand() * (i + 1));
                     [board[i], board[j]] = [board[j], board[i]];
@@ -1160,7 +1211,7 @@ const GameScreenPower = (props) => {
 
                             {/* BINGO BOARD */}
                             <ImageBackground
-                                source={require('../images/BingoBoard (2).png')}
+                                source={boardImages[equippedBoard] || boardImages.classic}
                                 style={[styles.board, powerMode && styles.boardPowerActive]}
                             >
                                 {powerMode && (
@@ -1175,6 +1226,7 @@ const GameScreenPower = (props) => {
                                         const disabled = powerMode
                                             ? isPicked
                                             : (currentTurn !== props?.user?._id || isPicked);
+                                        const theme = boardThemes[equippedBoard] || boardThemes.classic;
                                         return (
                                             <TouchableOpacity
                                                 key={index}
@@ -1189,11 +1241,21 @@ const GameScreenPower = (props) => {
                                             >
                                                 {isPicked && (
                                                     <Image
-                                                        source={require('../images/daub (2).png')}
+                                                        source={daubImages[equippedDaub] || daubImages.daub}
                                                         style={{ width: 40, height: 40, position: 'absolute', opacity: 0.5 }}
                                                     />
                                                 )}
-                                                <Text style={styles.numberText}>{num}</Text>
+                                                <Text style={[
+                                                    styles.numberText,
+                                                    { color: isPicked ? theme.pickedNumberColor : theme.numberColor },
+                                                    isPicked && {
+                                                        textShadowColor: 'rgba(0,0,0,0.3)',
+                                                        textShadowOffset: { width: 1, height: 1 },
+                                                        textShadowRadius: 2,
+                                                    },
+                                                ]}>
+                                                    {num}
+                                                </Text>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -1201,21 +1263,39 @@ const GameScreenPower = (props) => {
                             </ImageBackground>
 
                             {/* BINGO LETTERS */}
-                            {playerWins[props?.user?._id] && (
-                                <View style={styles.bingowin}>
-                                    {LETTERS.map((letter, index) => {
-                                        const daubed = playerWins[props?.user?._id]?.[letter];
-                                        return (
-                                            <View key={index} style={styles.bingoLetterContainer}>
-                                                <View style={[styles.bingoLetter, daubed && styles.daubedLetter]}>
-                                                    <Text style={[styles.letterText, daubed && styles.daubedText]}>{letter}</Text>
+                            {playerWins[props?.user?._id] && (() => {
+                                const theme = boardThemes[equippedBoard] || boardThemes.classic;
+                                return (
+                                    <View style={styles.bingowin}>
+                                        {LETTERS.map((letter, index) => {
+                                            const daubed = playerWins[props?.user?._id]?.[letter];
+                                            return (
+                                                <View key={index} style={styles.bingoLetterContainer}>
+                                                    <View style={[
+                                                        styles.bingoLetter,
+                                                        { backgroundColor: theme.bg, borderColor: theme.border, borderWidth: 2 },
+                                                        daubed && { backgroundColor: theme.daubed, borderColor: '#fff', borderWidth: 2.5 },
+                                                    ]}>
+                                                        <Text style={[
+                                                            styles.letterText,
+                                                            { color: theme.text },
+                                                            daubed && {
+                                                                color: '#fff',
+                                                                textShadowColor: 'rgba(0,0,0,0.4)',
+                                                                textShadowOffset: { width: 1, height: 1 },
+                                                                textShadowRadius: 3,
+                                                            },
+                                                        ]}>
+                                                            {letter}
+                                                        </Text>
+                                                    </View>
+                                                    <FloatingBingoGhost letter={letter} trigger={daubed} />
                                                 </View>
-                                                <FloatingBingoGhost letter={letter} trigger={daubed} />
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            )}
+                                            );
+                                        })}
+                                    </View>
+                                );
+                            })()}
                         </View>
 
                         {/* ── BOTTOM HUD BAR ── */}
@@ -1501,14 +1581,11 @@ const styles = StyleSheet.create({
         position: 'absolute', bottom: '28%', width: '70%', alignSelf: 'center',
     },
     bingoLetterContainer: { width: 50, height: 50, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-    bingoLetter: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#F8B55F', justifyContent: 'center', alignItems: 'center' },
-    daubedLetter: { backgroundColor: '#FFD700', borderWidth: 2, borderColor: '#000' },
-    letterText: { fontSize: 22, fontWeight: 'bold', color: '#F00' },
-    daubedText: { color: '#000' },
-
+    bingoLetter: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
+    letterText: { fontSize: 22, fontWeight: 'bold' },
+    numberText: { fontSize: 19, fontWeight: 'bold' },  // color now dynamic
     box: { width: '20%', height: '20%', justifyContent: 'center', alignItems: 'center' },
     boxPowerHighlight: { backgroundColor: 'rgba(255,215,0,0.3)', borderRadius: 6, borderWidth: 1, borderColor: '#FFD700' },
-    numberText: { fontSize: 19, fontWeight: 'bold', color: '#000' },
 
     exitIcon: { position: 'absolute', top: 50, left: 20, color: '#F8B55F', zIndex: 10 },
     roomCode: { color: '#fff', fontSize: 20, fontWeight: 'bold', alignSelf: 'center', marginTop: 20 },
