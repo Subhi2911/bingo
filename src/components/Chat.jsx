@@ -300,7 +300,7 @@ const Chat = ({ route }) => {
                         <Text style={styles.avatar}>{otherUser?.avatar || '🐟'}</Text>
                         <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={styles.username}>{otherUser?.username}</Text>
-                            <Text style={{ color: isOtherUserOnline ? '#22c55e' : '#9ca3af', fontSize: 11 }}>
+                            <Text style={{ color: isOtherUserOnline ? '#22c55e' : '#4c4c4e', fontSize: 11 }}>
                                 {isOtherUserOnline ? 'Online' : 'Offline'}
                             </Text>
                         </View>
@@ -336,7 +336,7 @@ const Chat = ({ route }) => {
                                 ListHeaderComponent={
                                     loadingMore ? (
                                         <View style={styles.loadingMore}>
-                                            <ActivityIndicator size="small" color="#888" />
+                                            <ActivityIndicator size="small" color="#200366" />
                                             <Text style={styles.loadingMoreText}>Loading older messages…</Text>
                                         </View>
                                     ) : hasMore ? (
@@ -400,10 +400,10 @@ const styles = StyleSheet.create({
     emptyText:  { color: '#555', fontSize: 14 },
 
     loadingMore:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 8 },
-    loadingMoreText: { color: '#888', fontSize: 12 },
+    loadingMoreText: { color: '#200366', fontSize: 12 },
     loadMoreBtn:     { alignItems: 'center', paddingVertical: 10 },
-    loadMoreText:    { color: '#4a90e2', fontSize: 13 },
-    noMoreText:      { textAlign: 'center', color: '#aaa', fontSize: 11, paddingVertical: 10 },
+    loadMoreText:    { color: '#200366', fontSize: 13 },
+    noMoreText:      { textAlign: 'center', color: '#200366', fontSize: 11, paddingVertical: 10 },
 
     inputContainer: {
         flexDirection: 'row',

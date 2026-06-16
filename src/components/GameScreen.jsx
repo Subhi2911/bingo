@@ -145,7 +145,7 @@ const GameScreen = (props) => {
     const boardThemes = {
         classic: { bg: '#F8B55F', border: '#8B5E0A', text: '#000000', daubed: '#FFD700', numberColor: '#3B1F00', pickedNumberColor: '#cf0603' },
         ocean: { bg: '#1A8FD1', border: '#0D5F8F', text: '#E0F4FF', daubed: '#00E5FF', numberColor: '#002B45', pickedNumberColor: '#1A8FD1' },
-        forest: { bg: '#4A7C3F', border: '#2E5228', text: '#E8FFE0', daubed: '#A8FF78', numberColor: '#1A3A15', pickedNumberColor: '#4A7C3F' },
+        forest: { bg: '#4A7C3F', border: '#2E5228', text: '#E8FFE0', daubed: '#85f14b', numberColor: '#0b2307', pickedNumberColor: '#4A7C3F' },
         galaxy: { bg: '#4B2D8F', border: '#2A1A5E', text: '#E8D5FF', daubed: '#C77DFF', numberColor: '#E8D5FF', pickedNumberColor: '#9B59B6' },
         candy: { bg: '#D94F8A', border: '#9C1F5E', text: '#FFE4F3', daubed: '#FF9ECD', numberColor: '#6B0033', pickedNumberColor: '#D94F8A' },
         lava: { bg: '#C03A00', border: '#7A2200', text: '#FFE8D0', daubed: '#FF6B00', numberColor: '#FFE8D0', pickedNumberColor: '#C03A00' },
@@ -703,7 +703,7 @@ const GameScreen = (props) => {
 
                             <ImageBackground
                                 source={boardImages[equippedBoard] || boardImages.classic}
-                                style={styles.board}
+                                style={[styles.board, ]}
                             >
                                 <View style={styles.grid}>
                                     {playerBoards[props?.user?._id]?.map((num, index) => {

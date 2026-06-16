@@ -88,7 +88,7 @@ const MessageBubble = ({
                     {message}
                 </Text>
 
-                <View style={styles.metaContainer}>
+                <View style={[styles.metaContainer, {justifyContent: isMe?'flex-end':'flex-start'}]}>
                     {/* BUG FIX: single formatted string instead of broken date + time vars */}
                     {!!formattedTime && (
                         <Text style={[styles.time, { color: isMe ? 'rgba(255,255,255,0.7)' : '#777' }]}>
@@ -136,7 +136,6 @@ const styles = StyleSheet.create({
     metaContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
         marginTop: 4,
         gap: 4,
     },
