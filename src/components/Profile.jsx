@@ -1,11 +1,12 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useRef } from "react";
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Switch, Alert, Modal, Animated,
+    ScrollView, Switch, Modal, Animated,
     ActivityIndicator, ImageBackground, TextInput,
-    KeyboardAvoidingView, Platform,
+    KeyboardAvoidingView, Platform, Linking,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -13,6 +14,9 @@ import { BACKEND_URL } from "../config/backend";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { showAlert2 } from "./CustomAlert2";
+//import useNotificationPermission from '../hooks/useNotificationPermission';
+import { useFocusEffect } from '@react-navigation/native'
+import { getNotificationStatus, requestNotificationPermission } from "../hooks/useNotificationPermission";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -157,6 +161,19 @@ export default function Profile() {
     const [editNameVisible, setEditNameVisible] = useState(false);
     const [editBioVisible, setEditBioVisible] = useState(false);
     const [savingField, setSavingField] = useState(false);
+    //const { requestNotificationPermission } = useNotificationPermission();
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const loadStatus = async () => {
+                const enabled = await getNotificationStatus();
+                setNotifications(enabled);
+            };
+
+            loadStatus();
+        }, [])
+    );
+
 
     React.useEffect(() => {
         (async () => {
@@ -266,11 +283,17 @@ export default function Profile() {
                     await AsyncStorage.clear();
                     navigation.reset({ index: 0, routes: [{ name: "Login" }] });
                 } catch {
-                    showAlert2({type:'error',title:'Error',message:'Could not delete account.'});
+                    showAlert2({ type: 'error', title: 'Error', message: 'Could not delete account.' });
                 }
             },
         });
     };
+
+    //ask permission
+    // Inside App component, add this useEffect
+    React.useEffect(() => {
+        requestNotificationPermission();
+    }, []);
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
@@ -335,7 +358,7 @@ export default function Profile() {
                     <SectionTitle label="Your stats" />
                     <View style={styles.statsGrid}>
                         {[
-                            { icon: "🏆", label: "Wins", value: (user?.wins?.classic+ user?.wins?.fast+ user?.wins?.power)?? 0 },
+                            { icon: "🏆", label: "Wins", value: (user?.wins?.classic + user?.wins?.fast + user?.wins?.power) || 0 },
                             { icon: "✨", label: "Stars", value: `${user?.stars ?? 0}/5` },
                             { icon: "⚡", label: "Total XP", value: user?.totalXp ?? 0 },
                             { icon: "📅", label: "Days in", value: user?.daysLoggedIn ?? 0 },
@@ -392,9 +415,19 @@ export default function Profile() {
                             label="Notifications"
                             sub="Friend requests & messages"
                             right={
-                                <Switch value={notifications} onValueChange={setNotifications}
+                                <Switch
+                                    value={notifications}
+                                    onValueChange={async (val) => {
+                                        if (val) {
+                                            const granted = await requestNotificationPermission();
+                                            setNotifications(granted);
+                                        } else {
+                                            Linking.openSettings();
+                                        }
+                                    }}
                                     trackColor={{ false: "#ccc", true: T.GOLD }}
-                                    thumbColor="#fff" />
+                                    thumbColor="#fff"
+                                />
                             }
                         />
                         <Divider />

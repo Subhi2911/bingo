@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     ImageBackground,
     ScrollView,
+    Modal, 
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,6 +16,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { BACKEND_URL } from "../config/backend";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSocket } from "../context/SocketContext";
+import { showAlert2 } from "./CustomAlert2";
 
 const OtherProfile = ({ myId, myUsername, myAvatar }) => {
     const route = useRoute();
@@ -27,6 +29,40 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
     const [loading, setLoading] = useState(true);
     const [requestStatus, setRequestStatus] = useState("none");
     const [myUser, setMyUser] = useState(null);
+
+    const [showReportSheet, setShowReportSheet] = useState(false);
+    const [reportReason, setReportReason] = useState("");
+    const [reportSent, setReportSent] = useState(false);
+    const [reportLoading, setReportLoading] = useState(false);
+
+    const submitReport = async () => {
+        if (!reportReason) return;
+        setReportLoading(true);
+        try {
+            const token = await AsyncStorage.getItem("authToken");
+            const res = await fetch(`${BACKEND_URL}/api/report/report/${userId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "auth-token": token,
+                },
+                body: JSON.stringify({ reason: reportReason }),
+            });
+            console.log(res);
+            if (res.ok) {
+                setReportSent(true);
+                setTimeout(() => {
+                    setShowReportSheet(false);
+                    setReportSent(false);
+                    setReportReason("");
+                }, 1800);
+            }
+        } catch (err) {
+            console.log("Report error:", err);
+        } finally {
+            setReportLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchUserProfile();
@@ -187,7 +223,7 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                             <View style={styles.statIconWrap}>
                                 <Text style={styles.statIconEmoji}>🏆</Text>
                             </View>
-                            <Text style={styles.statValue}>{user.wins?.length || 0}</Text>
+                            <Text style={styles.statValue}>{(user.wins?.classic + user?.wins?.fast + user?.wins?.power + user?.wins?.private) || 0}</Text>
                             <Text style={styles.statLabel}>WINS</Text>
                         </View>
 
@@ -215,9 +251,9 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                                 <Text style={{ fontSize: 26 }}>🔥</Text>
                             </View>
                             <View>
-                                <Text style={styles.streakTitle}>Current Streak</Text>
+                                <Text style={styles.streakTitle}>Maximum Streak</Text>
                                 <Text style={styles.streakValue}>
-                                    {user.streak || 0} Wins
+                                    {user.daysLoggedIn || 0} Days
                                 </Text>
                             </View>
                         </View>
@@ -254,12 +290,138 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                         </TouchableOpacity>
                     )}
 
-                    {/* REPORT */}
-                    <TouchableOpacity style={styles.reportBtn} activeOpacity={0.8}>
+                    {/* REPORT BUTTON */}
+                    <TouchableOpacity
+                        style={styles.reportBtn}
+                        activeOpacity={0.8}
+                        onPress={() => setShowReportSheet(true)}
+                    >
                         <Icon name="exclamation-triangle" size={15} color="#f0c9c9" />
                         <Text style={styles.reportText}>Report User</Text>
                     </TouchableOpacity>
                 </ScrollView>
+
+                {/*
+                  ✅ FIX: Modal moved outside the ScrollView (Modals render in their
+                  own native top-level layer anyway, so nesting inside ScrollView
+                  was harmless but a little misleading — keeping it as a sibling
+                  makes the structure clearer).
+
+                  ✅ FIX: added `transparent` + `animationType="fade"` so it behaves
+                  like a real bottom-sheet/dialog overlay instead of a default
+                  opaque full-screen white Modal.
+
+                  ✅ FIX: added `onRequestClose` — required on Android or you'll get
+                  a console warning/back-button crash on some RN versions.
+
+                  ✅ FIX: `visible={showReportSheet}` is now the source of truth
+                  instead of conditionally mounting/unmounting the whole Modal —
+                  this also lets the fade/slide animation actually play.
+                */}
+                <Modal
+                    visible={showReportSheet}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => {
+                        setShowReportSheet(false);
+                        setReportReason("");
+                    }}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.reportSheet}>
+                            {reportSent ? (
+                                <View style={styles.reportSentWrap}>
+                                    <Text style={{ fontSize: 36 }}>✅</Text>
+                                    <Text style={styles.reportSentText}>Report Submitted</Text>
+                                    <Text style={styles.reportSentSub}>
+                                        Thank you. We'll review this shortly.
+                                    </Text>
+                                </View>
+                            ) : (
+                                <>
+                                    <View style={styles.reportSheetHeader}>
+                                        <Text style={styles.reportSheetTitle}>
+                                            Report {user.username}
+                                        </Text>
+                                        <TouchableOpacity onPress={() => {
+                                            setShowReportSheet(false);
+                                            setReportReason("");
+                                        }}>
+                                            <Icon name="times" size={18} color="#aaa" />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <Text style={styles.reportSheetSub}>
+                                        Select a reason
+                                    </Text>
+
+                                    {[
+                                        { label: "Cheating / Hacking", icon: "skull-crossbones" },
+                                        { label: "Harassment", icon: "angry" },
+                                        { label: "Spam", icon: "ban" },
+                                        { label: "Inappropriate username", icon: "user-slash" },
+                                        { label: "Other", icon: "ellipsis-h" },
+                                    ].map(({ label, icon }) => (
+                                        <TouchableOpacity
+                                            key={label}
+                                            style={[
+                                                styles.reportOption,
+                                                reportReason === label && styles.reportOptionSelected,
+                                            ]}
+                                            onPress={() => setReportReason(label)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Icon
+                                                name={icon}
+                                                size={14}
+                                                color={reportReason === label ? "#fff" : "#aaa"}
+                                            />
+                                            <Text
+                                                style={[
+                                                    styles.reportOptionText,
+                                                    reportReason === label && { color: "#fff", fontWeight: "700" },
+                                                ]}
+                                            >
+                                                {label}
+                                            </Text>
+                                            {reportReason === label && (
+                                                <Icon
+                                                    name="check"
+                                                    size={13}
+                                                    color="#fff"
+                                                    style={{ marginLeft: "auto" }}
+                                                />
+                                            )}
+                                        </TouchableOpacity>
+                                    ))}
+
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.reportSubmitBtn,
+                                            !reportReason && { opacity: 0.4 },
+                                        ]}
+                                        onPress={() => {
+                                            showAlert2({
+                                                type: 'confirm',
+                                                title: 'Are you sure?',
+                                                message: 'After submission their account will freeze until proven innocent. In case of false report, your account will be banned.',
+                                                onConfirm: submitReport
+                                            })
+                                        }}
+                                        disabled={!reportReason || reportLoading}
+                                        activeOpacity={0.85}
+                                    >
+                                        {reportLoading ? (
+                                            <ActivityIndicator size="small" color="#fff" />
+                                        ) : (
+                                            <Text style={styles.reportSubmitText}>Submit Report</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                        </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         </ImageBackground>
     );
@@ -645,5 +807,98 @@ const styles = StyleSheet.create({
         color: "#FFD740",
         fontWeight: "800",
         fontSize: 16,
+    },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.55)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    /* Report Sheet */
+    reportSheet: {
+        width: "92%",
+        backgroundColor: "#0d1f4a",
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: "rgba(255,60,60,0.35)",
+        padding: 20,
+        shadowColor: "#000",
+        shadowOpacity: 0.5,
+        shadowRadius: 16,
+        elevation: 12,
+    },
+    reportSheetHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 4,
+    },
+    reportSheetTitle: {
+        fontSize: 17,
+        fontWeight: "800",
+        color: "#fff",
+    },
+    reportSheetSub: {
+        fontSize: 12,
+        color: "#7EB3FF",
+        fontWeight: "600",
+        marginBottom: 14,
+        marginTop: 2,
+    },
+    reportOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        borderRadius: 14,
+        backgroundColor: "rgba(255,255,255,0.06)",
+        borderWidth: 1.5,
+        borderColor: "rgba(255,255,255,0.1)",
+        marginBottom: 8,
+    },
+    reportOptionSelected: {
+        backgroundColor: "rgba(220,30,30,0.75)",
+        borderColor: "rgba(255,80,80,0.6)",
+    },
+    reportOptionText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#bbb",
+    },
+    reportSubmitBtn: {
+        marginTop: 6,
+        height: 52,
+        borderRadius: 16,
+        backgroundColor: "#DC1E1E",
+        justifyContent: "center",
+        alignItems: "center",
+        shadowColor: "#DC1E1E",
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    reportSubmitText: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#fff",
+        letterSpacing: 0.3,
+    },
+    reportSentWrap: {
+        alignItems: "center",
+        paddingVertical: 20,
+        gap: 10,
+    },
+    reportSentText: {
+        fontSize: 20,
+        fontWeight: "900",
+        color: "#fff",
+    },
+    reportSentSub: {
+        fontSize: 13,
+        color: "#7EB3FF",
+        textAlign: "center",
     },
 });

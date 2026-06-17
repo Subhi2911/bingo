@@ -267,7 +267,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                         <View style={styles.streakDot} />
                         <Text style={styles.streakText}>
                             <Text style={{ color: GOLD }}>
-                                {user?.daysLoggedIn || 0}-day streak
+                                {user?.daysLoggedIn || 0} day-Maximum streak
                             </Text>
                             {user?.daysLoggedIn > 0 ? " — keep it up!" : " — claim today to start!"}
                         </Text>
@@ -345,8 +345,114 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                     <Action icon="tasks" label="Missions" onPress={() => navigation.navigate("Missions")} />
                     <Action icon="medal" label="Ranking" onPress={() => navigation.navigate("Ranking")} />
                     <Action icon="user-friends" label="Friends" onPress={() => navigation.navigate("Friends")} />
-                    <Action icon="palette" label="Customize" onPress={()=>navigation.navigate("CustomizeScreen")} />
+                    <Action icon="palette" label="Customize" onPress={() => navigation.navigate("CustomizeScreen")} />
                 </View>
+                {showRewardsModal && (
+                    <Modal
+                        visible={showRewardsModal}
+                        transparent
+                        animationType="slide"
+                        onRequestClose={() => setShowRewardsModal(false)}
+                    >
+                        <Pressable
+                            style={styles.modalOverlay}
+                            onPress={() => setShowRewardsModal(false)}
+                        >
+                            <Pressable style={styles.rewardsModal} onPress={() => { }}>
+                                {/* Header */}
+                                <View style={styles.rewardsModalHeader}>
+                                    <Text style={styles.rewardsModalTitle}>🎁 Daily Rewards</Text>
+                                    <TouchableOpacity onPress={() => setShowRewardsModal(false)}>
+                                        <Icon name="times" size={18} color={SUB} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={styles.rewardsModalSub}>
+                                    Log in every day to claim bigger rewards!
+                                </Text>
+
+                                {/* 7 reward cards */}
+                                <View style={styles.rewardsGrid}>
+                                    {[1, 2, 3, 4, 5, 6, 7].map((slot) => {
+                                        const done = isSlotDone(slot);
+                                        const today = isSlotToday(slot);
+                                        const reward = dailyReward[slot];
+                                        const emoji =
+                                            slot === 7 ? "💰" :
+                                                slot === 4 ? "🎁" :
+                                                    slot === 5 ? "🎰" :
+                                                        slot % 2 === 0 ? "⚡" : "🪙";
+
+                                        return (
+                                            <View
+                                                key={slot}
+                                                style={[
+                                                    styles.rewardDayCard,
+                                                    done && styles.rewardDayCardDone,
+                                                    today && styles.rewardDayCardToday,
+                                                ]}
+                                            >
+                                                {done && (
+                                                    <View style={styles.doneOverlay}>
+                                                        <Icon name="check-circle" size={22} color={GOLD} />
+                                                    </View>
+                                                )}
+                                                <Text style={styles.rewardDayEmoji}>{emoji}</Text>
+                                                <Text style={styles.rewardDayLabel}>Day {slot}</Text>
+                                                <Text
+                                                    style={[
+                                                        styles.rewardDayValue,
+                                                        today && { color: GOLD },
+                                                    ]}
+                                                    numberOfLines={2}
+                                                >
+                                                    {reward}
+                                                </Text>
+                                                {today && !done && (
+                                                    <View style={styles.todayBadge}>
+                                                        <Text style={styles.todayBadgeText}>TODAY</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+
+                                {/* Streak */}
+                                <View style={styles.rewardsStreakRow}>
+                                    <Text style={styles.rewardsStreakFire}>🔥</Text>
+                                    <Text style={styles.rewardsStreakText}>
+                                        {user?.daysLoggedIn || 0}-day streak
+                                    </Text>
+                                </View>
+
+                                {/* Claim button */}
+                                <TouchableOpacity
+                                    style={[styles.rewardsClaimBtn, !canClaim && styles.claimBtnOff]}
+                                    onPress={() => {
+                                        if (canClaim) {
+                                            handleClaimRewards();
+                                            setShowRewardsModal(false);
+                                        }
+                                    }}
+                                    disabled={!canClaim}
+                                >
+                                    <Icon
+                                        name={canClaim ? "gift" : "clock"}
+                                        size={16}
+                                        color={canClaim ? "#1E1740" : SUB}
+                                    />
+                                    <Text style={[
+                                        styles.rewardsClaimText,
+                                        !canClaim && { color: SUB }
+                                    ]}>
+                                        {canClaim ? `Claim Day ${todaySlot}` : "Come back tomorrow!"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </Pressable>
+                        </Pressable>
+                    </Modal>
+                )}
 
             </ScrollView>
         </View>
@@ -561,4 +667,119 @@ const styles = StyleSheet.create({
     actionsRow: { flexDirection: "row", justifyContent: "space-around", marginBottom: 30 },
     actionBox: { alignItems: "center" },
     actionText: { color: TEXT, marginTop: 4 },
+    // ── Rewards Modal ──────────────────────────────────────────────────────
+    rewardsModal: {
+        backgroundColor: "#1E1740",
+        borderRadius: 28,
+        borderWidth: 1.5,
+        borderColor: BORDER,
+        padding: 22,
+        width: "92%",
+        maxHeight: "85%",
+    },
+    rewardsModalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 6,
+    },
+    rewardsModalTitle: {
+        color: GOLD,
+        fontSize: 20,
+        fontWeight: "800",
+    },
+    rewardsModalSub: {
+        color: SUB,
+        fontSize: 12,
+        marginBottom: 18,
+    },
+    rewardsGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        gap: 10,
+        marginBottom: 18,
+    },
+    rewardDayCard: {
+        width: "30%",
+        backgroundColor: CARD,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: BORDER,
+        padding: 10,
+        alignItems: "center",
+        gap: 4,
+        minHeight: 100,
+        justifyContent: "center",
+        position: "relative",
+        overflow: "hidden",
+    },
+    rewardDayCardDone: {
+        backgroundColor: "#2A2250",
+        borderColor: "#4A4370",
+        opacity: 0.7,
+    },
+    rewardDayCardToday: {
+        borderColor: GOLD,
+        borderWidth: 2,
+        backgroundColor: "#2E2560",
+    },
+    doneOverlay: {
+        position: "absolute",
+        top: 6,
+        right: 6,
+    },
+    rewardDayEmoji: {
+        fontSize: 26,
+    },
+    rewardDayLabel: {
+        color: SUB,
+        fontSize: 10,
+        fontWeight: "600",
+    },
+    rewardDayValue: {
+        color: TEXT,
+        fontSize: 11,
+        fontWeight: "700",
+        textAlign: "center",
+    },
+    todayBadge: {
+        backgroundColor: GOLD,
+        borderRadius: 8,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        marginTop: 2,
+    },
+    todayBadgeText: {
+        color: "#1E1740",
+        fontSize: 9,
+        fontWeight: "900",
+    },
+    rewardsStreakRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        marginBottom: 16,
+    },
+    rewardsStreakFire: { fontSize: 20 },
+    rewardsStreakText: {
+        color: GOLD,
+        fontWeight: "700",
+        fontSize: 14,
+    },
+    rewardsClaimBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        backgroundColor: GOLD,
+        borderRadius: 22,
+        paddingVertical: 14,
+    },
+    rewardsClaimText: {
+        color: "#1E1740",
+        fontWeight: "800",
+        fontSize: 15,
+    },
 });

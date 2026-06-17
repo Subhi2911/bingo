@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react-native/no-inline-styles */
 import {
     StyleSheet, Text, View, TextInput,
@@ -8,6 +9,7 @@ import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useAlertToast } from './AlertToast';
+import { getNotificationStatus, requestNotificationPermission } from "../hooks/useNotificationPermission";
 
 const STEPS = ['Email', 'Verify', 'Account'];
 const RESEND_COOLDOWN = 30; // seconds
@@ -52,8 +54,8 @@ const Signup = () => {
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const cooldownRef = useRef(null);
     const { showToast } = useAlertToast();
-
-    // ✅ Clear cooldown timer on unmount
+    
+    // Clear cooldown timer on unmount
     useEffect(() => {
         return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
     }, []);
@@ -77,7 +79,7 @@ const Signup = () => {
 
     const onChange = (name, value) => setCredentials(prev => ({ ...prev, [name]: value }));
 
-    // ✅ Shared send OTP logic — used by both "Send OTP" and "Resend"
+    // Shared send OTP logic — used by both "Send OTP" and "Resend"
     const sendOtp = async (isResend = false) => {
         if (!credentials.email) { showToast('error', 'Error', 'Email required.'); return; }
         setLoading(true);
@@ -134,9 +136,10 @@ const Signup = () => {
             const data = await res.json();
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
-                await AsyncStorage.setItem("equippedBoard","classic");
-                await AsyncStorage.setItem("equippedDaub","daub (2)");
+                await AsyncStorage.setItem("equippedBoard", "classic");
+                await AsyncStorage.setItem("equippedDaub", "daub (2)");
                 showToast('success', 'Account created', 'Welcome aboard!');
+                await requestNotificationPermission();
                 navigation.navigate("AvatarSelection");
             } else {
                 showToast('error', 'Signup failed', data.error || 'Invalid email or password. Please try again.');
@@ -146,7 +149,7 @@ const Signup = () => {
         } finally { setLoading(false); }
     };
 
-    // ✅ Go back to step 1 — user can fix email and resend fresh OTP
+    // Go back to step 1 — user can fix email and resend fresh OTP
     const handleBackToEmail = () => {
         if (cooldownRef.current) clearInterval(cooldownRef.current);
         setResendCooldown(0);

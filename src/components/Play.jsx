@@ -131,6 +131,9 @@ const Play = ({ user }) => {
               No games played yet 🎯
             </Text>
           }
+          contentContainerStyle={{
+            paddingBottom: 60,
+          }}
         />
       )}
     </View>

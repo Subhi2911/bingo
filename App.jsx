@@ -1,5 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Home from './src/components/Home';
 import Dashboard from './src/components/Dashboard';
 import Signup from './src/components/Signup';
@@ -34,7 +35,13 @@ import { AlertToastProvider } from './src/components/AlertToast.jsx';
 import ChangePassword from './src/components/ChangePassword.jsx';
 import ForgotPassword from './src/components/ForgotPassword.jsx';
 import { createNavigationContainerRef } from '@react-navigation/native';
-import CustomizeScreen from './src/components/CustomizeScreen.jsx'
+import CustomizeScreen from './src/components/CustomizeScreen.jsx';
+import FrozenScreen from './src/components/FrozenScreen.jsx';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from './src/context/AuthContext';
+import { useSocket } from './src/context/SocketContext';
+import { Platform } from 'react-native';
+import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -51,7 +58,7 @@ const displayLocalNotification = async (remoteMessage) => {
 
   await notifee.displayNotification({
     title: remoteMessage.notification?.title || remoteMessage.data?.title || 'New Message',
-    body:  remoteMessage.notification?.body  || remoteMessage.data?.body  || '',
+    body: remoteMessage.notification?.body || remoteMessage.data?.body || '',
     android: {
       channelId,
       importance: AndroidImportance.HIGH,
@@ -63,34 +70,115 @@ const displayLocalNotification = async (remoteMessage) => {
 
 // ── Inner component — lives INSIDE NavigationContainer so useNavigation works ──
 const AppNavigator = () => {
+  const navigation = useNavigation();
+  const socketRef = useSocket();
+  const socket = socketRef?.socket;
+
+  const [user, setUser] = React.useState(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      SystemNavigationBar?.navigationHide();
+    }
+  }, []);
+
+  React.useEffect(() => {
+
+    const getUser = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "auth-token": token,
+          },
+        });
+        const json = await res.json();
+        setUser(json);
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    getUser();
+  }, []);
+
+
+  useEffect(() => {
+    if (user?.isFrozen) {
+      console.log(user?.isFrozen);
+      navigation.navigate("FrozenScreen", {
+        message: user.freezeMessage,
+        freezeUntil: user.freezeUntil,
+        reason: user.freezeReason,
+      });
+    }
+  }, []);
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("accountFrozen", ({ message, freezeUntil, reason }) => {
+      // Update context so isFrozen is reflected everywhere
+      setUser(prev => ({
+        ...prev,
+        isFrozen: true,
+        freezeMessage: message,
+        freezeUntil,
+        freezeReason: reason,
+      }));
+      // Navigate immediately — works from ANY screen
+      navigation.navigate("FrozenScreen", { message, freezeUntil, reason });
+    });
+
+    socket.on("accountUnfrozen", () => {
+      setUser(prev => ({
+        ...prev,
+        isFrozen: false,
+        freezeMessage: null,
+        freezeUntil: null,
+        freezeReason: null,
+      }));
+      // Send them back to home
+      navigation.navigate("Home");
+    });
+
+    return () => {
+      socket.off("accountFrozen");
+      socket.off("accountUnfrozen");
+    };
+  }, [socket]);
+
+
   return (
+
     <>
       {/* FIX: MessageToast is now inside NavigationContainer so useNavigation() works */}
       <MessageToast />
 
       <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home"              component={Home} />
-        <Stack.Screen name="Dashboard"         component={Dashboard} />
-        <Stack.Screen name="Signup"            component={Signup} />
-        <Stack.Screen name="Classic"           component={Classic} />
-        <Stack.Screen name="Fast"              component={Fast} />
-        <Stack.Screen name="Power"             component={Power} />
-        <Stack.Screen name="Private"           component={Private} />
-        <Stack.Screen name="Profile"           component={Profile} />
-        <Stack.Screen name="HomeScreen"        component={HomeScreen} />
-        <Stack.Screen name="Friends"           component={Freinds} />
-        <Stack.Screen name="Ranking"           component={Ranking} />
-        <Stack.Screen name="Missions"          component={Missions} />
-        <Stack.Screen name="OtherProfile"      component={OtherProfile} />
-        <Stack.Screen name="Messaging"         component={Messaging} />
-        <Stack.Screen name="Chat"              component={Chat} />
-        <Stack.Screen name="AvatarSelection"   component={AvatarSelection} />
+        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="Dashboard" component={Dashboard} />
+        <Stack.Screen name="Signup" component={Signup} />
+        <Stack.Screen name="Classic" component={Classic} />
+        <Stack.Screen name="Fast" component={Fast} />
+        <Stack.Screen name="Power" component={Power} />
+        <Stack.Screen name="Private" component={Private} />
+        <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="Friends" component={Freinds} />
+        <Stack.Screen name="Ranking" component={Ranking} />
+        <Stack.Screen name="Missions" component={Missions} />
+        <Stack.Screen name="OtherProfile" component={OtherProfile} />
+        <Stack.Screen name="Messaging" component={Messaging} />
+        <Stack.Screen name="Chat" component={Chat} />
+        <Stack.Screen name="AvatarSelection" component={AvatarSelection} />
         <Stack.Screen name="NotificationPanel" component={NotificationPanel} />
-        <Stack.Screen name="TermsOfService"    component={TermsOfService} />
-        <Stack.Screen name="PrivacyPolicy"     component={PrivacyPolicy} />
-        <Stack.Screen name="ChangePassword"    component={ChangePassword} />
-        <Stack.Screen name="ForgotPassword"    component={ForgotPassword} />
-        <Stack.Screen name="CustomizeScreen"   component={CustomizeScreen}/>
+        <Stack.Screen name="TermsOfService" component={TermsOfService} />
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+        <Stack.Screen name="ChangePassword" component={ChangePassword} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+        <Stack.Screen name="CustomizeScreen" component={CustomizeScreen} />
+        <Stack.Screen name="FrozenScreen" component={FrozenScreen} />
       </Stack.Navigator>
     </>
   );
@@ -98,9 +186,9 @@ const AppNavigator = () => {
 
 const App = () => {
 
-  useEffect(()=>{
+  useEffect(() => {
     console.log(BACKEND_URL);
-  },[])
+  }, [])
 
   // Request permission + save FCM token
   useEffect(() => {
@@ -111,7 +199,7 @@ const App = () => {
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        const fcmToken  = await messaging().getToken();
+        const fcmToken = await messaging().getToken();
         const authToken = await AsyncStorage.getItem("authToken");
         await fetch(`${BACKEND_URL}/api/auth/save-fcm-token`, {
           method: "POST",

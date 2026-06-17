@@ -23,36 +23,36 @@ import { useSocket } from '../context/SocketContext';
 const PAGE_SIZE = 8; // messages per page
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const getRoomCode    = (text) => text?.match(/Room Code:\s*(\w+)/)?.[1] || null;
+const getRoomCode = (text) => text?.match(/Room Code:\s*(\w+)/)?.[1] || null;
 const getPlayerCount = (text) => text?.match(/Total Players:\s*(\d+)/)?.[1] || null;
-const getGameType    = (text) => text?.match(/GameType:\s*(.+)/)?.[1] || null;
+const getGameType = (text) => text?.match(/GameType:\s*(.+)/)?.[1] || null;
 
 const Chat = ({ route }) => {
-    const navigation                  = useNavigation();
-    const { chatId }                  = route.params;
-    const socketRef                   = useSocket();
-    const socket                      = socketRef?.socket;
-    const onlineUsers                 = socketRef?.onlineUsers;
+    const navigation = useNavigation();
+    const { chatId } = route.params;
+    const socketRef = useSocket();
+    const socket = socketRef?.socket;
+    const onlineUsers = socketRef?.onlineUsers;
 
     // ── State ─────────────────────────────────────────────────────────────────
     const [typedMessage, setTypedMessage] = useState('');
-    const [inputHeight, setInputHeight]   = useState(48);
-    const [userData, setUserData]         = useState(null);
-    const [otherUser, setOtherUser]       = useState(null);
-    const [messages, setMessages]         = useState([]);
+    const [inputHeight, setInputHeight] = useState(48);
+    const [userData, setUserData] = useState(null);
+    const [otherUser, setOtherUser] = useState(null);
+    const [messages, setMessages] = useState([]);
 
     // Pagination
-    const [page, setPage]               = useState(1);
-    const [hasMore, setHasMore]         = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
 
     // Keyboard animation
     const [keyboardHeight] = useState(new Animated.Value(0));
 
     // Refs
-    const flatListRef     = useRef(null);
-    const firstLoadRef    = useRef(true);   // scroll-to-bottom only on first load
-    const sentMessageIds  = useRef(new Set()); // prevent double-append for own messages
+    const flatListRef = useRef(null);
+    const firstLoadRef = useRef(true);   // scroll-to-bottom only on first load
+    const sentMessageIds = useRef(new Set()); // prevent double-append for own messages
 
     // ── Keyboard listeners ────────────────────────────────────────────────────
     useEffect(() => {
@@ -75,7 +75,7 @@ const Chat = ({ route }) => {
         const getMyUserData = async () => {
             try {
                 const token = await AsyncStorage.getItem('authToken');
-                const res   = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
+                const res = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'auth-token': token },
                 });
@@ -90,7 +90,7 @@ const Chat = ({ route }) => {
         if (!userData || !chatId) return;
         const fetchChat = async () => {
             try {
-                const res  = await fetch(`${BACKEND_URL}/api/chat/${chatId}`);
+                const res = await fetch(`${BACKEND_URL}/api/chat/${chatId}`);
                 if (!res.ok) return;
                 const data = await res.json();
                 setOtherUser(data.participants.find(p => p._id !== userData._id));
@@ -110,7 +110,7 @@ const Chat = ({ route }) => {
         if (loadingMore && !isInitial) return;
         setLoadingMore(true);
         try {
-            const res  = await fetch(
+            const res = await fetch(
                 `${BACKEND_URL}/api/messages/${chatId}?page=${targetPage}&limit=${PAGE_SIZE}`
             );
             const data = await res.json(); // newest-first from backend, we reverse below
@@ -211,11 +211,11 @@ const Chat = ({ route }) => {
 
         const unread = messages.filter(
             m => m.sender?._id !== userData._id &&
-                 !(m.seenBy || []).includes(userData._id)
+                !(m.seenBy || []).includes(userData._id)
         );
 
         unread.forEach(m => markSeen(m._id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages, userData]);
 
     const markSeen = useCallback(async (messageId) => {
@@ -295,8 +295,15 @@ const Chat = ({ route }) => {
                 <SafeAreaView style={styles.root} edges={['top']}>
 
                     {/* HEADER */}
-                    <View style={styles.header}>
-                        <Icon name="arrow-left" size={16} color="#000" onPress={() => navigation.goBack()} />
+                    <TouchableOpacity style={styles.header} onPress={() =>
+                        navigation.navigate("OtherProfile", {
+                            userId: otherUser?._id,
+                            myId: userData?._id,
+                            myUsername: userData?.username,
+                            myAvatar: userData?.avatar,
+                        })
+                    }>
+                        <Icon name="arrow-left" size={20} color="#000" onPress={() => navigation.goBack()} />
                         <Text style={styles.avatar}>{otherUser?.avatar || '🐟'}</Text>
                         <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={styles.username}>{otherUser?.username}</Text>
@@ -304,7 +311,7 @@ const Chat = ({ route }) => {
                                 {isOtherUserOnline ? 'Online' : 'Offline'}
                             </Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* MESSAGES */}
                     <View style={{ flex: 1 }}>
@@ -332,7 +339,7 @@ const Chat = ({ route }) => {
                                 )}
                                 contentContainerStyle={{ paddingVertical: 10 }}
                                 // Trigger load-more when user reaches the top
-                                onScrollToIndexFailed={() => {}}
+                                onScrollToIndexFailed={() => { }}
                                 ListHeaderComponent={
                                     loadingMore ? (
                                         <View style={styles.loadingMore}>
@@ -393,17 +400,17 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#ddd',
     },
-    avatar:   { fontSize: 22, marginLeft: 14 },
+    avatar: { fontSize: 22, marginLeft: 14 },
     username: { fontSize: 18, fontWeight: 'bold', color: '#000' },
 
     emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 60 },
-    emptyText:  { color: '#555', fontSize: 14 },
+    emptyText: { color: '#555', fontSize: 14 },
 
-    loadingMore:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 8 },
+    loadingMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 8 },
     loadingMoreText: { color: '#200366', fontSize: 12 },
-    loadMoreBtn:     { alignItems: 'center', paddingVertical: 10 },
-    loadMoreText:    { color: '#200366', fontSize: 13 },
-    noMoreText:      { textAlign: 'center', color: '#200366', fontSize: 11, paddingVertical: 10 },
+    loadMoreBtn: { alignItems: 'center', paddingVertical: 10 },
+    loadMoreText: { color: '#200366', fontSize: 13 },
+    noMoreText: { textAlign: 'center', color: '#200366', fontSize: 11, paddingVertical: 10 },
 
     inputContainer: {
         flexDirection: 'row',

@@ -34,6 +34,8 @@ import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FloatingMessage from './FloatingMessage';
 import { ScrollView } from 'react-native';
+import { useAlertToast } from './AlertToast';
+
 
 // ─────────────────────────────────────────────
 // POWER DEFINITIONS
@@ -355,6 +357,7 @@ const GameScreenPower = (props) => {
     const [me, setMe] = useState(null);
     const [readyPlayers, setReadyPlayers] = useState({});
     const [floatingMessages2, setFloatingMessages2] = useState([]);
+    const { showToast } = useAlertToast();
 
     // Power state
     const [usedPower, setUsedPower] = useState(false);
@@ -388,6 +391,14 @@ const GameScreenPower = (props) => {
     useEffect(() => { pickedNumbersRef.current = pickedNumbers; }, [pickedNumbers]);
     useEffect(() => { playerWinsRef.current = playerWins; }, [playerWins]);
     useEffect(() => { turnOrderRef.current = turnOrder; }, [turnOrder]);
+
+    //____________________________________
+    //Info
+    //___________________________________
+    useEffect(() => {
+        !loading &&
+            showToast('warning', props.gameType, 'Each row/column/diagonal will daub one letter of BINGO. Daub all the letters to win. You can use your power only once');
+    }, []);
 
     //_____________________
     //bingo board and daub

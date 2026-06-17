@@ -29,10 +29,23 @@ const MARGIN = 8;
 
 
 
-const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAvatar}) => {
+const ProfileModal = ({ visible, anchor, user, onClose, myId, myUsername, myAvatar }) => {
   const [otherUser, setOtherUser] = React.useState(null);
+
+  const [showReport, setShowReport] = React.useState(false);
+  const [reportReason, setReportReason] = React.useState("");
+  const [reportSent, setReportSent] = React.useState(false);
+
   const socketRef = useSocket();
   const socket = socketRef?.socket;
+
+  useEffect(() => {
+    setSent(false);
+    setShowReport(false);
+    setReportReason("");
+    setReportSent(false);
+  }, [user?.userId]);
+
   useEffect(() => {
 
     const getOtherUserData = async () => {
@@ -60,6 +73,33 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
 
     getOtherUserData();
   }, [user]);
+
+  //submit report
+  const submitReport = async () => {
+    if (!reportReason) return;
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      const response = await fetch(`${BACKEND_URL}/api/report/report/${user?.userId}`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "auth-token": token,
+        },
+        body: JSON.stringify({ reason: reportReason }),
+      });
+      if (response.ok) {
+        setReportSent(true);
+        setTimeout(() => {
+          setShowReport(false);
+          setReportSent(false);
+          setReportReason("");
+          onClose();
+        }, 1500);
+      }
+    } catch (error) {
+      console.log("Report error:", error);
+    }
+  };
 
 
   const [sent, setSent] = React.useState(false);
@@ -117,7 +157,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
 
 
   return (
-    <Modal transparent animationType="fade">
+    <Modal transparent animationType="fade" visible={visible}>
       {/* Backdrop */}
       <TouchableOpacity
         style={styles.backdrop}
@@ -134,6 +174,8 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
                 left,
                 borderWidth: 2.5,
                 borderColor: "rgba(255,255,255,0.3)",
+                zIndex: 9999,
+                elevation: 9999,  // Android
               },
             ]}
           >
@@ -173,6 +215,7 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
                     size={20}
                     color="red"
                     style={{ position: 'absolute', top: 0, right: -40 }}
+                    onPress={() => setShowReport(true)}
                   />
                 </View>
               </View>
@@ -181,9 +224,47 @@ const ProfileModal = ({ visible, anchor, user, onClose, myId , myUsername, myAva
               {/* Stats */}
               <View style={styles.statsRow}>
                 <Stat label="XP" value={otherUser.totalXp} />
-                <Stat label="Wins" value={otherUser.wins} />
+                <Stat label="Wins" value={otherUser.wins.classic + otherUser.wins.fast + otherUser.wins.power + otherUser.wins.private} />
                 <Stat label="Coins" value={otherUser.money} />
               </View>
+
+              {showReport && (
+                <View style={styles.reportPanel}>
+                  {reportSent ? (
+                    <Text style={{ color: '#2ecc71', textAlign: 'center', fontWeight: '700' }}>
+                      ✓ Reported
+                    </Text>
+                  ) : (
+                    <>
+                      <Text style={styles.reportTitle}>Report {otherUser.username}</Text>
+                      {["Spam", "Cheating", "Harassment", "Inappropriate name"].map((r) => (
+                        <TouchableOpacity
+                          key={r}
+                          style={[
+                            styles.reportOption,
+                            reportReason === r && styles.reportOptionSelected,
+                          ]}
+                          onPress={() => setReportReason(r)}
+                        >
+                          <Text style={{ color: reportReason === r ? '#fff' : '#ccc', fontSize: 11 }}>
+                            {r}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                        <TouchableOpacity onPress={() => setShowReport(false)}>
+                          <Text style={{ color: '#aaa', fontSize: 11 }}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={submitReport} disabled={!reportReason}>
+                          <Text style={{ color: reportReason ? '#e74c3c' : '#555', fontSize: 11, fontWeight: '700' }}>
+                            Submit
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
 
               <Text style={styles.rank}>Rank #{otherUser.rank}</Text>
 
@@ -211,6 +292,8 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",
+    zIndex: 9999,        // iOS
+    elevation: 9999,    // Android
   },
   container: {
     position: "absolute",
@@ -279,6 +362,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 10,
+  },
+  reportPanel: {
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 6,
+  },
+  reportTitle: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  reportOption: {
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    marginBottom: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  reportOptionSelected: {
+    backgroundColor: '#e74c3c',
   },
 });
 

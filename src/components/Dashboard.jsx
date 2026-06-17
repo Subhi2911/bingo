@@ -188,6 +188,17 @@ const Dashboard = () => {
     }, [isHomeSelected]);
 
 
+    useEffect(() => {
+        if (!loading && user?.isFrozen) {
+            navigation.navigate("FrozenScreen", {
+                message: user.freezeMessage,
+                freezeUntil: user.freezeUntil,
+                reason: user.freezeReason,
+            });
+        }
+    },);
+
+
     return (
         <View style={{ flex: 1 }}>
             {loading ? (
@@ -304,16 +315,6 @@ const Dashboard = () => {
                             }}
                         >
                             <Text style={styles.logoutText}>Logout</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.btn, styles.logout]}
-                            onPress={async () => {
-
-                                navigation.navigate("AvatarSelection");
-                                setProfileModalVisible(false);
-                            }}
-                        >
-                            <Text style={styles.logoutText}>avatar</Text>
                         </TouchableOpacity>
                     </View>
                 </Pressable>

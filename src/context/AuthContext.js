@@ -9,56 +9,42 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // YOUR LOGIC (moved to context)
+  const fetchUser = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) return null;
+
+      const response = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "auth-token": token,
+        },
+      });
+      console.log(response);
+
+      const json = await response.json();
+      setUser(json);
+      return json;         
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const getMyUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-
-
-        const response = await fetch(
-          `${BACKEND_URL}/api/auth/getUser`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "auth-token": token,
-            },
-          }
-        );
-
-        const json = await response.json();
-        setUser(json);
-      } catch (error) {
-        console.error("Error fetching my user data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getMyUserData();
+    fetchUser();
   }, []);
 
-  // optional logout
   const logout = async () => {
     setUser(null);
     await AsyncStorage.removeItem("authToken");
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        loading,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
+    <AuthContext.Provider value={{ user, setUser, loading, logout, fetchUser, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

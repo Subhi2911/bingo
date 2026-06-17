@@ -32,6 +32,8 @@ import XPModal from './XPModal';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FloatingMessage from './FloatingMessage';
+import { useAlertToast } from './AlertToast';
+
 
 
 const GameScreen = (props) => {
@@ -58,6 +60,7 @@ const GameScreen = (props) => {
     const [floatingMessages, setFloatingMessages] = useState([]);
     const [inputHeight, setInputHeight] = useState(48);
     const keyboardHeight = useRef(new Animated.Value(0)).current;
+    const { showToast } = useAlertToast();
 
     const [bingopop, setBingopop] = useState(false);
     const bingoShownRef = useRef(false);
@@ -87,559 +90,569 @@ const GameScreen = (props) => {
     const playerBoardsRef = useRef(playerBoards);
     const pickedNumbersRef = useRef(pickedNumbers);
 
+    useEffect(() => {
+        const message = props.gameType === 'clasic'
+            ? 'Each row/column/diagonal will daub one letter of BINGO. Daub all the letters to win.'
+            : 'Each row/column/diagonal will daub one letter of BINGO. Daub only 3 letters to win.';
+        if (!loading) {
+            showToast('warning', props.gameType, message);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
 
-    useEffect(() => { playerBoardsRef.current = playerBoards; }, [playerBoards]);
-    useEffect(() => { pickedNumbersRef.current = pickedNumbers; }, [pickedNumbers]);
 
-    const handleWinModalClose = () => {
-        setWinModal(false);
-        setXpModalVisible(true);
+useEffect(() => { playerBoardsRef.current = playerBoards; }, [playerBoards]);
+useEffect(() => { pickedNumbersRef.current = pickedNumbers; }, [pickedNumbers]);
+
+const handleWinModalClose = () => {
+    setWinModal(false);
+    setXpModalVisible(true);
+};
+
+const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
+//_____________________
+//bingo board and daub
+//_____________________
+const boardImages = {
+    classic: require("../images/boards/classic.png"),
+    ocean: require("../images/boards/ocean.png"),
+    forest: require("../images/boards/forest.png"),
+    galaxy: require("../images/boards/galaxy.png"),
+    candy: require("../images/boards/candy.png"),
+    lava: require("../images/boards/lava.png"),
+    barbie: require("../images/boards/barbie.png")
+};
+const daubImages = {
+    daub: require("../images/daubs/daub (2).png"),
+    crown: require("../images/daubs/crown.png"),
+    flame: require("../images/daubs/flame.png"),
+    ice: require("../images/daubs/ice.png"),
+    skull: require("../images/daubs/skull.png"),
+    star: require("../images/daubs/star.png"),
+    thunder: require("../images/daubs/thunder.png"),
+};
+
+const [equippedBoard, setEquippedBoard] = useState("classic");
+const [equippedDaub, setEquippedDaub] = useState("daub");
+
+useEffect(() => {
+    const loadBoard = async () => {
+        const board = await AsyncStorage.getItem("equippedBoard");
+        if (board) setEquippedBoard(board);
     };
-
-    const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s.toString().padStart(2, '0')}`;
-    };
-
-    //_____________________
-    //bingo board and daub
-    //_____________________
-    const boardImages = {
-        classic: require("../images/boards/classic.png"),
-        ocean: require("../images/boards/ocean.png"),
-        forest: require("../images/boards/forest.png"),
-        galaxy: require("../images/boards/galaxy.png"),
-        candy: require("../images/boards/candy.png"),
-        lava: require("../images/boards/lava.png"),
-        barbie: require("../images/boards/barbie.png")
-    };
-    const daubImages = {
-        daub: require("../images/daubs/daub (2).png"),
-        crown: require("../images/daubs/crown.png"),
-        flame: require("../images/daubs/flame.png"),
-        ice: require("../images/daubs/ice.png"),
-        skull: require("../images/daubs/skull.png"),
-        star: require("../images/daubs/star.png"),
-        thunder: require("../images/daubs/thunder.png"),
+    const loadDaub = async () => {
+        const daub = await AsyncStorage.getItem("equippedDaub");
+        if (daub) setEquippedDaub(daub);
     }
 
-    const [equippedBoard, setEquippedBoard] = useState("classic");
-    const [equippedDaub, setEquippedDaub] = useState("daub")
+    loadBoard();
+    loadDaub();
+}, []);
 
-    useEffect(() => {
-        const loadBoard = async () => {
-            const board = await AsyncStorage.getItem("equippedBoard");
-            if (board) setEquippedBoard(board);
-        };
-        const loadDaub = async () => {
-            const daub = await AsyncStorage.getItem("equippedDaub");
-            if (daub) setEquippedDaub(daub);
-        }
+const boardThemes = {
+    classic: { bg: '#F8B55F', border: '#8B5E0A', text: '#000000', daubed: '#FFD700', numberColor: '#3B1F00', pickedNumberColor: '#cf0603' },
+    ocean: { bg: '#1A8FD1', border: '#0D5F8F', text: '#E0F4FF', daubed: '#00E5FF', numberColor: '#002B45', pickedNumberColor: '#1A8FD1' },
+    forest: { bg: '#4A7C3F', border: '#2E5228', text: '#E8FFE0', daubed: '#85f14b', numberColor: '#0b2307', pickedNumberColor: '#4A7C3F' },
+    galaxy: { bg: '#4B2D8F', border: '#2A1A5E', text: '#E8D5FF', daubed: '#C77DFF', numberColor: '#E8D5FF', pickedNumberColor: '#9B59B6' },
+    candy: { bg: '#D94F8A', border: '#9C1F5E', text: '#FFE4F3', daubed: '#FF9ECD', numberColor: '#6B0033', pickedNumberColor: '#D94F8A' },
+    lava: { bg: '#C03A00', border: '#7A2200', text: '#FFE8D0', daubed: '#FF6B00', numberColor: '#FFE8D0', pickedNumberColor: '#C03A00' },
+    barbie: { bg: '#E0307A', border: '#A01050', text: '#FFE4F3', daubed: '#FF80C0', numberColor: '#6B0033', pickedNumberColor: '#E0307A' },
+};
 
-        loadBoard();
-        loadDaub();
-    }, []);
+useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+        Animated.timing(keyboardHeight, {
+            toValue: e.endCoordinates.height,
+            duration: 250,
+            useNativeDriver: false,
+        }).start();
+    });
 
-    const boardThemes = {
-        classic: { bg: '#F8B55F', border: '#8B5E0A', text: '#000000', daubed: '#FFD700', numberColor: '#3B1F00', pickedNumberColor: '#cf0603' },
-        ocean: { bg: '#1A8FD1', border: '#0D5F8F', text: '#E0F4FF', daubed: '#00E5FF', numberColor: '#002B45', pickedNumberColor: '#1A8FD1' },
-        forest: { bg: '#4A7C3F', border: '#2E5228', text: '#E8FFE0', daubed: '#85f14b', numberColor: '#0b2307', pickedNumberColor: '#4A7C3F' },
-        galaxy: { bg: '#4B2D8F', border: '#2A1A5E', text: '#E8D5FF', daubed: '#C77DFF', numberColor: '#E8D5FF', pickedNumberColor: '#9B59B6' },
-        candy: { bg: '#D94F8A', border: '#9C1F5E', text: '#FFE4F3', daubed: '#FF9ECD', numberColor: '#6B0033', pickedNumberColor: '#D94F8A' },
-        lava: { bg: '#C03A00', border: '#7A2200', text: '#FFE8D0', daubed: '#FF6B00', numberColor: '#FFE8D0', pickedNumberColor: '#C03A00' },
-        barbie: { bg: '#E0307A', border: '#A01050', text: '#FFE4F3', daubed: '#FF80C0', numberColor: '#6B0033', pickedNumberColor: '#E0307A' },
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        Animated.timing(keyboardHeight, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: false,
+        }).start();
+    });
+
+    return () => {
+        showSub.remove();
+        hideSub.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
-    useEffect(() => {
-        const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-            Animated.timing(keyboardHeight, {
-                toValue: e.endCoordinates.height,
-                duration: 250,
-                useNativeDriver: false,
-            }).start();
+const updateXPFromServer = async (
+    didWin,
+    gameType = props.gameType,
+    playerCount = props.players
+) => {
+    if (xpUpdatedRef.current) return;
+    xpUpdatedRef.current = true;
+
+    try {
+        const token = await AsyncStorage.getItem('authToken');
+        oldXpRef.current = props.user.xp;
+
+        const duration = gameStartTimeRef.current
+            ? Math.floor((Date.now() - gameStartTimeRef.current) / 1000)
+            : 0;
+
+        const res = await fetch(`${BACKEND_URL}/api/games/update-progress`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'auth-token': token,
+            },
+            body: JSON.stringify({
+                gameId: props.roomCode,
+                didWin,
+                gameType,
+                playerCount,
+                duration,
+            }),
         });
 
-        const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-            Animated.timing(keyboardHeight, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: false,
-            }).start();
+        const data = await res.json();
+        setXpResult({ ...data, oldXP: oldXpRef.current });
+    } catch (e) {
+        console.log(e);
+    }
+};
+
+useEffect(() => {
+    if (currentTurn !== props?.user?._id) return;
+
+    setTimer(TURN_TIME);
+    const interval = setInterval(() => {
+        setTimer(prev => {
+            if (prev <= 1) {
+                clearInterval(interval);
+                return 0;
+            }
+            return prev - 1;
         });
+    }, 1000);
 
-        return () => {
-            showSub.remove();
-            hideSub.remove();
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [currentTurn]);
 
-    const updateXPFromServer = async (
-        didWin,
-        gameType = props.gameType,
-        playerCount = props.players
-    ) => {
-        if (xpUpdatedRef.current) return;
-        xpUpdatedRef.current = true;
+useEffect(() => {
+    if (!socket || !props.roomCode) return;
+    socket.emit('join_chat_room', props.roomCode);
+}, [socket, props.roomCode]);
 
-        try {
-            const token = await AsyncStorage.getItem('authToken');
-            oldXpRef.current = props.user.xp;
+const sendMessage = () => {
+    if (!chatInput.trim()) return;
+    socket.emit('send_message', {
+        roomCode: props.roomCode,
+        username: props.user.username,
+        text: chatInput.trim(),
+    });
+    setChatInput('');
+};
 
-            const duration = gameStartTimeRef.current
-                ? Math.floor((Date.now() - gameStartTimeRef.current) / 1000)
-                : 0;
+useEffect(() => {
+    if (!socket) return;
 
-            const res = await fetch(`${BACKEND_URL}/api/games/update-progress`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'auth-token': token,
-                },
-                body: JSON.stringify({
-                    gameId: props.roomCode,
-                    didWin,
-                    gameType,
-                    playerCount,
-                    duration,
-                }),
-            });
+    const handleReceive = (data) => {
+        setFloatingMessages(prev => [
+            ...prev,
+            {
+                id: `${Date.now()}-${Math.random()}`,
+                text: `${data.username}: ${data.text}`,
+                top: Math.random() * 250 + 120,
+            },
+        ]);
+    };
 
-            const data = await res.json();
-            setXpResult({ ...data, oldXP: oldXpRef.current });
-        } catch (e) {
-            console.log(e);
+    socket.on('receive_message', handleReceive);
+    return () => socket.off('receive_message', handleReceive);
+}, [socket]);
+
+useEffect(() => {
+    const handleResults = ({ winnerId }) => {
+        if (winnerId !== props?.user?._id) {
+            setResult('lose');
+            setWinnerPlayerId(winnerId);
+            setBingopop(true);
+            updateXPFromServer(false);
         }
     };
 
-    useEffect(() => {
-        if (currentTurn !== props?.user?._id) return;
+    socket.on('show_results', handleResults);
+    return () => socket.off('show_results', handleResults);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
-        setTimer(TURN_TIME);
-        const interval = setInterval(() => {
-            setTimer(prev => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    return 0;
-                }
-                return prev - 1;
+useEffect(() => {
+    if (!socket) return;
+
+    const handleTurnOrder = (order) => {
+        setTurnOrder(order);
+        setMe(order.find(p => p.userId === props?.user?._id));
+        if (!gameStartTimeRef.current) {
+            gameStartTimeRef.current = Date.now();
+        }
+    };
+
+    socket.on('turn_order', handleTurnOrder);
+
+
+
+    return () => socket.off('turn_order', handleTurnOrder);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [socket]);
+
+// ─── CHECK FOR REJOIN on mount ────────────────────────────────────────────
+useEffect(() => {
+    if (!socket || !props?.user?._id) return;
+
+    socket.emit("check_rejoin", { userId: props.user._id });
+
+    const handleRejoin = ({ roomCode, gameType, players, pickedNumbers, currentTurn, turnOrder }) => {
+        // Restore state from server snapshot
+        setPickedNumbers(pickedNumbers || []);
+        setTurnOrder(turnOrder || []);
+        setCurrentTurn(currentTurn?.userId || null);
+        setMe(turnOrder?.find(p => p.userId === props.user._id));
+
+        // Rebuild boards for all players
+        if (turnOrder?.length) {
+            const boards = {};
+            const wins = {};
+            turnOrder.forEach(player => {
+                const arr = Array.from({ length: 25 }, (_, i) => i + 1);
+                shuffle(arr);
+                boards[player.userId] = arr;
+                wins[player.userId] = {
+                    B: false, I: false, N: false, G: false, O: false,
+                    claimedPatterns: [], completed: false,
+                };
             });
-        }, 1000);
+            setPlayerBoards(boards);
+            setPlayerWins(wins);
+        }
 
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentTurn]);
+        if (!gameStartTimeRef.current) {
+            gameStartTimeRef.current = Date.now();
+        }
+    };
 
-    useEffect(() => {
-        if (!socket || !props.roomCode) return;
-        socket.emit('join_chat_room', props.roomCode);
-    }, [socket, props.roomCode]);
-
-    const sendMessage = () => {
-        if (!chatInput.trim()) return;
-        socket.emit('send_message', {
+    const handleNoRejoin = () => {
+        // Normal flow — emit join_room as usual
+        socket.emit("join_room", {
             roomCode: props.roomCode,
-            username: props.user.username,
-            text: chatInput.trim(),
+            userId: props?.user?._id,
+            username: props?.user?.username,
+            avatar: props?.user?.avatar,
+            gameType: props.gameType,
         });
-        setChatInput('');
     };
 
-    useEffect(() => {
-        if (!socket) return;
+    socket.on("rejoin_available", handleRejoin);
+    socket.on("no_rejoin_available", handleNoRejoin);
 
-        const handleReceive = (data) => {
-            setFloatingMessages(prev => [
-                ...prev,
-                {
-                    id: `${Date.now()}-${Math.random()}`,
-                    text: `${data.username}: ${data.text}`,
-                    top: Math.random() * 250 + 120,
-                },
-            ]);
+    return () => {
+        socket.off("rejoin_available", handleRejoin);
+        socket.off("no_rejoin_available", handleNoRejoin);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [socket]);
+
+useEffect(() => {
+    if (!gameStartTimeRef.current) return;
+
+    const interval = setInterval(() => {
+        const seconds = Math.floor(
+            (Date.now() - gameStartTimeRef.current) / 1000
+        );
+        setElapsedSeconds(seconds);
+    }, 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [gameStartTimeRef.current]);
+
+useEffect(() => {
+    const backAction = () => true;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+}, []);
+
+const playerPositions = {
+    2: [{ top: '18%', right: '10%' }, { bottom: '17%', left: '10%' }],
+    3: [{ top: '18%', left: '40%' }, { bottom: '17%', left: '15%' }, { bottom: '17%', right: '15%' }],
+    4: [
+        { top: '18%', left: '8%' },
+        { top: '18%', right: '8%' },
+        { bottom: '17%', left: '8%' },
+        { bottom: '17%', right: '8%' },
+    ],
+    5: [
+        { left: '8%', top: '22%' },
+        { right: '8%', top: '22%' },
+        { left: '8%', bottom: '17%' },
+        { right: '8%', bottom: '17%' },
+        { bottom: '17%', left: '45%' },
+    ],
+};
+const positions = playerPositions[props.players] || [];
+
+useEffect(() => {
+    if (!turnOrder?.length) return;
+    const boards = {};
+    const wins = {};
+    turnOrder?.forEach(player => {
+        const arr = Array.from({ length: 25 }, (_, i) => i + 1);
+        shuffle(arr);
+        boards[player?.userId] = arr;
+        wins[player?.userId] = {
+            B: false, I: false, N: false, G: false, O: false,
+            claimedPatterns: [],
+            completed: false,
+        };
+    });
+    setPlayerBoards(boards);
+    setPlayerWins(wins);
+}, [turnOrder]);
+
+const shuffle = (array) => {
+    for (let i = array?.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+};
+
+useEffect(() => {
+    if (!socket) return;
+
+    socket.on('current_turn', (player) => setCurrentTurn(player?.userId));
+    socket.on('number_picked', (numbers) => setPickedNumbers(numbers));
+
+    return () => {
+        socket.off('current_turn');
+        socket.off('number_picked');
+    };
+}, [socket]);
+
+const [me, setMe] = useState(null);
+
+const handleNumberPress = useCallback((num) => {
+    if (currentTurn !== props?.user?._id) return;
+
+    const myBoard = playerBoardsRef.current[props?.user?._id];
+    if (!myBoard) return;
+
+    setFloatingNumbers(prev => [...prev, num]);
+    socket.emit('select_number', { roomCode: props.roomCode, number: num });
+}, [currentTurn, socket, props.roomCode, props?.user?._id]);
+
+useEffect(() => {
+    if (!floatingNumbers?.length) return;
+
+    const t = setTimeout(() => {
+        setFloatingNumbers(prev => prev.slice(1));
+    }, 1000);
+
+    return () => clearTimeout(t);
+}, [floatingNumbers]);
+
+useEffect(() => {
+    if (
+        !turnOrder?.length ||
+        !playerBoards[props.user._id] ||
+        gameEndedRef.current
+    ) return;
+
+    checkBingo(props.user._id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [pickedNumbers, turnOrder, playerBoards]);
+
+const [readyPlayers, setReadyPlayers] = useState({});
+
+const resetGameState = () => {
+    setPickedNumbers([]);
+    setPlayerBoards({});
+    setPlayerWins({});
+    setCurrentTurn(null);
+    setResult('');
+    setWinnerPlayerId(null);
+    gameEndedRef.current = false;
+};
+
+useEffect(() => {
+    if (!socket) return;
+
+    const handleReadyUpdate = ({ readyPlayers: rp }) => setReadyPlayers(rp);
+    const handleRestartGame = () => {
+        resetGameState();
+        setWinModal(false);
+    };
+
+    socket.on('ready_update', handleReadyUpdate);
+    socket.on('restart_game', handleRestartGame);
+
+    return () => {
+        socket.off('ready_update', handleReadyUpdate);
+        socket.off('restart_game', handleRestartGame);
+    };
+}, [socket]);
+
+useEffect(() => {
+    setTimeout(() => setLoading(false), 2000);
+}, []);
+
+const playAgain = () => {
+    socket.emit('player_ready', { roomCode: props.roomCode, userId: props.user._id });
+};
+
+const checkBingo = (playerId) => {
+    if (gameEndedRef.current) return;
+
+    setPlayerWins(prev => {
+        if (!playerBoards[playerId] || !prev[playerId]) return prev;
+
+        const newWins = { ...prev };
+        const playerData = { ...newWins[playerId] };
+        const numbers = playerBoards[playerId];
+
+        const columns = [
+            [0, 5, 10, 15, 20], [1, 6, 11, 16, 21],
+            [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
+        ];
+        const rows = [
+            [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14],
+            [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
+        ];
+        const diagonals = [[0, 6, 12, 18, 24], [4, 8, 12, 16, 20]];
+
+        const daubLetter = () => {
+            const availableLetter = letters.find(l => !playerData[l]);
+            if (availableLetter) playerData[availableLetter] = true;
         };
 
-        socket.on('receive_message', handleReceive);
-        return () => socket.off('receive_message', handleReceive);
-    }, [socket]);
-
-    useEffect(() => {
-        const handleResults = ({ winnerId }) => {
-            if (winnerId !== props?.user?._id) {
-                setResult('lose');
-                setWinnerPlayerId(winnerId);
-                setBingopop(true);
-                updateXPFromServer(false);
-            }
-        };
-
-        socket.on('show_results', handleResults);
-        return () => socket.off('show_results', handleResults);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleTurnOrder = (order) => {
-            setTurnOrder(order);
-            setMe(order.find(p => p.userId === props?.user?._id));
-            if (!gameStartTimeRef.current) {
-                gameStartTimeRef.current = Date.now();
-            }
-        };
-
-        socket.on('turn_order', handleTurnOrder);
-
-
-
-        return () => socket.off('turn_order', handleTurnOrder);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [socket]);
-
-    // ─── CHECK FOR REJOIN on mount ────────────────────────────────────────────
-    useEffect(() => {
-        if (!socket || !props?.user?._id) return;
-
-        socket.emit("check_rejoin", { userId: props.user._id });
-
-        const handleRejoin = ({ roomCode, gameType, players, pickedNumbers, currentTurn, turnOrder }) => {
-            // Restore state from server snapshot
-            setPickedNumbers(pickedNumbers || []);
-            setTurnOrder(turnOrder || []);
-            setCurrentTurn(currentTurn?.userId || null);
-            setMe(turnOrder?.find(p => p.userId === props.user._id));
-
-            // Rebuild boards for all players
-            if (turnOrder?.length) {
-                const boards = {};
-                const wins = {};
-                turnOrder.forEach(player => {
-                    const arr = Array.from({ length: 25 }, (_, i) => i + 1);
-                    shuffle(arr);
-                    boards[player.userId] = arr;
-                    wins[player.userId] = {
-                        B: false, I: false, N: false, G: false, O: false,
-                        claimedPatterns: [], completed: false,
-                    };
-                });
-                setPlayerBoards(boards);
-                setPlayerWins(wins);
-            }
-
-            if (!gameStartTimeRef.current) {
-                gameStartTimeRef.current = Date.now();
-            }
-        };
-
-        const handleNoRejoin = () => {
-            // Normal flow — emit join_room as usual
-            socket.emit("join_room", {
-                roomCode: props.roomCode,
-                userId: props?.user?._id,
-                username: props?.user?.username,
-                avatar: props?.user?.avatar,
-                gameType: props.gameType,
+        const checkPatterns = (patterns, type) => {
+            patterns.forEach((pattern, i) => {
+                const patternId = `${type}${i}`;
+                if (
+                    !playerData.claimedPatterns.includes(patternId) &&
+                    pattern.every(idx => pickedNumbers.includes(numbers[idx]))
+                ) {
+                    daubLetter();
+                    playerData.claimedPatterns = [...playerData.claimedPatterns, patternId];
+                }
             });
         };
 
-        socket.on("rejoin_available", handleRejoin);
-        socket.on("no_rejoin_available", handleNoRejoin);
+        checkPatterns(columns, 'col');
+        checkPatterns(rows, 'row');
+        checkPatterns(diagonals, 'diag');
 
-        return () => {
-            socket.off("rejoin_available", handleRejoin);
-            socket.off("no_rejoin_available", handleNoRejoin);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [socket]);
+        let hasCompletedBingo = false;
 
-    useEffect(() => {
-        if (!gameStartTimeRef.current) return;
-
-        const interval = setInterval(() => {
-            const seconds = Math.floor(
-                (Date.now() - gameStartTimeRef.current) / 1000
-            );
-            setElapsedSeconds(seconds);
-        }, 1000);
-
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameStartTimeRef.current]);
-
-    useEffect(() => {
-        const backAction = () => true;
-        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-        return () => backHandler.remove();
-    }, []);
-
-    const playerPositions = {
-        2: [{ top: '18%', right: '10%' }, { bottom: '17%', left: '10%' }],
-        3: [{ top: '18%', left: '40%' }, { bottom: '17%', left: '15%' }, { bottom: '17%', right: '15%' }],
-        4: [
-            { top: '18%', left: '8%' },
-            { top: '18%', right: '8%' },
-            { bottom: '17%', left: '8%' },
-            { bottom: '17%', right: '8%' },
-        ],
-        5: [
-            { left: '8%', top: '22%' },
-            { right: '8%', top: '22%' },
-            { left: '8%', bottom: '17%' },
-            { right: '8%', bottom: '17%' },
-            { bottom: '17%', left: '45%' },
-        ],
-    };
-    const positions = playerPositions[props.players] || [];
-
-    useEffect(() => {
-        if (!turnOrder?.length) return;
-        const boards = {};
-        const wins = {};
-        turnOrder?.forEach(player => {
-            const arr = Array.from({ length: 25 }, (_, i) => i + 1);
-            shuffle(arr);
-            boards[player?.userId] = arr;
-            wins[player?.userId] = {
-                B: false, I: false, N: false, G: false, O: false,
-                claimedPatterns: [],
-                completed: false,
-            };
-        });
-        setPlayerBoards(boards);
-        setPlayerWins(wins);
-    }, [turnOrder]);
-
-    const shuffle = (array) => {
-        for (let i = array?.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+        if (props.gameType === 'classic') {
+            hasCompletedBingo = letters.every(l => playerData[l]);
+        } else if (props.gameType === 'fast') {
+            const daubedCount = letters.filter(l => playerData[l]).length;
+            hasCompletedBingo = daubedCount >= 3;
         }
-    };
 
-    useEffect(() => {
-        if (!socket) return;
+        if (hasCompletedBingo && !playerData.completed && !gameEndedRef.current) {
+            gameEndedRef.current = true;
+            playerData.completed = true;
 
-        socket.on('current_turn', (player) => setCurrentTurn(player?.userId));
-        socket.on('number_picked', (numbers) => setPickedNumbers(numbers));
+            setResult(playerId === props.user._id ? 'win' : 'lose');
+            setWinnerPlayerId(playerId === props.user._id ? props.user._id : null);
+            setBingopop(true);
 
-        return () => {
-            socket.off('current_turn');
-            socket.off('number_picked');
-        };
-    }, [socket]);
+            updateXPFromServer(playerId === props.user._id);
 
-    const [me, setMe] = useState(null);
+            socket.emit('game_end', {
+                roomCode: props.roomCode,
+                winnerId: playerId,
+                gameType: props.gameType
+            });
+        }
 
-    const handleNumberPress = useCallback((num) => {
-        if (currentTurn !== props?.user?._id) return;
+        newWins[playerId] = playerData;
+        return newWins;
+    });
+};
 
-        const myBoard = playerBoardsRef.current[props?.user?._id];
-        if (!myBoard) return;
+const openProfile = (player) => {
+    avatarRef.current?.measureInWindow((x, y, width, height) => {
+        setAnchor({ x, y, width, height });
+        setProfileDetails(player);
+        setProfileVisible(true);
+    });
+};
 
-        setFloatingNumbers(prev => [...prev, num]);
-        socket.emit('select_number', { roomCode: props.roomCode, number: num });
-    }, [currentTurn, socket, props.roomCode, props?.user?._id]);
+return (
+    <>
+        {loading ? (
+            <Intro />
+        ) : (
+            <View style={styles.container}>
+                <Icon
+                    name="sign-out-alt"
+                    size={30}
+                    style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
+                    onPress={() => setShowAlert(true)}
+                />
 
-    useEffect(() => {
-        if (!floatingNumbers?.length) return;
+                <CustomAlert
+                    visible={showAlert}
+                    title="Exit Game"
+                    message="Are you sure you want to leave? It will charge you 40 coins."
+                    onCancel={() => setShowAlert(false)}
+                    onConfirm={() => navigation.goBack()}
+                />
 
-        const t = setTimeout(() => {
-            setFloatingNumbers(prev => prev.slice(1));
-        }, 1000);
-
-        return () => clearTimeout(t);
-    }, [floatingNumbers]);
-
-    useEffect(() => {
-        if (
-            !turnOrder?.length ||
-            !playerBoards[props.user._id] ||
-            gameEndedRef.current
-        ) return;
-
-        checkBingo(props.user._id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pickedNumbers, turnOrder, playerBoards]);
-
-    const [readyPlayers, setReadyPlayers] = useState({});
-
-    const resetGameState = () => {
-        setPickedNumbers([]);
-        setPlayerBoards({});
-        setPlayerWins({});
-        setCurrentTurn(null);
-        setResult('');
-        setWinnerPlayerId(null);
-        gameEndedRef.current = false;
-    };
-
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleReadyUpdate = ({ readyPlayers: rp }) => setReadyPlayers(rp);
-        const handleRestartGame = () => {
-            resetGameState();
-            setWinModal(false);
-        };
-
-        socket.on('ready_update', handleReadyUpdate);
-        socket.on('restart_game', handleRestartGame);
-
-        return () => {
-            socket.off('ready_update', handleReadyUpdate);
-            socket.off('restart_game', handleRestartGame);
-        };
-    }, [socket]);
-
-    useEffect(() => {
-        setTimeout(() => setLoading(false), 2000);
-    }, []);
-
-    const playAgain = () => {
-        socket.emit('player_ready', { roomCode: props.roomCode, userId: props.user._id });
-    };
-
-    const checkBingo = (playerId) => {
-        if (gameEndedRef.current) return;
-
-        setPlayerWins(prev => {
-            if (!playerBoards[playerId] || !prev[playerId]) return prev;
-
-            const newWins = { ...prev };
-            const playerData = { ...newWins[playerId] };
-            const numbers = playerBoards[playerId];
-
-            const columns = [
-                [0, 5, 10, 15, 20], [1, 6, 11, 16, 21],
-                [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
-            ];
-            const rows = [
-                [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14],
-                [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
-            ];
-            const diagonals = [[0, 6, 12, 18, 24], [4, 8, 12, 16, 20]];
-
-            const daubLetter = () => {
-                const availableLetter = letters.find(l => !playerData[l]);
-                if (availableLetter) playerData[availableLetter] = true;
-            };
-
-            const checkPatterns = (patterns, type) => {
-                patterns.forEach((pattern, i) => {
-                    const patternId = `${type}${i}`;
-                    if (
-                        !playerData.claimedPatterns.includes(patternId) &&
-                        pattern.every(idx => pickedNumbers.includes(numbers[idx]))
-                    ) {
-                        daubLetter();
-                        playerData.claimedPatterns = [...playerData.claimedPatterns, patternId];
-                    }
-                });
-            };
-
-            checkPatterns(columns, 'col');
-            checkPatterns(rows, 'row');
-            checkPatterns(diagonals, 'diag');
-
-            let hasCompletedBingo = false;
-
-            if (props.gameType === 'classic') {
-                hasCompletedBingo = letters.every(l => playerData[l]);
-            } else if (props.gameType === 'fast') {
-                const daubedCount = letters.filter(l => playerData[l]).length;
-                hasCompletedBingo = daubedCount >= 3;
-            }
-
-            if (hasCompletedBingo && !playerData.completed && !gameEndedRef.current) {
-                gameEndedRef.current = true;
-                playerData.completed = true;
-
-                setResult(playerId === props.user._id ? 'win' : 'lose');
-                setWinnerPlayerId(playerId === props.user._id ? props.user._id : null);
-                setBingopop(true);
-
-                updateXPFromServer(playerId === props.user._id);
-
-                socket.emit('game_end', {
-                    roomCode: props.roomCode,
-                    winnerId: playerId,
-                    gameType: props.gameType
-                });
-            }
-
-            newWins[playerId] = playerData;
-            return newWins;
-        });
-    };
-
-    const openProfile = (player) => {
-        avatarRef.current?.measureInWindow((x, y, width, height) => {
-            setAnchor({ x, y, width, height });
-            setProfileDetails(player);
-            setProfileVisible(true);
-        });
-    };
-
-    return (
-        <>
-            {loading ? (
-                <Intro />
-            ) : (
-                <View style={styles.container}>
-                    <Icon
-                        name="sign-out-alt"
-                        size={30}
-                        style={[styles.exitIcon, { transform: [{ scaleX: -1 }] }]}
-                        onPress={() => setShowAlert(true)}
-                    />
-
-                    <CustomAlert
-                        visible={showAlert}
-                        title="Exit Game"
-                        message="Are you sure you want to leave? It will charge you 40 coins."
-                        onCancel={() => setShowAlert(false)}
-                        onConfirm={() => navigation.goBack()}
-                    />
-
-                    <ImageBackground
-                        source={require('../images/gameScreen.jpg')}
-                        style={{ width: '100%', height: '100%' }}
-                    >
-                        <View style={{ position: 'absolute', top: '3%', left: '40%' }}>
-                            <Text style={styles.roomCode}>{props.roomCode}</Text>
-                            <View style={styles.timerBox}>
-                                <Icon name="clock" size={14} color="#FFD67A" />
-                                <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
-                            </View>
+                <ImageBackground
+                    source={require('../images/gameScreen.jpg')}
+                    style={{ width: '100%', height: '100%' }}
+                >
+                    <View style={{ position: 'absolute', top: '3%', left: '40%' }}>
+                        <Text style={styles.roomCode}>{props.roomCode}</Text>
+                        <View style={styles.timerBox}>
+                            <Icon name="clock" size={14} color="#FFD67A" />
+                            <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
                         </View>
+                    </View>
 
-                        <View style={{ flex: 1 }}>
-                            {turnOrder?.map((player, index) => {
-                                let pos = {};
-                                if (player?.userId === props?.user?._id) {
-                                    pos = { bottom: '17%', left: '10%' };
-                                } else {
-                                    const idx = otherPlayers.findIndex(p => p.userId === player?.userId);
-                                    pos = positions[idx] || {};
-                                }
+                    <View style={{ flex: 1 }}>
+                        {turnOrder?.map((player, index) => {
+                            let pos = {};
+                            if (player?.userId === props?.user?._id) {
+                                pos = { bottom: '17%', left: '10%' };
+                            } else {
+                                const idx = otherPlayers.findIndex(p => p.userId === player?.userId);
+                                pos = positions[idx] || {};
+                            }
 
-                                const isCurrentTurn = player?.userId === currentTurn;
+                            const isCurrentTurn = player?.userId === currentTurn;
 
-                                return (
-                                    <View key={player?.userId} style={[styles.player, pos]}>
-                                        <View
-                                            style={{
-                                                position: 'absolute',
-                                                width: 70,
-                                                height: 70,
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                            }}
-                                        >
-                                            {/*
+                            return (
+                                <View key={player?.userId} style={[styles.player, pos]}>
+                                    <View
+                                        style={{
+                                            position: 'absolute',
+                                            width: 70,
+                                            height: 70,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        {/*
                                              * ─── KEY FIXES ────────────────────────────────────────
                                              * 1. gameEnded prop: tells the timer to stop its animation
                                              *    the moment the game ends, even mid-countdown.
@@ -650,234 +663,234 @@ const GameScreen = (props) => {
                                              *    just because the parent re-rendered.
                                              * ──────────────────────────────────────────────────────
                                              */}
-                                            {isCurrentTurn && (
-                                                <AvatarTimer
-                                                    key={currentTurn} // remount on every turn change
-                                                    size={55}
-                                                    duration={TURN_TIME}
-                                                    gameEnded={gameEndedRef.current}
-                                                //onComplete={handleTimerComplete}
+                                        {isCurrentTurn && (
+                                            <AvatarTimer
+                                                key={currentTurn} // remount on every turn change
+                                                size={55}
+                                                duration={TURN_TIME}
+                                                gameEnded={gameEndedRef.current}
+                                            //onComplete={handleTimerComplete}
+                                            />
+                                        )}
+
+                                        <TouchableOpacity
+                                            ref={avatarRef}
+                                            style={styles.userAvatar}
+                                            onPress={() => openProfile(player)}
+                                        >
+                                            <View style={[styles.userAvatarImage, { backgroundColor: '#000' }]}>
+                                                <Text style={{ fontSize: 35 }}>{player?.avatar || '🐟'}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <Text style={styles.userText}>
+                                        {player?.userId === props?.user?._id ? 'Me' : player.username}
+                                    </Text>
+                                </View>
+                            );
+                        })}
+
+                        <View style={{ position: 'absolute', top: '50%', left: '12%' }}>
+                            {floatingNumbers.map((num, i) => (
+                                <FloatingNumber key={i} number={num} />
+                            ))}
+                        </View>
+
+                        {floatingMessages.map(msg => (
+                            <FloatingMessage
+                                key={msg.id}
+                                text={msg.text}
+                                top={msg.top}
+                                onFinish={() =>
+                                    setFloatingMessages(prev => prev.filter(m => m.id !== msg.id))
+                                }
+                            />
+                        ))}
+
+                        <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
+                            {pickedNumbers.map((num, i) => (
+                                <FloatingNumber key={i} number={num} />
+                            ))}
+                        </View>
+
+                        <ImageBackground
+                            source={boardImages[equippedBoard] || boardImages.classic}
+                            style={[styles.board,]}
+                        >
+                            <View style={styles.grid}>
+                                {playerBoards[props?.user?._id]?.map((num, index) => {
+                                    if (!num) return null;
+                                    const isPicked = pickedNumbers.includes(num);
+                                    const disabled = currentTurn !== props?.user?._id || isPicked;
+                                    const theme = boardThemes[equippedBoard] || boardThemes.classic;
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            disabled={disabled}
+                                            onPress={() => handleNumberPress(num)}
+                                            style={[
+                                                styles.box,
+                                                isPicked && { opacity: 0.7 },
+                                                disabled && { opacity: 0.4 },
+                                            ]}
+                                        >
+                                            {isPicked && (
+                                                <Image
+                                                    source={daubImages[equippedDaub] || daubImages.daub}
+                                                    style={{
+                                                        width: 40, height: 40,
+                                                        position: 'absolute', opacity: 0.5,
+                                                    }}
                                                 />
                                             )}
-
-                                            <TouchableOpacity
-                                                ref={avatarRef}
-                                                style={styles.userAvatar}
-                                                onPress={() => openProfile(player)}
-                                            >
-                                                <View style={[styles.userAvatarImage, { backgroundColor: '#000' }]}>
-                                                    <Text style={{ fontSize: 35 }}>{player?.avatar || '🐟'}</Text>
-                                                </View>
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        <Text style={styles.userText}>
-                                            {player?.userId === props?.user?._id ? 'Me' : player.username}
-                                        </Text>
-                                    </View>
-                                );
-                            })}
-
-                            <View style={{ position: 'absolute', top: '50%', left: '12%' }}>
-                                {floatingNumbers.map((num, i) => (
-                                    <FloatingNumber key={i} number={num} />
-                                ))}
+                                            <Text style={[
+                                                styles.numberText,
+                                                { color: isPicked ? theme.pickedNumberColor : theme.numberColor },
+                                                isPicked && {
+                                                    textShadowColor: 'rgba(0,0,0,0.3)',
+                                                    textShadowOffset: { width: 1, height: 1 },
+                                                    textShadowRadius: 2,
+                                                },
+                                            ]}>
+                                                {num}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </View>
+                        </ImageBackground>
 
-                            {floatingMessages.map(msg => (
-                                <FloatingMessage
-                                    key={msg.id}
-                                    text={msg.text}
-                                    top={msg.top}
-                                    onFinish={() =>
-                                        setFloatingMessages(prev => prev.filter(m => m.id !== msg.id))
-                                    }
-                                />
-                            ))}
-
-                            <View style={{ position: 'absolute', top: '50%', right: '12%' }}>
-                                {pickedNumbers.map((num, i) => (
-                                    <FloatingNumber key={i} number={num} />
-                                ))}
-                            </View>
-
-                            <ImageBackground
-                                source={boardImages[equippedBoard] || boardImages.classic}
-                                style={[styles.board, ]}
-                            >
-                                <View style={styles.grid}>
-                                    {playerBoards[props?.user?._id]?.map((num, index) => {
-                                        if (!num) return null;
-                                        const isPicked = pickedNumbers.includes(num);
-                                        const disabled = currentTurn !== props?.user?._id || isPicked;
-                                        const theme = boardThemes[equippedBoard] || boardThemes.classic;
-
+                        {playerWins[props?.user?._id] && (() => {
+                            const theme = boardThemes[equippedBoard] || boardThemes.classic;
+                            return (
+                                <View style={styles.bingowin}>
+                                    {letters.map((letter, index) => {
+                                        const daubed = playerWins[props?.user?._id]?.[letter];
                                         return (
-                                            <TouchableOpacity
-                                                key={index}
-                                                disabled={disabled}
-                                                onPress={() => handleNumberPress(num)}
-                                                style={[
-                                                    styles.box,
-                                                    isPicked && { opacity: 0.7 },
-                                                    disabled && { opacity: 0.4 },
-                                                ]}
-                                            >
-                                                {isPicked && (
-                                                    <Image
-                                                        source={daubImages[equippedDaub] || daubImages.daub}
-                                                        style={{
-                                                            width: 40, height: 40,
-                                                            position: 'absolute', opacity: 0.5,
-                                                        }}
-                                                    />
-                                                )}
-                                                <Text style={[
-                                                    styles.numberText,
-                                                    { color: isPicked ? theme.pickedNumberColor : theme.numberColor },
-                                                    isPicked && {
-                                                        textShadowColor: 'rgba(0,0,0,0.3)',
-                                                        textShadowOffset: { width: 1, height: 1 },
-                                                        textShadowRadius: 2,
-                                                    },
+                                            <View key={index} style={styles.bingoLetterContainer}>
+                                                <View style={[
+                                                    styles.bingoLetter,
+                                                    { backgroundColor: theme.bg, borderColor: theme.border, borderWidth: 2 },
+                                                    daubed && { backgroundColor: theme.daubed, borderColor: '#fff', borderWidth: 2.5 },
                                                 ]}>
-                                                    {num}
-                                                </Text>
-                                            </TouchableOpacity>
+                                                    <Text style={[
+                                                        styles.letterText,
+                                                        { color: theme.text },
+                                                        daubed && { color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+                                                    ]}>
+                                                        {letter}
+                                                    </Text>
+                                                </View>
+                                                <FloatingBingoGhost letter={letter} trigger={daubed} />
+                                            </View>
                                         );
                                     })}
                                 </View>
-                            </ImageBackground>
+                            );
+                        })()}
+                    </View>
 
-                            {playerWins[props?.user?._id] && (() => {
-                                const theme = boardThemes[equippedBoard] || boardThemes.classic;
-                                return (
-                                    <View style={styles.bingowin}>
-                                        {letters.map((letter, index) => {
-                                            const daubed = playerWins[props?.user?._id]?.[letter];
-                                            return (
-                                                <View key={index} style={styles.bingoLetterContainer}>
-                                                    <View style={[
-                                                        styles.bingoLetter,
-                                                        { backgroundColor: theme.bg, borderColor: theme.border, borderWidth: 2 },
-                                                        daubed && { backgroundColor: theme.daubed, borderColor: '#fff', borderWidth: 2.5 },
-                                                    ]}>
-                                                        <Text style={[
-                                                            styles.letterText,
-                                                            { color: theme.text },
-                                                            daubed && { color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
-                                                        ]}>
-                                                            {letter}
-                                                        </Text>
-                                                    </View>
-                                                    <FloatingBingoGhost letter={letter} trigger={daubed} />
-                                                </View>
-                                            );
-                                        })}
-                                    </View>
-                                );
-                            })()}
-                        </View>
-
-                        {/* INPUT BAR */}
-                        <Animated.View
-                            style={[
-                                styles.inputContainer,
-                                { bottom: Animated.add(keyboardHeight, 20) },
-                            ]}
-                        >
-                            <TextInput
-                                style={[styles.input, { height: inputHeight }]}
-                                placeholder="Type a message..."
-                                placeholderTextColor="#717171"
-                                value={chatInput}
-                                onChangeText={setChatInput}
-                                multiline
-                                textAlignVertical="top"
-                                numberOfLines={4}
-                                onContentSizeChange={(e) => {
-                                    const newHeight = Math.min(120, e.nativeEvent.contentSize.height);
-                                    setInputHeight(newHeight < 48 ? 48 : newHeight);
-                                }}
-                            />
-                            <TouchableOpacity onPress={sendMessage} disabled={!chatInput.trim()}>
-                                <Icon name="paper-plane" size={24} color="#ffffff" style={styles.sendIcon} />
-                            </TouchableOpacity>
-                            <Icon name="gift" size={24} color="#f708d7" />
-                        </Animated.View>
-
-                        {bingopop && !bingoShownRef.current && (
-                            <BingoPopUp
-                                delay={200}
-                                onAnimationEnd={() => {
-                                    bingoShownRef.current = true;
-                                    setWinModal(true);
-                                    setBingopop(false);
-                                }}
-                            />
-                        )}
-                    </ImageBackground>
-
-                    <Modal transparent visible={winModal} animationType="fade">
-                        <WinningModal
-                            result={result}
-                            matchedPlayers={props.matchedPlayers}
-                            onClose={handleWinModalClose}
-                            winnerPlayerId={winnerPlayerId}
-                            playAgain={playAgain}
-                            readyPlayers={readyPlayers}
-                            user={props.user}
-                            gameType={props.gameType}
+                    {/* INPUT BAR */}
+                    <Animated.View
+                        style={[
+                            styles.inputContainer,
+                            { bottom: Animated.add(keyboardHeight, 20) },
+                        ]}
+                    >
+                        <TextInput
+                            style={[styles.input, { height: inputHeight }]}
+                            placeholder="Type a message..."
+                            placeholderTextColor="#717171"
+                            value={chatInput}
+                            onChangeText={setChatInput}
+                            multiline
+                            textAlignVertical="top"
+                            numberOfLines={4}
+                            onContentSizeChange={(e) => {
+                                const newHeight = Math.min(120, e.nativeEvent.contentSize.height);
+                                setInputHeight(newHeight < 48 ? 48 : newHeight);
+                            }}
                         />
-                    </Modal>
+                        <TouchableOpacity onPress={sendMessage} disabled={!chatInput.trim()}>
+                            <Icon name="paper-plane" size={24} color="#ffffff" style={styles.sendIcon} />
+                        </TouchableOpacity>
+                        <Icon name="gift" size={24} color="#f708d7" />
+                    </Animated.View>
 
-                    {profileDetails && profileVisible && (
-                        <Modal
-                            visible={profileVisible}
-                            transparent
-                            animationType="fade"
-                            statusBarTranslucent
-                        >
-                            <ProfileModal
-                                visible={profileVisible}
-                                anchor={anchor}
-                                user={profileDetails}
-                                onClose={() => setProfileVisible(false)}
-                                myId={props.user._id}
-                                myUsername={props.user.username}
-                                myAvatar={props.user.avatar}
-                            />
-                        </Modal>
-                    )}
-
-                    <LevelModal
-                        visible={levelModalVisible}
-                        didWin={result === 'win'}
-                        currentLevel={xpResult?.level}
-                        currentStars={xpResult?.stars}
-                        onClose={() => navigation.navigate('Dashboard')}
-                    />
-
-                    {!!xpResult && (
-                        <XPModal
-                            visible={xpModalVisible && !!xpResult}
-                            earnedXP={xpResult?.earnedXP}
-                            oldXP={xpResult?.levelXp}
-                            newXP={xpResult?.levelXp + xpResult?.earnedXP}
-                            xpNeeded={xpResult?.xpNeeded}
-                            starGained={xpResult?.starGained}
-                            onFinish={() => {
-                                setTimeout(() => {
-                                    setXpModalVisible(false);
-                                    setLevelModalVisible(true);
-                                }, 3000);
+                    {bingopop && !bingoShownRef.current && (
+                        <BingoPopUp
+                            delay={200}
+                            onAnimationEnd={() => {
+                                bingoShownRef.current = true;
+                                setWinModal(true);
+                                setBingopop(false);
                             }}
                         />
                     )}
-                </View>
-            )}
-        </>
-    );
+                </ImageBackground>
+
+                <Modal transparent visible={winModal} animationType="fade">
+                    <WinningModal
+                        result={result}
+                        matchedPlayers={props.matchedPlayers}
+                        onClose={handleWinModalClose}
+                        winnerPlayerId={winnerPlayerId}
+                        playAgain={playAgain}
+                        readyPlayers={readyPlayers}
+                        user={props.user}
+                        gameType={props.gameType}
+                    />
+                </Modal>
+
+                {profileDetails && profileVisible && (
+                    <Modal
+                        visible={profileVisible}
+                        transparent
+                        animationType="fade"
+                        statusBarTranslucent
+                    >
+                        <ProfileModal
+                            visible={profileVisible}
+                            anchor={anchor}
+                            user={profileDetails}
+                            onClose={() => setProfileVisible(false)}
+                            myId={props.user._id}
+                            myUsername={props.user.username}
+                            myAvatar={props.user.avatar}
+                        />
+                    </Modal>
+                )}
+
+                <LevelModal
+                    visible={levelModalVisible}
+                    didWin={result === 'win'}
+                    currentLevel={xpResult?.level}
+                    currentStars={xpResult?.stars}
+                    onClose={() => navigation.navigate('Dashboard')}
+                />
+
+                {!!xpResult && (
+                    <XPModal
+                        visible={xpModalVisible && !!xpResult}
+                        earnedXP={xpResult?.earnedXP}
+                        oldXP={xpResult?.levelXp}
+                        newXP={xpResult?.levelXp + xpResult?.earnedXP}
+                        xpNeeded={xpResult?.xpNeeded}
+                        starGained={xpResult?.starGained}
+                        onFinish={() => {
+                            setTimeout(() => {
+                                setXpModalVisible(false);
+                                setLevelModalVisible(true);
+                            }, 3000);
+                        }}
+                    />
+                )}
+            </View>
+        )}
+    </>
+);
 };
 
 export default GameScreen;

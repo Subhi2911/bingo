@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react-native/no-inline-styles */
 import {
     StyleSheet, Text, TextInput, TouchableOpacity,
@@ -9,6 +10,8 @@ import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { useAlertToast } from './AlertToast';
+import { useAuth } from '../context/AuthContext';
+import { getNotificationStatus, requestNotificationPermission } from "../hooks/useNotificationPermission";
 
 const MODAL_STEPS = ['Email', 'Verify', 'Reset'];
 
@@ -55,7 +58,8 @@ const Login = () => {
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const navigation = useNavigation();
     const { showToast } = useAlertToast();
-
+    const { fetchUser } = useAuth();
+    
     const onChange = (name, value) => setCredentials(prev => ({ ...prev, [name]: value }));
 
     const animateStep = (fn) => {
@@ -76,7 +80,7 @@ const Login = () => {
 
     const handleLogin = async () => {
         if (!credentials.email || !credentials.password) {
-           showToast('error', 'Error', 'All fields are required.');
+            showToast('error', 'Error', 'All fields are required.');
             return;
         }
         setLoading(true);
@@ -89,12 +93,14 @@ const Login = () => {
             const data = await res.json();
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
-                await AsyncStorage.setItem("equippedBoard","classic");
-                await AsyncStorage.setItem("equippedDaub","daub (2)");
+                await AsyncStorage.setItem("equippedBoard", "classic");
+                await AsyncStorage.setItem("equippedDaub", "daub (2)");
+                await fetchUser();
                 navigation.navigate("Dashboard");
+                await requestNotificationPermission();
                 showToast('success', 'Welcome back', 'Lets play!');
             } else {
-                showToast('error', 'Login failed', data.error|| 'Invalid email or password. Please try again.');
+                showToast('error', 'Login failed', data.error || 'Invalid email or password. Please try again.');
             }
         } catch (err) {
             console.log(err);
@@ -111,11 +117,11 @@ const Login = () => {
                 body: JSON.stringify({ email: otpEmail })
             });
             const data = await res.json();
-            if (res.ok) { 
+            if (res.ok) {
                 showToast('info', 'OTP sent', 'Check your email for the 6-digit code.');
-                animateStep(() => setStep(2)); 
+                animateStep(() => setStep(2));
             }
-            else { showToast('error', 'Failed', data.error|| 'Something went wrong');}
+            else { showToast('error', 'Failed', data.error || 'Something went wrong'); }
         } finally { setLoading(false); }
     };
 
@@ -130,12 +136,12 @@ const Login = () => {
             });
             const data = await res.json();
             if (res.ok) { animateStep(() => setStep(3)); }
-            else { showToast('error', 'Invalid OTP', data.error|| 'Please try again.');}
+            else { showToast('error', 'Invalid OTP', data.error || 'Please try again.'); }
         } finally { setLoading(false); }
     };
 
     const handleResetPassword = async () => {
-        if (!password) {showToast('error', 'Error', 'Password Required.'); return; }
+        if (!password) { showToast('error', 'Error', 'Password Required.'); return; }
         if (password !== cpassword) { showToast('error', 'Error', 'Passwords do not match.'); return; }
         setLoading(true);
         try {
@@ -149,7 +155,7 @@ const Login = () => {
                 showToast('success', 'Password changed successfully.', 'Continue Loging in!');
                 closeModal();
             } else {
-                showToast('error', 'Error', data.error|| 'Something went Wrong.');
+                showToast('error', 'Error', data.error || 'Something went Wrong.');
             }
         } catch (err) {
             console.log(err);
@@ -228,7 +234,7 @@ const Login = () => {
                         style={{ flex: 1 }}
                     >
                         <Pressable style={styles.modalOverlay} onPress={closeModal}>
-                            <Pressable style={styles.modalCard} onPress={() => {}}>
+                            <Pressable style={styles.modalCard} onPress={() => { }}>
 
                                 {/* Drag handle */}
                                 <View style={styles.modalHandle} />
