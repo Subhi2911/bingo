@@ -32,6 +32,7 @@ import NotificationPanel from "./NotificationPanel";
 import { useNotifications } from "../context/NotificationContext";
 import SpinWheelModal from "./SpinWheel";
 import Messaging from "./Messaging";
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 const Dashboard = () => {
     const [loading, setLoading] = React.useState(true);
@@ -263,7 +264,17 @@ const Dashboard = () => {
                                     </View>
 
                                 }
-                            </>}
+                                {selected === 'home' && (
+                                    <View style={{ marginHorizontal: 22, marginBottom: 8, borderRadius: 14, overflow: 'hidden', }}>
+                                        <BannerAd
+                                        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-2234703611718718/6246590554'}
+                                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                                        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                                    />
+                                    </View>
+                                )}
+                            </>
+                        }
 
                     </SafeAreaView>
 

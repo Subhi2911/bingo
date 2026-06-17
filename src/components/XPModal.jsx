@@ -87,7 +87,7 @@ const XPModal = ({
 
                     {leveledUp && (
                         <Text style={styles.levelText}>
-                            🎉 LEVEL UP!
+                            {oldXP<newXP? '🎉 LEVEL UP!':'🔻 Oops'}
                         </Text>
                     )}
                 </View>

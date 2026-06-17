@@ -106,7 +106,6 @@ const AppNavigator = () => {
 
   useEffect(() => {
     if (user?.isFrozen) {
-      console.log(user?.isFrozen);
       navigation.navigate("FrozenScreen", {
         message: user.freezeMessage,
         freezeUntil: user.freezeUntil,
@@ -186,9 +185,6 @@ const AppNavigator = () => {
 
 const App = () => {
 
-  useEffect(() => {
-    console.log(BACKEND_URL);
-  }, [])
 
   // Request permission + save FCM token
   useEffect(() => {

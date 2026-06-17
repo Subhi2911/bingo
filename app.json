@@ -6,5 +6,8 @@
       "projectId": "5db8ceed-fefd-47e4-80f2-3c97efe56974"
     }
   },
-  "owner": "subhasmita2911"
+  "owner": "subhasmita2911",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-2234703611718718~4300114334"
+  }
 }

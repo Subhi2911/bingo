@@ -1,21 +1,23 @@
 import {
+    ActivityIndicator,
     FlatList,
     ImageBackground,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    SafeAreaView
 } from 'react-native';
 import React from 'react';
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from '../config/backend';
 
 const Ranking = () => {
 
     const [selectedMode, setSelectedMode] = React.useState("world");
     const [leaderboard, setLeaderboard] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
     const navigation = useNavigation();
     const avatars = {
         '🐵': 'Mischief Maverick',
@@ -32,20 +34,36 @@ const Ranking = () => {
         '🐍': 'Venom Viper',
     };
 
-
-    const fetchLeaderboard = async () => {
+    const fetchLeaderboard = async (mode) => {
+        setLoading(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/games/ranking`);
+            const endpoint =
+                mode === "friends"
+                    ? `${BACKEND_URL}/api/games/rank/friends`
+                    : `${BACKEND_URL}/api/games/ranking`;
+
+
+            const token = await AsyncStorage.getItem("authToken");
+
+            const res = await fetch(endpoint, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "auth-token": token,
+                },
+            });
             const data = await res.json();
             setLeaderboard(data);
         } catch (err) {
             console.log(err);
+            setLeaderboard({ avatars: [] });
+        } finally {
+            setLoading(false);
         }
     };
 
     React.useEffect(() => {
-        fetchLeaderboard();
-    }, []);
+        fetchLeaderboard(selectedMode);
+    }, [selectedMode]);
 
     const renderAvatarCard = ({ item, index }) => {
         const isTop = index === 0;
@@ -100,7 +118,7 @@ const Ranking = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <ImageBackground
                 source={require('../images/FriendsPage.png')}
                 style={{ flex: 1 }}
@@ -115,12 +133,12 @@ const Ranking = () => {
                         color="#000000"
                         onPress={() => navigation.goBack()}
                     />
-                    <Text style={styles.title}>Leaderboard</Text>
+                    <Text style={styles.title}>Ranking</Text>
                 </View>
 
                 {/* Mode Selector */}
                 <View style={styles.modeContainer}>
-                    {['world', 'area', 'friends'].map(mode => (
+                    {['world', 'friends'].map(mode => (
                         <TouchableOpacity
                             key={mode}
                             style={[
@@ -137,7 +155,23 @@ const Ranking = () => {
                 </View>
 
                 {/* Leaderboard */}
-                {leaderboard && (
+                {loading && (
+                    <View style={styles.centerState}>
+                        <ActivityIndicator size="large" color="#ffd900" />
+                    </View>
+                )}
+
+                {!loading && leaderboard && leaderboard.avatars?.length === 0 && (
+                    <View style={styles.centerState}>
+                        <Text style={styles.emptyText}>
+                            {selectedMode === "friends"
+                                ? "No friends yet — add some to see rankings here!"
+                                : "No rankings to show yet."}
+                        </Text>
+                    </View>
+                )}
+
+                {!loading && leaderboard && leaderboard.avatars?.length > 0 && (
                     <FlatList
                         data={leaderboard.avatars}
                         keyExtractor={(item) => item.avatar}
@@ -148,7 +182,7 @@ const Ranking = () => {
                 )}
 
             </ImageBackground>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -194,6 +228,20 @@ const styles = StyleSheet.create({
     modeText: {
         color: "#000000",
         fontWeight: "600",
+    },
+
+    centerState: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 30,
+    },
+
+    emptyText: {
+        color: "#000000",
+        fontSize: 14,
+        textAlign: "center",
+        fontWeight: "500",
     },
 
     /* ---------- CARD ---------- */

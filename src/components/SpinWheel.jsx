@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import {
     View,
@@ -10,7 +11,9 @@ import {
 } from "react-native";
 import Svg, { G, Path, Text as SvgText, Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRewardedAd } from "react-native-google-mobile-ads";
 import { BACKEND_URL } from "../config/backend";
+import { AD_UNIT_IDS } from "../config/ads";
 import { useAuth } from "../context/AuthContext";
 
 // ─── Theme (matches Profile / Settings screens) ───────────────────────────────
@@ -54,6 +57,35 @@ export default function SpinWheelModal({ isOpen, onClose }) {
     const currentRotation = useRef(0);
     const glowAnim = useRef(new Animated.Value(0)).current;
     const { user, setUser } = useAuth();
+
+    // ── Rewarded ad: free spin when on cooldown ───────────────────────────────
+    const { isLoaded: spinAdLoaded, isEarnedReward, load: loadSpinAd, show: showSpinAd } = useRewardedAd(
+        AD_UNIT_IDS.rewardedSpin,
+        { requestNonPersonalizedAdsOnly: false }
+    );
+
+    useEffect(() => { loadSpinAd(); }, [loadSpinAd]);
+
+    useEffect(() => {
+        if (isEarnedReward) grantExtraSpin();
+    }, [isEarnedReward]);
+
+    const grantExtraSpin = async () => {
+        try {
+            const token = await AsyncStorage.getItem("authToken");
+            const res = await fetch(`${BACKEND_URL}/api/rewards/grant-extra`, {
+                method: "POST",
+                headers: { "auth-token": token },
+            });
+            if (res.ok) {
+                await checkCooldown(); // re-pull status so canSpin reflects the new extraSpins count
+            }
+        } catch (e) {
+            console.log(e);
+        } finally {
+            loadSpinAd();
+        }
+    };
 
     // ── Pulse glow on the outer ring while idle ───────────────────────────────
     useEffect(() => {
@@ -150,8 +182,7 @@ export default function SpinWheelModal({ isOpen, onClose }) {
             const wonReward = rewards[result.prizeIndex];
             setMessage(`🎉 You won ${wonReward.label}!`);
             setSpinning(false);
-            setCanSpin(false);
-            setCooldownMsg("Come back tomorrow for your next spin!");
+            checkCooldown(); // refresh from server instead of assuming cooldown state
         });
     };
 
@@ -273,12 +304,25 @@ export default function SpinWheelModal({ isOpen, onClose }) {
                         </View>
                     ) : null}
 
-                    {/* ── Cooldown notice ── */}
+                    {/* ── Cooldown notice + watch ad option ── */}
                     {!canSpin && !spinning && cooldownMsg ? (
-                        <View style={styles.cooldownBadge}>
-                            <Text style={styles.cooldownIcon}>⏳</Text>
-                            <Text style={styles.cooldownText}>{cooldownMsg}</Text>
-                        </View>
+                        <>
+                            <View style={styles.cooldownBadge}>
+                                <Text style={styles.cooldownIcon}>⏳</Text>
+                                <Text style={styles.cooldownText}>{cooldownMsg}</Text>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.adBtn, !spinAdLoaded && styles.btnDisabled]}
+                                onPress={() => spinAdLoaded && showSpinAd()}
+                                disabled={!spinAdLoaded}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.adBtnText, !spinAdLoaded && styles.btnTextDisabled]}>
+                                    {spinAdLoaded ? "🎬 Watch Ad for Free Spin" : "Loading ad..."}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
                     ) : null}
 
                     {/* ── Spin button ── */}
@@ -329,7 +373,6 @@ const styles = StyleSheet.create({
         elevation: 20,
     },
 
-    // Header
     header: {
         alignItems: "center",
         marginBottom: 20,
@@ -347,7 +390,6 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
 
-    // Wheel area
     wheelArea: {
         width: RADIUS * 2 + 24,
         height: RADIUS * 2 + 24,
@@ -375,14 +417,12 @@ const styles = StyleSheet.create({
         borderLeftColor: "transparent",
         borderRightColor: "transparent",
         borderTopColor: T.GOLD,
-        // Gold shadow under pointer
         shadowColor: T.GOLD,
         shadowOpacity: 0.8,
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 2 },
     },
 
-    // Win message
     messageBubble: {
         backgroundColor: T.DARK,
         borderWidth: 1,
@@ -399,7 +439,6 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
 
-    // Cooldown
     cooldownBadge: {
         flexDirection: "row",
         alignItems: "center",
@@ -408,7 +447,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 14,
         paddingVertical: 7,
-        marginBottom: 14,
+        marginBottom: 10,
     },
     cooldownIcon: {
         fontSize: 14,
@@ -418,7 +457,21 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
 
-    // Spin button
+    adBtn: {
+        backgroundColor: "transparent",
+        borderWidth: 2,
+        borderColor: T.GOLD,
+        paddingVertical: 10,
+        paddingHorizontal: 28,
+        borderRadius: 14,
+        marginBottom: 14,
+    },
+    adBtnText: {
+        color: T.GOLD,
+        fontSize: 13,
+        fontWeight: "700",
+    },
+
     btn: {
         backgroundColor: T.GOLD,
         paddingVertical: 14,
@@ -446,7 +499,6 @@ const styles = StyleSheet.create({
         color: "#7AAA3399",
     },
 
-    // Close
     closeBtn: {
         paddingVertical: 6,
         paddingHorizontal: 16,
