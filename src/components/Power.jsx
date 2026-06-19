@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from "react-native";
 import GameScreenPower from './GameScreenPower';
 import {showAlert2} from './CustomAlert2'
+import { useAuth } from '../context/AuthContext';
 
 const Power = () => {
     const socketRef = useSocket();
@@ -23,7 +24,8 @@ const Power = () => {
     const [roomCode, setRoomCode] = React.useState(null);
     const navigation = useNavigation();
     const [ready, setReady] = React.useState(false);
-    const [user, setUser] = React.useState(null);
+    //const [user, setUser] = React.useState(null);
+    const { user }= useAuth();
     const [powerSelected, setPowerSelected] = React.useState(1);
     const avatarPowers = {
         "🐵": [
@@ -164,25 +166,25 @@ const Power = () => {
         "🐍": ["🦎", "🐉", "🐲"]
     };
 
-    React.useEffect(() => {
-        const getUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await response.json();
-                setUser(json);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        getUser();
-    }, []);
+    // React.useEffect(() => {
+    //     const getUser = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //                 method: "POST",
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "auth-token": token,
+    //                 },
+    //             });
+    //             const json = await response.json();
+    //             setUser(json);
+    //         } catch (error) {
+    //             console.log(error);
+    //         }
+    //     };
+    //     getUser();
+    // }, []);
 
 
     // Disable back button

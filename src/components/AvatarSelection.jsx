@@ -79,7 +79,7 @@ const AvatarSelection = () => {
     const finalizeAvatar = (avatar) => {
         //alert(`Avatar Selected: ${avatar}`);
         saveAvatar(avatar);
-        navigation.navigate("Dashboard");
+        navigation.navigate("Dashboard",{ tempAvatar:avatar });
     };
 
     return (

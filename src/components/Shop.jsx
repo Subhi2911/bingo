@@ -3,28 +3,31 @@
 import React from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    FlatList, Image,
+    FlatList, Image, ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRewardedAd } from 'react-native-google-mobile-ads';
+import RazorpayCheckout from 'react-native-razorpay';
 import { BACKEND_URL } from '../config/backend';
 import { AD_UNIT_IDS } from '../config/ads';
 import { showAlert2 } from './CustomAlert2';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useAuth } from '../context/AuthContext';
 
+// ─── Razorpay configuration ──────────────────────────────────────────────────
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID
 
 // ─── Real money items (₹) ─────────────────────────────────────────────────────
 const REAL_ITEMS = [
-    { id: 1, name: '100 Coins', desc: '100 Coins', price: "Ad", img: require('../images/bag.png') },
-    { id: 2, name: '50 XP', desc: '50 XP', price: "AdXP", img: require('../images/xpicon.png') },
-    { id: 3, name: 'Coin Pack', desc: '500 Coins', price: 49, img: require('../images/coin.png') },
-    { id: 4, name: 'Mega Coins', desc: '2000 Coins', price: 149, img: require('../images/bag.png') },
-    { id: 5, name: 'Free Daubs', desc: 'Extra 5 Marks', price: 99, img: require('../images/daub.png') },
-    { id: 6, name: 'Double XP', desc: '1 Match Boost', price: 129, img: require('../images/xp.png') },
-    { id: 7, name: 'Instant Claim', desc: 'Auto Claim Win', price: 199, img: require('../images/claim.png') },
-    { id: 8, name: 'Theme Pack', desc: 'New Board Skin', price: 299, img: require('../images/theme.png') },
-    { id: 5, name: 'Free Boards', desc: 'Extra 1 board', price: 299, img: require('../images/boards/forest.png') },
-
+    { id: 1, name: '100 Coins', desc: '100 Coins', price: "Ad", img: require('../images/bag.png'), razorpayEnabled: false },
+    { id: 2, name: '50 XP', desc: '50 XP', price: "AdXP", img: require('../images/xpicon.png'), razorpayEnabled: false },
+    { id: 3, name: 'Coin Pack', desc: '500 Coins', price: 49, img: require('../images/coin.png'), razorpayEnabled: true },
+    { id: 4, name: 'Mega Coins', desc: '2000 Coins', price: 149, img: require('../images/bag.png'), razorpayEnabled: true },
+    { id: 5, name: 'Free Daubs', desc: 'Extra 5 Marks', price: 99, img: require('../images/daub.png'), razorpayEnabled: false },
+    { id: 6, name: 'Double XP', desc: '1 Match Boost', price: 129, img: require('../images/xp.png'), razorpayEnabled: true },
+    { id: 7, name: 'Instant Claim', desc: 'Auto Claim Win', price: 199, img: require('../images/claim.png'), razorpayEnabled: false },
+    { id: 8, name: 'Theme Pack', desc: 'New Board Skin', price: 299, img: require('../images/theme.png'), razorpayEnabled: false },
+    { id: 9, name: 'Free Boards', desc: 'Extra 1 board', price: 299, img: require('../images/boards/forest.png'), razorpayEnabled: true },
 ];
 
 // ─── Board skins ──────────────────────────────────────────────────────────────
@@ -86,7 +89,7 @@ const SkinCard = ({ item, coins, owned, onBuy, isBoard }) => {
             ) : (
                 <TouchableOpacity
                     style={[s.btn, !canAfford && s.btnCant]}
-                    onPress={() => canAfford && onBuy(item)}
+                    onPress={() => { showAlert2({ type: 'confirm', title: `Purchasing ${s.item.name}`, message: "Are you sure, you want to purchase? ", onConfirm: () => canAfford && onBuy(item) }) }}
                     disabled={!canAfford}
                 >
                     <Text style={[s.btnTxt, !canAfford && s.btnCantTxt]}>
@@ -99,9 +102,18 @@ const SkinCard = ({ item, coins, owned, onBuy, isBoard }) => {
 };
 
 // ─── Real money card ──────────────────────────────────────────────────────────
-const RealCard = ({ item, onBuy, onWatchAd, onWatchXpAd, adLoaded, xpAdLoaded }) => {
+const RealCard = ({ item, onBuy, onWatchAd, onWatchXpAd, adLoaded, xpAdLoaded, isLoading }) => {
     const isAdItem = item.price === "Ad";
     const isXpAdItem = item.price === "AdXP";
+    const isRazorpayItem = item.razorpayEnabled === true;
+
+    if (isLoading) {
+        return (
+            <View style={s.realCard}>
+                <ActivityIndicator size="small" color="#F8B55F" />
+            </View>
+        );
+    }
 
     return (
         <View style={s.realCard}>
@@ -129,8 +141,16 @@ const RealCard = ({ item, onBuy, onWatchAd, onWatchXpAd, adLoaded, xpAdLoaded })
                         {xpAdLoaded ? '🎬 Watch Ad' : 'Loading...'}
                     </Text>
                 </TouchableOpacity>
+            ) : isRazorpayItem ? (
+                <TouchableOpacity
+                    style={s.rupeeBtn}
+                    onPress={() => onBuy(item)}
+                    disabled={isLoading}
+                >
+                    <Text style={s.rupeeBtnTxt}>₹{item.price}</Text>
+                </TouchableOpacity>
             ) : (
-                <TouchableOpacity style={s.rupeeBtn} onPress={() => onBuy(item)}>
+                <TouchableOpacity style={s.rupeeBtn} onPress={() => { showAlert2({ type: 'confirm', title: `Purchasing ${s.itemName}`, message: "Are you sure, you want to purchase? ", onConfirm: () => onBuy(item) }) }}>
                     <Text style={s.rupeeBtnTxt}>₹{item.price}</Text>
                 </TouchableOpacity>
             )}
@@ -157,10 +177,12 @@ const AdCard = ({ style }) => (
 
 // ─── Main Shop ────────────────────────────────────────────────────────────────
 const Shop = () => {
-    const [user, setUser] = React.useState(null);
+    //const [user, setUser] = React.useState(null);
+    const { user , setUser } = useAuth();
     const [skinTab, setSkinTab] = React.useState('boards');
-    const [ownedBoards, setOwnedBoards] = React.useState(['classic']);
-    const [ownedDaubs, setOwnedDaubs] = React.useState(['star']);
+    const [ownedBoards, setOwnedBoards] = React.useState(user.ownedBoards||['classic']);
+    const [ownedDaubs, setOwnedDaubs] = React.useState(user.ownedDaubs||['star']);
+    const [loadingItemId, setLoadingItemId] = React.useState(null);
 
     // ── Rewarded ad: 100 coins for item id 1 ───────────────────────────────────
     const { isLoaded: coinsAdLoaded, isEarnedReward, load: loadCoinsAd, show: showCoinsAd } = useRewardedAd(
@@ -232,27 +254,121 @@ const Shop = () => {
     };
 
     // ── Load user ─────────────────────────────────────────────────────────────
-    React.useEffect(() => {
-        const init = async () => {
-            try {
-                const token = await AsyncStorage.getItem('authToken');
-                const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'auth-token': token },
-                });
-                const data = await res.json();
-                setUser(data);
-                if (data.ownedBoards?.length) setOwnedBoards(data.ownedBoards);
-                if (data.ownedDaubs?.length) setOwnedDaubs(data.ownedDaubs);
-            } catch (e) { console.log(e); }
-        };
-        init();
-    }, []);
+    // React.useEffect(() => {
+    //     const init = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem('authToken');
+    //             const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json', 'auth-token': token },
+    //             });
+    //             const data = await res.json();
+    //             setUser(data);
+    //             if (data.ownedBoards?.length) setOwnedBoards(data.ownedBoards);
+    //             if (data.ownedDaubs?.length) setOwnedDaubs(data.ownedDaubs);
+    //         } catch (e) { console.log(e); }
+    //     };
+    //     init();
+    // }, []);
 
-    // ── Real money purchase ───────────────────────────────────────────────────
+    // ── Razorpay payment handler ───────────────────────────────────────────────
+    const handleRazorpayPayment = async (item) => {
+        try {
+            setLoadingItemId(item.id);
+
+            // Step 1: Create order on backend
+            const token = await AsyncStorage.getItem('authToken');
+            const orderRes = await fetch(`${BACKEND_URL}/api/payments/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'auth-token': token },
+                body: JSON.stringify({
+                    itemId: item.id,
+                    itemName: item.name,
+                    amount: item.price,
+                }),
+            });
+            
+
+            const orderData = await orderRes.json();
+            if (!orderRes.ok) {
+                showAlert2({ type: 'error', title: orderData.message || 'Failed to create order' });
+                setLoadingItemId(null);
+                return;
+            }
+
+            // Step 2: Open Razorpay checkout
+            const options = {
+                description: item.name,
+                image: 'https://kommodo.ai/i/r4wM91zToF99rJhC1xxq',
+                currency: 'INR',
+                key: RAZORPAY_KEY_ID,
+                amount: item.price * 100, // Amount in paise
+                order_id: orderData.orderId,
+                name: 'BingoBing',
+                prefill: {
+                    email: user?.email || '',
+                    contact: user?.phone || '',
+                },
+                theme: { color: '#FFD67A' },
+            };
+
+            RazorpayCheckout.open(options)
+                .then(async (data) => {
+                    // Step 3: Payment successful, verify on backend
+                    const verifyRes = await fetch(`${BACKEND_URL}/api/payments/verify-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'auth-token': token },
+                        body: JSON.stringify({
+                            razorpay_order_id: data.razorpay_order_id,
+                            razorpay_payment_id: data.razorpay_payment_id,
+                            razorpay_signature: data.razorpay_signature,
+                            itemId: item.id,
+                        }),
+                    });
+
+                    const verifyData = await verifyRes.json();
+                    if (!verifyRes.ok) {
+                        showAlert2({ type: 'error', title: 'Payment verification failed' });
+                        setLoadingItemId(null);
+                        return;
+                    }
+
+                    // Step 4: Update user state
+                    setUser(prev => ({
+                        ...prev,
+                        ...verifyData.updatedUser, // Backend returns updated user with new coins/xp
+                    }));
+
+                    showAlert2({
+                        type: 'success',
+                        title: `Payment successful! ${item.name} added to your account.`,
+                    });
+
+                    setLoadingItemId(null);
+                })
+                .catch((error) => {
+                    if (error.code === 'CANCELLED') {
+                        showAlert2({ type: 'info', title: 'Payment cancelled' });
+                    } else {
+                        showAlert2({ type: 'error', title: 'Payment failed: ' + error.description });
+                    }
+                    setLoadingItemId(null);
+                });
+        } catch (e) {
+            console.log('Razorpay error:', e);
+            showAlert2({ type: 'error', title: 'An error occurred. Please try again.' });
+            setLoadingItemId(null);
+        }
+    };
+
+    // ── Real money purchase (unified) ──────────────────────────────────────────
     const handleRealBuy = (item) => {
-        // TODO: integrate Razorpay / Google Pay here
-        showAlert2({ type: 'success', title: `Purchased ${item.name}!` });
+        if (item.razorpayEnabled) {
+            handleRazorpayPayment(item);
+        } else {
+            // TODO: Handle other payment methods or future integrations
+            showAlert2({ type: 'info', title: 'This item will be available soon' });
+        }
     };
 
     // ── Coin skin purchase ────────────────────────────────────────────────────
@@ -342,23 +458,24 @@ const Shop = () => {
                         <View style={s.divider} />
 
                         {/* ── Premium Store ── */}
-                        <SectionHeader title="Premium Store" sub="Purchase with real money" />
+                        {/*<SectionHeader title="Premium Store" sub="Purchase with real money" />
                         <View style={s.realGrid}>
-                            <View style={s.realGrid}>
-                                {REAL_ITEMS.map(item => (
-                                    <RealCard
-                                        key={item.id}
-                                        item={item}
-                                        onBuy={handleRealBuy}
-                                        onWatchAd={handleWatchAd}
-                                        adLoaded={coinsAdLoaded}
-                                        onWatchXpAd={handleWatchXpAd}
-                                        xpAdLoaded={xpAdLoaded} 
-                                    />
-                                ))}
-                                {REAL_ITEMS.length % 2 !== 0 && <AdCard />}
-                            </View>
-                        </View>
+
+                            {REAL_ITEMS.map(item => (
+                                <RealCard
+                                    key={item.id}
+                                    item={item}
+                                    onBuy={handleRealBuy}
+                                    onWatchAd={handleWatchAd}
+                                    adLoaded={coinsAdLoaded}
+                                    onWatchXpAd={handleWatchXpAd}
+                                    xpAdLoaded={xpAdLoaded}
+                                    isLoading={loadingItemId === item.id}
+                                />
+                            ))}
+                            {REAL_ITEMS.length % 2 !== 0 && <AdCard />} 
+
+                        </View>*/}
                     </>
                 }
             />

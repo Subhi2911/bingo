@@ -17,33 +17,35 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BACKEND_URL } from "../config/backend";
+import { useAuth } from "../context/AuthContext";
 
 const Friends = () => {
     const navigation = useNavigation();
+    const { user }=useAuth();
     const [screen, setScreen] = useState('friends');
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState([]);
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState(user);
 
-    useEffect(() => {
-        const getMyUserData = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await response.json();
-                setUserData(json);
-            } catch (error) {
-                console.log("Error fetching my user data:", error);
-            }
-        };
-        getMyUserData();
-    }, []);
+    // useEffect(() => {
+    //     const getMyUserData = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             const response = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
+    //                 method: "POST",
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "auth-token": token,
+    //                 },
+    //             });
+    //             const json = await response.json();
+    //             setUserData(json);
+    //         } catch (error) {
+    //             console.log("Error fetching my user data:", error);
+    //         }
+    //     };
+    //     getMyUserData();
+    // }, []);
 
     useEffect(() => {
         const fetchFriendsData = async () => {

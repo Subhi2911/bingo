@@ -23,6 +23,7 @@ const Missions = () => {
                 method: 'GET',
                 headers: { "Content-Type": 'application/json', "auth-token": token },
             });
+            console.log(res);
             const data = await res.json();
             if (data.success) setMissions(data.missions);
             else showAlert2({ type: 'error', title: 'Error', message: data.message || 'Failed to load missions' });
@@ -43,6 +44,7 @@ const Missions = () => {
                 method: 'POST',
                 headers: { "Content-Type": 'application/json', "auth-token": token },
             });
+            
             const data = await res.json();
             if (data.success) {
                 setMissions(prev => prev.map(m => m.id === id ? { ...m, ...data.mission } : m));

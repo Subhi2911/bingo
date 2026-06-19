@@ -7,13 +7,15 @@ import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator } from "react-native";
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
 
 const PAGE_SIZE = 7;
 
 const Messaging = () => {
     const navigation   = useNavigation();
+    const { user } = useAuth
     const [chats, setChats]         = useState([]);
-    const [userData, setUserData]   = useState(null);
+    const [userData, setUserData]   = useState(user);
     const [loadingChats, setLoadingChats] = useState(true);
     const [loadingMore, setLoadingMore]   = useState(false);
     const [hasMore, setHasMore]           = useState(true);

@@ -91,10 +91,11 @@ const Login = () => {
                 body: JSON.stringify({ email: credentials.email, password: credentials.password })
             });
             const data = await res.json();
+            console.log(data);
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
                 await AsyncStorage.setItem("equippedBoard", "classic");
-                await AsyncStorage.setItem("equippedDaub", "daub (2)");
+                await AsyncStorage.setItem("equippedDaub", "daub");
                 await fetchUser();
                 navigation.navigate("Dashboard");
                 await requestNotificationPermission();

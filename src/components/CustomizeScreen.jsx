@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from '../config/backend';
 import { showAlert2 } from './CustomAlert2';
 import { useAlertToast } from './AlertToast';
+import { useAuth } from "../context/AuthContext";
 
 // ─── Theme data ───────────────────────────────────────────────────────────────
 const BOARD_THEMES = {
@@ -162,13 +163,14 @@ const DaubCard = ({ item, selected, owned, onPress }) => {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 const CustomizeScreen = ({ navigation }) => {
+    const {user}= useAuth();
     const [activeTab,   setActiveTab]   = useState('boards');
     const [selBoard,    setSelBoard]    = useState('classic');
-    const [selDaub,     setSelDaub]     = useState('star');
-    const [ownedBoards, setOwnedBoards] = useState(['classic']);
-    const [ownedDaubs,  setOwnedDaubs]  = useState(['star']);
+    const [selDaub,     setSelDaub]     = useState('daub');
+    const [ownedBoards, setOwnedBoards] = useState(user.ownedBoards||['classic']);
+    const [ownedDaubs,  setOwnedDaubs]  = useState(user.ownedDaubs|| ['daub']);
     const [saved,       setSaved]       = useState(false);
-    const [userCoins,   setUserCoins]   = useState(0);
+    const [userCoins,   setUserCoins]   = useState(user.money);
     const { showToast } = useAlertToast();
 
     const saveAnim    = useRef(new Animated.Value(1)).current;
@@ -178,20 +180,23 @@ const CustomizeScreen = ({ navigation }) => {
     useEffect(() => {
         const init = async () => {
             try {
-                // ── Fetch user from server (owned items + coin balance) ──
-                const token = await AsyncStorage.getItem('authToken');
-                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'auth-token': token,
-                    },
-                });
-                const user = await response.json();
+                // // ── Fetch user from server (owned items + coin balance) ──
+                // const token = await AsyncStorage.getItem('authToken');
+                // const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //         'auth-token': token,
+                //     },
+                // });
+                // const {user} = useAuth();
 
-                if (user.ownedBoards?.length) setOwnedBoards(user.ownedBoards);
-                if (user.ownedDaubs?.length)  setOwnedDaubs(user.ownedDaubs);
-                if (user.money != null)        setUserCoins(user.money);
+                console.log(user);
+                console.log(selBoard,selDaub);
+
+                if (user.ownedBoards?.length) setOwnedBoards(user?.ownedBoards);
+                if (user.ownedDaubs?.length)  setOwnedDaubs(user?.ownedDaubs);
+                if (user.money != null)        setUserCoins(user?.money);
 
                 // ── Load equipped prefs from AsyncStorage (local only) ──
                 const [eB, eD] = await Promise.all([
@@ -260,8 +265,8 @@ const CustomizeScreen = ({ navigation }) => {
 
     const tabIndicatorLeft = tabUnderAnim.interpolate({ inputRange: [0, 1], outputRange: ['2%', '52%'] });
 
-    const activeBoard = BOARD_THEMES[selBoard];
-    const activeDaub  = DAUB_STYLES[selDaub];
+    const activeBoard = BOARD_THEMES[selBoard || 'classic'];
+    const activeDaub  = DAUB_STYLES[selDaub] || 'daub';
     const boardList   = Object.values(BOARD_THEMES);
     const daubList    = Object.values(DAUB_STYLES);
 

@@ -17,17 +17,19 @@ import { BACKEND_URL } from "../config/backend";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSocket } from "../context/SocketContext";
 import { showAlert2 } from "./CustomAlert2";
+import { useAuth } from "../context/AuthContext";
 
 const OtherProfile = ({ myId, myUsername, myAvatar }) => {
     const route = useRoute();
     const navigation = useNavigation();
     const { userId } = route.params;
+    const { user }= useAuth();
 
     const socketRef = useSocket();
     const socket = socketRef?.socket;
-    const [user, setUser] = useState(null);
+    //const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [requestStatus, setRequestStatus] = useState("none");
+    const [requestStatus, setRequestStatus] = useState(user.requestStatus || 'none');
     const [myUser, setMyUser] = useState(null);
 
     const [showReportSheet, setShowReportSheet] = useState(false);
@@ -64,10 +66,10 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
         }
     };
 
-    useEffect(() => {
-        fetchUserProfile();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // useEffect(() => {
+    //     fetchUserProfile();
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, []);
 
     React.useEffect(() => {
         const getMyUser = async () => {
@@ -89,27 +91,27 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
         getMyUser();
     }, []);
 
-    const fetchUserProfile = async () => {
-        try {
-            const token = await AsyncStorage.getItem("authToken");
+    // const fetchUserProfile = async () => {
+    //     try {
+    //         const token = await AsyncStorage.getItem("authToken");
 
-            const res = await fetch(`${BACKEND_URL}/api/auth/user/${userId}`, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "auth-token": token,
-                },
-            });
+    //         const res = await fetch(`${BACKEND_URL}/api/auth/user/${userId}`, {
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //                 "auth-token": token,
+    //             },
+    //         });
 
-            const data = await res.json();
+    //         const data = await res.json();
 
-            setUser(data);
-            setRequestStatus(data.requestStatus || "none");
-        } catch (err) {
-            console.log(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    //         setUser(data);
+    //         setRequestStatus(data.requestStatus || "none");
+    //     } catch (err) {
+    //         console.log(err);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     const sendFriendRequest = async () => {
         try {
@@ -229,6 +231,14 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
 
                         <View style={[styles.statCard, styles.statCardLevel]}>
                             <View style={styles.statIconWrap}>
+                                <Text style={styles.statIconEmoji}>🎮</Text>
+                            </View>
+                            <Text style={styles.statValue}>{user.totalGamesPlayed}</Text>
+                            <Text style={styles.statLabel}>Games played</Text>
+                        </View>
+
+                        <View style={[styles.statCard, styles.statCardLevel]}>
+                            <View style={styles.statIconWrap}>
                                 <Text style={styles.statIconEmoji}>⭐</Text>
                             </View>
                             <Text style={styles.statValue}>{user.level}</Text>
@@ -269,7 +279,7 @@ const OtherProfile = ({ myId, myUsername, myAvatar }) => {
                     </View>
 
                     {/* FRIEND ACTION */}
-                    {requestStatus === "friends" ? (
+                    {requestStatus === "friends" ||user.friends?.some(id => id.toString() === myUser._id) ? (
                         <View style={styles.friendBadge}>
                             <Icon name="check-circle" size={18} color="#00E676" />
                             <Text style={styles.friendText}>Friends</Text>

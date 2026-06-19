@@ -17,6 +17,7 @@ import { showAlert2 } from "./CustomAlert2";
 //import useNotificationPermission from '../hooks/useNotificationPermission';
 import { useFocusEffect } from '@react-navigation/native'
 import { getNotificationStatus, requestNotificationPermission } from "../hooks/useNotificationPermission";
+import { useAuth } from "../context/AuthContext";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -146,14 +147,15 @@ function EditModal({ visible, title, placeholder, value, onClose, onSave, multil
 export default function Profile() {
     const navigation = useNavigation();
 
-    const [user, setUser] = useState(null);
+    //const [user, setUser] = useState(null);
+    const { user, setUser }= useAuth();
     const [notifications, setNotifications] = useState(true);
     const [soundFx, setSoundFx] = useState(true);
     const [haptics, setHaptics] = useState(true);
 
     // Avatar modal
     const [avatarModal, setAvatarModal] = useState(false);
-    const [selectedAvatar, setSelectedAvatar] = useState("🐟");
+    const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar||"🐟");
     const [saving, setSaving] = useState(false);
     const avatarAnim = useRef(new Animated.Value(0)).current;
 
@@ -175,20 +177,20 @@ export default function Profile() {
     );
 
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "auth-token": token },
-                });
-                const json = await res.json();
-                setUser(json);
-                setSelectedAvatar(json?.avatar ?? "🐟");
-            } catch (e) { console.log(e); }
-        })();
-    }, []);
+    // React.useEffect(() => {
+    //     (async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //                 method: "POST",
+    //                 headers: { "Content-Type": "application/json", "auth-token": token },
+    //             });
+    //             const json = await res.json();
+    //             setUser(json);
+    //             setSelectedAvatar(json?.avatar ?? "🐟");
+    //         } catch (e) { console.log(e); }
+    //     })();
+    // }, []);
 
     // ── Avatar modal ──────────────────────────────────────────────────────────
     const openAvatarModal = () => {
@@ -265,7 +267,7 @@ export default function Profile() {
             type: "confirm", title: "Log out", message: "Are you sure you want to log out?",
             onConfirm: async () => {
                 await AsyncStorage.removeItem("authToken");
-                navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+                navigation.navigate("Home");
             },
         });
     };
@@ -281,7 +283,7 @@ export default function Profile() {
                         method: "DELETE", headers: { "auth-token": token },
                     });
                     await AsyncStorage.clear();
-                    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+                    navigation.navigate("Home");
                 } catch {
                     showAlert2({ type: 'error', title: 'Error', message: 'Could not delete account.' });
                 }
@@ -359,7 +361,7 @@ export default function Profile() {
                     <View style={styles.statsGrid}>
                         {[
                             { icon: "🏆", label: "Wins", value: (user?.wins?.classic + user?.wins?.fast + user?.wins?.power) || 0 },
-                            { icon: "✨", label: "Stars", value: `${user?.stars ?? 0}/5` },
+                            { icon: "✨", label: "Games Played", value: `${user?.totalGamesPlayed ?? 0}` },
                             { icon: "⚡", label: "Total XP", value: user?.totalXp ?? 0 },
                             { icon: "📅", label: "Days in", value: user?.daysLoggedIn ?? 0 },
                         ].map(stat => (
@@ -452,6 +454,26 @@ export default function Profile() {
                             isLast
                         />
                     </GlassCard>
+                    {/* // ── Payment History ── */}
+                    <SectionTitle label="Payments" />
+                    <GlassCard>
+                        <SettingRow
+                            icon="💳"
+                            label="Transaction history"
+                            sub="View all your purchases"
+                            onPress={() => navigation.navigate("Receipts")}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
+                        />
+                        <Divider />
+                        <SettingRow
+                            icon="📊"
+                            label="Payment statistics"
+                            sub="View your spending summary"
+                            onPress={() => navigation.navigate("PaymentStats")}
+                            right={<Icon name="chevron-right" size={13} color={T.INK_LIGHT} />}
+                            isLast
+                        />
+                    </GlassCard>
 
                     {/* ── About ── */}
                     <SectionTitle label="About" />
@@ -477,6 +499,8 @@ export default function Profile() {
                             isLast
                         />
                     </GlassCard>
+
+
 
                     {/* ── Danger zone ── */}
                     <SectionTitle label="Account actions" />

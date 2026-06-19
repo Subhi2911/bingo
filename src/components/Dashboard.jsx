@@ -33,11 +33,13 @@ import { useNotifications } from "../context/NotificationContext";
 import SpinWheelModal from "./SpinWheel";
 import Messaging from "./Messaging";
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useAuth } from "../context/AuthContext";
 
-const Dashboard = () => {
+const Dashboard = ({route}) => {
+    const { user} = useAuth();
     const [loading, setLoading] = React.useState(true);
     const [selected, setSelected] = React.useState("home");
-    const [user, setUser] = React.useState(null);
+    //const [user, setUser] = React.useState(null);
     const [profileModalVisible, setProfileModalVisible] = React.useState(false);
     const navigation = useNavigation();
     const [searchResults, setSearchResults] = React.useState([]);
@@ -48,6 +50,8 @@ const Dashboard = () => {
     const { hasUnread } = useNotifications();
     const [notifications, setNotifications] = React.useState([]);
     const [openWheel, setOpenWheel] = React.useState(false);
+    
+    const { tempAvatar } = route?.params || '';
 
 
 
@@ -166,27 +170,26 @@ const Dashboard = () => {
         navigation.navigate("OtherProfile", { userId: item._id, myId: user._id, myUsername: user.username, myAvatar: user.avatar });
     }
 
-    const isHomeSelected = selected === 'home';
-
-    React.useEffect(() => {
-        const getUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await res.json();
-                setUser(json);
-            } catch (e) {
-                console.log(e);
-            }
-        };
-        getUser();
-    }, [isHomeSelected]);
+    
+    // React.useEffect(() => {
+    //     const getUser = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //                 method: "POST",
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "auth-token": token,
+    //                 },
+    //             });
+    //             const json = await res.json();
+    //             setUser(json);
+    //         } catch (e) {
+    //             console.log(e);
+    //         }
+    //     };
+    //     getUser();
+    // }, []);
 
 
     useEffect(() => {
@@ -218,7 +221,7 @@ const Dashboard = () => {
                                         onPress={() => setProfileModalVisible(true)}
                                     >
                                         <View style={[styles.avatar, { backgroundColor: '#000', display: 'flex', justifyContent: "center", alignItems: "center" }]}>
-                                            <Text style={{ fontSize: 30 }}>{user?.avatar}</Text>
+                                            <Text style={{ fontSize: 30 }}>{user?.avatar===''? tempAvatar:user?.avatar}</Text>
                                         </View>
                                     </TouchableOpacity>
 

@@ -20,14 +20,14 @@ export const AuthProvider = ({ children }) => {
           "Content-Type": "application/json",
           "auth-token": token,
         },
-      });
-      console.log(response);
+      })
 
       const json = await response.json();
+      console.log(json);
       setUser(json);
       return json;         
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.log("Error fetching user:", error);
       return null;
     } finally {
       setLoading(false);

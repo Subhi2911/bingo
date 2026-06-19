@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useAlertToast } from './AlertToast';
 import { getNotificationStatus, requestNotificationPermission } from "../hooks/useNotificationPermission";
+import { useAuth } from '../context/AuthContext';
 
 const STEPS = ['Email', 'Verify', 'Account'];
 const RESEND_COOLDOWN = 30; // seconds
@@ -54,6 +55,7 @@ const Signup = () => {
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const cooldownRef = useRef(null);
     const { showToast } = useAlertToast();
+    const { fetchUser } = useAuth;
     
     // Clear cooldown timer on unmount
     useEffect(() => {
@@ -137,10 +139,11 @@ const Signup = () => {
             if (res.ok) {
                 await AsyncStorage.setItem("authToken", data.authToken);
                 await AsyncStorage.setItem("equippedBoard", "classic");
-                await AsyncStorage.setItem("equippedDaub", "daub (2)");
+                await AsyncStorage.setItem("equippedDaub", "daub");
                 showToast('success', 'Account created', 'Welcome aboard!');
                 await requestNotificationPermission();
                 navigation.navigate("AvatarSelection");
+                await fetchUser();
             } else {
                 showToast('error', 'Signup failed', data.error || 'Invalid email or password. Please try again.');
             }

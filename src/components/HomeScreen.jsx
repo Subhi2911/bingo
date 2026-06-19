@@ -17,6 +17,7 @@ import { BACKEND_URL } from "../config/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScrollView } from "react-native";
 import { showAlert2 } from "./CustomAlert2";
+import { useAuth } from "../context/AuthContext";
 
 // ─── Day labels anchored to real calendar day ────────────────────────────────
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -31,9 +32,8 @@ const getTodayIndex = () => {
 const HomeScreen = ({ setSelected, setSearchResults }) => {
     const navigation = useNavigation();
     const [showRewardsModal, setShowRewardsModal] = React.useState(false);
-    const [user, setUser] = React.useState(null);
-    const [query, setQuery] = React.useState("");
-
+    //const [user, setUser] = React.useState(null);
+    const { user , setUser} = useAuth();
     // Mystery box state
     const [mysteryPrize, setMysteryPrize] = React.useState(null);
     const [showMysteryModal, setShowMysteryModal] = React.useState(false);
@@ -54,35 +54,27 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
         };
         return getMondayOf(dateA) === getMondayOf(dateB);
     };
+    
 
-    const getSlotFromDate = (date) => {
-        const jsDay = new Date(date).getDay();
-        return (jsDay + 6) % 7 + 1; // Mon=1 … Sun=7
-    };
-
-    const lastClaimedSlot = user?.lastDailyClaim
-        ? getSlotFromDate(user.lastDailyClaim)
-        : null;
-
-    React.useEffect(() => {
-        const getUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await response.json();
-                setUser(json);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        getUser();
-    }, []);
+    // React.useEffect(() => {
+    //     const getUser = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //                 method: "POST",
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "auth-token": token,
+    //                 },
+    //             });
+    //             const json = await response.json();
+    //             setUser(json);
+    //         } catch (error) {
+    //             console.log(error);
+    //         }
+    //     };
+    //     getUser();
+    // }, []);
 
     // ─── Daily reward map ────────────────────────────────────────────────────
     // Day 4 is now "Mystery Box" — backend will resolve the actual prize
@@ -111,11 +103,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
     const todaySlot = todayIndex + 1;         // 1–7
 
     // A slot is "done" if user claimed it already today or on a prior streak day
-    const isSlotDone = (slot) => {
-        if (!lastClaimedSlot || !user?.lastDailyClaim) return false;
-        if (!isSameWeek(user.lastDailyClaim, new Date())) return false;
-        return slot <= lastClaimedSlot;
-    };
+    const isSlotDone = (slot) => !!user?.weeklyClaims?.[slot - 1];
 
     const isSlotToday = (slot) => slot === todaySlot;
 
@@ -267,9 +255,9 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                         <View style={styles.streakDot} />
                         <Text style={styles.streakText}>
                             <Text style={{ color: GOLD }}>
-                                {user?.daysLoggedIn || 0} day-Maximum streak
+                                {user?.streak || 0} day streak
                             </Text>
-                            {user?.daysLoggedIn > 0 ? " — keep it up!" : " — claim today to start!"}
+                            {user?.streak > 0 ? " — keep it up!" : " — claim today to start!"}
                         </Text>
                     </View>
 
@@ -422,7 +410,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                                 <View style={styles.rewardsStreakRow}>
                                     <Text style={styles.rewardsStreakFire}>🔥</Text>
                                     <Text style={styles.rewardsStreakText}>
-                                        {user?.daysLoggedIn || 0}-day streak
+                                        {user?.streak || 0}-day streak
                                     </Text>
                                 </View>
 

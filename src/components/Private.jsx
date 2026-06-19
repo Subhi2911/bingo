@@ -22,6 +22,7 @@ import GameScreen from './GameScreen';
 import PrivateRoomBoard from './PrivateRoomBoard';
 import GameScreenPower from './GameScreenPower';
 import { showAlert2 } from './CustomAlert2';
+import { useAuth } from '../context/AuthContext';
 
 const PrivateRoom = () => {
     const navigation = useNavigation();
@@ -36,7 +37,8 @@ const PrivateRoom = () => {
     const pinRefs = useRef([]);
 
     // USER
-    const [user, setUser] = useState(null);
+    //const [user, setUser] = useState(null);
+    const { user } = useAuth();
     const [friends, setFriends] = useState([]);
 
     // FLOW
@@ -334,20 +336,20 @@ const PrivateRoom = () => {
     }, [socket, user]);
 
     /* ===================== FETCH USER ===================== */
-    useEffect(() => {
-        const fetchUser = async () => {
-            const token = await AsyncStorage.getItem('authToken');
-            if (!token) return;
+    // useEffect(() => {
+    //     const fetchUser = async () => {
+    //         const token = await AsyncStorage.getItem('authToken');
+    //         if (!token) return;
 
-            const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'auth-token': token },
-            });
-            const json = await res.json();
-            setUser(json);
-        };
-        fetchUser();
-    }, []);
+    //         const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json', 'auth-token': token },
+    //         });
+    //         const json = await res.json();
+    //         setUser(json);
+    //     };
+    //     fetchUser();
+    // }, []);
 
     /* ===================== FETCH FRIENDS ===================== */
     useEffect(() => {

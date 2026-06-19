@@ -10,39 +10,41 @@ import CustomAlert from './CustomAlert';
 import { useSocket } from '../context/SocketContext';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
 
 
 const Fast = () => {
     const socketRef = useSocket();
     const socket = socketRef?.socket;
+    const { user}=useAuth();
     const [gameStarted, setGameStarted] = React.useState(false);
     const [playerCount, setPlayerCount] = React.useState(2); // before matchmaking
     const [matchedPlayers, setMatchedPlayers] = React.useState([]); // after match
     const [roomCode, setRoomCode] = React.useState(null);
     const navigation = useNavigation();
     const [ready, setReady] = React.useState(false);
-    const [user, setUser] = React.useState(null);
+    //const [user, setUser] = React.useState(null);
 
-    React.useEffect(() => {
-        const getUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await response.json();
-                setUser(json);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        getUser();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // React.useEffect(() => {
+    //     const getUser = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem("authToken");
+    //             const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
+    //                 method: "POST",
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "auth-token": token,
+    //                 },
+    //             });
+    //             const json = await response.json();
+    //             setUser(json);
+    //         } catch (error) {
+    //             console.log(error);
+    //         }
+    //     };
+    //     getUser();
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, []);
 
 
     // Disable back button

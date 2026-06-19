@@ -165,6 +165,7 @@ export default function SpinWheelModal({ isOpen, onClose }) {
             ...prev,
             money: result.coins,
             totalXp: result.TotalXp,
+            levelXp: result.levelXp
         }));
 
         const segmentAngle = 360 / rewards.length;

@@ -3,30 +3,13 @@ import { StyleSheet, Text, View, ImageBackground, Image } from 'react-native';
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from '../config/backend';
+import { useAuth } from "../context/AuthContext";
 
 const CommonSelectionRoom = (props) => {
-    const [user, setUser] = React.useState(null);
+    const {user}= useAuth()
+    //const [user, setUser] = React.useState(user);
     const [positions, setPositions] = React.useState([]);
 
-    React.useEffect(() => {
-        const getUser = async () => {
-            try {
-                const token = await AsyncStorage.getItem("authToken");
-                const response = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "auth-token": token,
-                    },
-                });
-                const json = await response.json();
-                setUser(json);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        getUser();
-    }, []);
 
     const playerPositionsClassic = {
         1: [{ bottom: '2%', left: '10%' }],

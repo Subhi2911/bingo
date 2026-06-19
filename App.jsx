@@ -42,6 +42,17 @@ import { useAuth } from './src/context/AuthContext';
 import { useSocket } from './src/context/SocketContext';
 import { Platform } from 'react-native';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
+import Receipts from './src/components/Receipts.jsx';
+import PaymentStats from './src/components/PaymentStats.jsx';
+import {
+  getMessaging,
+  getToken,
+  onMessage,
+  onNotificationOpenedApp,
+  getInitialNotification,
+  AuthorizationStatus,
+  requestPermission,
+} from '@react-native-firebase/messaging';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -74,33 +85,14 @@ const AppNavigator = () => {
   const socketRef = useSocket();
   const socket = socketRef?.socket;
 
-  const [user, setUser] = React.useState(null);
+  const { user, setUser } = useAuth();
+
+  //const [user, setUser] = React.useState(null);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
       SystemNavigationBar?.navigationHide();
     }
-  }, []);
-
-  React.useEffect(() => {
-
-    const getUser = async () => {
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "auth-token": token,
-          },
-        });
-        const json = await res.json();
-        setUser(json);
-      } catch (e) {
-        console.log(e);
-      }
-    };
-    getUser();
   }, []);
 
 
@@ -178,6 +170,8 @@ const AppNavigator = () => {
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
         <Stack.Screen name="CustomizeScreen" component={CustomizeScreen} />
         <Stack.Screen name="FrozenScreen" component={FrozenScreen} />
+        <Stack.Screen name="Receipts" component={Receipts }/>
+        <Stack.Screen name="PaymentStats" component={PaymentStats} />
       </Stack.Navigator>
     </>
   );
@@ -186,16 +180,17 @@ const AppNavigator = () => {
 const App = () => {
 
 
-  // Request permission + save FCM token
+  // ── Permission + FCM token ──
   useEffect(() => {
-    const requestPermission = async () => {
-      const authStatus = await messaging().requestPermission();
+    const requestPerm = async () => {
+      const messaging = getMessaging();
+      const authStatus = await requestPermission(messaging);
       const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === AuthorizationStatus.AUTHORIZED ||
+        authStatus === AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        const fcmToken = await messaging().getToken();
+        const fcmToken = await getToken(messaging);
         const authToken = await AsyncStorage.getItem("authToken");
         await fetch(`${BACKEND_URL}/api/auth/save-fcm-token`, {
           method: "POST",
@@ -204,17 +199,18 @@ const App = () => {
         });
       }
     };
-    requestPermission();
+    requestPerm();
   }, []);
 
-  // Foreground message handler
+  // ── Foreground + background open handler ──
   useEffect(() => {
-    const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
+    const messaging = getMessaging();
+
+    const unsubscribeForeground = onMessage(messaging, async remoteMessage => {
       await displayLocalNotification(remoteMessage);
     });
 
-    // App opened by tapping notification from BACKGROUND state
-    const unsubscribeBackground = messaging().onNotificationOpenedApp(remoteMessage => {
+    const unsubscribeBackground = onNotificationOpenedApp(messaging, remoteMessage => {
       navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
     });
 
@@ -224,15 +220,14 @@ const App = () => {
     };
   }, []);
 
-  // App opened from QUIT state
+  // ── Quit state ──
   useEffect(() => {
-    messaging()
-      .getInitialNotification()
-      .then(remoteMessage => {
-        if (remoteMessage && navigationRef.isReady()) {
-          navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
-        }
-      });
+    const messaging = getMessaging();
+    getInitialNotification(messaging).then(remoteMessage => {
+      if (remoteMessage && navigationRef.isReady()) {
+        navigationRef.navigate('Chat', { chatId: remoteMessage.data.chatId });
+      }
+    });
   }, []);
 
   // Load token check

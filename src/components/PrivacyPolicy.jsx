@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome5";
+import { Linking } from "react-native";
 
 // ─── Same tokens as Profile ───────────────────────────────────────────────────
 const T = {
@@ -169,6 +170,18 @@ export default function PrivacyPolicy() {
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Questions about your privacy?</Text>
                         <Text style={styles.footerEmail}>{CONTACT_EMAIL}</Text>
+                        <Text
+                            style={{
+                                color: T.GOLD,
+                                textDecorationLine: "underline",
+                                marginTop: 8,
+                            }}
+                            onPress={() =>
+                                Linking.openURL("https://bingobing-privacy.netlify.app/")
+                            }
+                        >
+                            Tap to learn more
+                        </Text>
                     </View>
 
                     <View style={{ height: 48 }} />

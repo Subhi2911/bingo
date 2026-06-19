@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
@@ -19,6 +20,9 @@ import MessageBubble from './MessageBubble';
 import { BACKEND_URL } from '../config/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../context/SocketContext';
+import GiftModal from './GiftModal';
+import { showAlert2 } from './CustomAlert2';
+import { useAuth } from "../context/AuthContext";
 
 const PAGE_SIZE = 8; // messages per page
 
@@ -33,13 +37,16 @@ const Chat = ({ route }) => {
     const socketRef = useSocket();
     const socket = socketRef?.socket;
     const onlineUsers = socketRef?.onlineUsers;
+    const {user} = useAuth();
 
     // ── State ─────────────────────────────────────────────────────────────────
     const [typedMessage, setTypedMessage] = useState('');
     const [inputHeight, setInputHeight] = useState(48);
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState(user);
     const [otherUser, setOtherUser] = useState(null);
     const [messages, setMessages] = useState([]);
+    const [giftModalVisible, setGiftModalVisible] = useState(false);
+    const [myCoins, setMyCoins] = useState(userData.money|| 0);
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -70,20 +77,22 @@ const Chat = ({ route }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── Fetch my user data ────────────────────────────────────────────────────
+    //____handleGift_____________
     useEffect(() => {
-        const getMyUserData = async () => {
-            try {
-                const token = await AsyncStorage.getItem('authToken');
-                const res = await fetch(`${BACKEND_URL}/api/auth/getUser`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'auth-token': token },
-                });
-                setUserData(await res.json());
-            } catch (e) { console.log('getUser error:', e); }
+        if (!socket) return;
+        const handleGift = ({ senderName, coins, message, chatId: giftChatId }) => {
+            if (giftChatId !== chatId) return;
+            showAlert2({
+                type: 'success',
+                title: `🎁 ${senderName} sent you ${coins} coins!${message ? `\n"${message}"` : ''}`,
+            });
+            // Coins are already credited on the backend; refresh balance
+            setMyCoins(prev => prev + coins);
         };
-        getMyUserData();
-    }, []);
+        socket.on('gift_received', handleGift);
+        return () => socket.off('gift_received', handleGift);
+    }, [socket, chatId]);
+
 
     // ── Fetch other user from chat participants ───────────────────────────────
     useEffect(() => {
@@ -307,7 +316,7 @@ const Chat = ({ route }) => {
                         <Text style={styles.avatar}>{otherUser?.avatar || '🐟'}</Text>
                         <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={styles.username}>{otherUser?.username}</Text>
-                            <Text style={{ color: isOtherUserOnline ? '#22c55e' : '#4c4c4e', fontSize: 11 }}>
+                            <Text style={{ color: isOtherUserOnline ? '#00ca4a' : '#4c4c4e', fontSize: 11 }}>
                                 {isOtherUserOnline ? 'Online' : 'Offline'}
                             </Text>
                         </View>
@@ -379,8 +388,25 @@ const Chat = ({ route }) => {
                                 <Icon name="paper-plane" size={24} color="#ffffff" style={styles.sendIcon} />
                             </TouchableOpacity>
                         )}
-                        <Icon name="gift" size={24} color="#f708d7" />
+                        <Icon
+                            name="gift"
+                            size={24}
+                            color="#f708d7"
+                            onPress={() => setGiftModalVisible(true)}
+                            style={{ marginLeft: 8 }}
+                        />
+
                     </Animated.View>
+
+                    <GiftModal
+                        visible={giftModalVisible}
+                        onClose={() => setGiftModalVisible(false)}
+                        chatId={chatId}
+                        receiverId={otherUser?._id}
+                        receiverName={otherUser?.username}
+                        myCoins={myCoins}
+                        onSuccess={(newBalance) => setMyCoins(newBalance)}
+                    />
 
                 </SafeAreaView>
             </ImageBackground>
