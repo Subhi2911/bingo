@@ -55,7 +55,7 @@ const Signup = () => {
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const cooldownRef = useRef(null);
     const { showToast } = useAlertToast();
-    const { fetchUser } = useAuth;
+    const { fetchUser } = useAuth();
     
     // Clear cooldown timer on unmount
     useEffect(() => {

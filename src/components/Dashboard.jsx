@@ -270,7 +270,7 @@ const Dashboard = ({route}) => {
                                 {selected === 'home' && (
                                     <View style={{ marginHorizontal: 22, marginBottom: 8, borderRadius: 14, overflow: 'hidden', }}>
                                         <BannerAd
-                                        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-2234703611718718/6246590554'}
+                                        unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-2234703611718718/7387088898'}
                                         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
                                         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
                                     />

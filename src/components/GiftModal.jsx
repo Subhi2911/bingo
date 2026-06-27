@@ -13,7 +13,7 @@ const GiftModal = ({ visible, onClose, chatId, receiverId, receiverName, myCoins
     const [amount, setAmount]   = useState('');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
-
+    
     const selectedAmount = parseInt(amount, 10) || 0;
     const canSend = selectedAmount >= 10 && selectedAmount <= myCoins;
 

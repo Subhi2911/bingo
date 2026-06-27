@@ -13,21 +13,27 @@ import { AD_UNIT_IDS } from '../config/ads';
 import { showAlert2 } from './CustomAlert2';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useAuth } from '../context/AuthContext';
+import { RAZORPAY_KEY_ID } from '../config/razorpay'
 
-// ─── Razorpay configuration ──────────────────────────────────────────────────
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID
+// ─── Free items (Ad-based only) ───────────────────────────────────────────────
+const FREE_ITEMS = [
+    { id: 1, name: '100 Coins', desc: '100 Coins', price: "Ad", img: require('../images/bag.png'), type: 'coins' },
+    { id: 2, name: '50 XP', desc: '50 XP', price: "AdXP", img: require('../images/xpicon.png'), type: 'xp' },
+];
 
-// ─── Real money items (₹) ─────────────────────────────────────────────────────
-const REAL_ITEMS = [
-    { id: 1, name: '100 Coins', desc: '100 Coins', price: "Ad", img: require('../images/bag.png'), razorpayEnabled: false },
-    { id: 2, name: '50 XP', desc: '50 XP', price: "AdXP", img: require('../images/xpicon.png'), razorpayEnabled: false },
-    { id: 3, name: 'Coin Pack', desc: '500 Coins', price: 49, img: require('../images/coin.png'), razorpayEnabled: true },
-    { id: 4, name: 'Mega Coins', desc: '2000 Coins', price: 149, img: require('../images/bag.png'), razorpayEnabled: true },
-    { id: 5, name: 'Free Daubs', desc: 'Extra 5 Marks', price: 99, img: require('../images/daub.png'), razorpayEnabled: false },
-    { id: 6, name: 'Double XP', desc: '1 Match Boost', price: 129, img: require('../images/xp.png'), razorpayEnabled: true },
-    { id: 7, name: 'Instant Claim', desc: 'Auto Claim Win', price: 199, img: require('../images/claim.png'), razorpayEnabled: false },
-    { id: 8, name: 'Theme Pack', desc: 'New Board Skin', price: 299, img: require('../images/theme.png'), razorpayEnabled: false },
-    { id: 9, name: 'Free Boards', desc: 'Extra 1 board', price: 299, img: require('../images/boards/forest.png'), razorpayEnabled: true },
+// ─── Premium items (Razorpay ONLY - sorted by type then price) ────────────────
+const PREMIUM_ITEMS = [
+    // COINS
+    { id: 1, name: 'Coin Pack', desc: '500 Coins', price: 49, img: require('../images/coin.png'), razorpayEnabled: true, type: 'coins' },
+    { id: 2, name: 'Coin Bundle', desc: '1000 Coins', price: 99, img: require('../images/coin.png'), razorpayEnabled: true, type: 'coins' },
+    { id: 3, name: 'Mega Coins', desc: '2000 Coins', price: 149, img: require('../images/bag.png'), razorpayEnabled: true, type: 'coins' },
+
+    // XP
+    { id: 4, name: 'XP Booster', desc: '50 XP', price: 79, img: require('../images/xpicon.png'), razorpayEnabled: true, type: 'xp' },
+    { id: 5, name: 'Double XP', desc: '100 XP  ', price: 129, img: require('../images/xp.png'), razorpayEnabled: true, type: 'xp' },
+
+    // BOARDS
+    { id: 6, name: 'Free Board', desc: 'Extra 1 board', price: 299, img: require('../images/boards/gaming.png'), razorpayEnabled: true, type: 'boards' },
 ];
 
 // ─── Board skins ──────────────────────────────────────────────────────────────
@@ -74,8 +80,8 @@ const SkinCard = ({ item, coins, owned, onBuy, isBoard }) => {
                 resizeMode="contain"
             />
 
-            <Text style={s.skinName}>{item.name}</Text>
-            <Text style={s.skinSub}>{isFree ? 'Free' : item.sub}</Text>
+            <Text style={s.skinName}>{item?.name}</Text>
+            <Text style={s.skinSub}>{isFree ? 'Free' : item?.sub}</Text>
 
             {/* Button */}
             {isOwned ? (
@@ -89,11 +95,11 @@ const SkinCard = ({ item, coins, owned, onBuy, isBoard }) => {
             ) : (
                 <TouchableOpacity
                     style={[s.btn, !canAfford && s.btnCant]}
-                    onPress={() => { showAlert2({ type: 'confirm', title: `Purchasing ${s.item.name}`, message: "Are you sure, you want to purchase? ", onConfirm: () => canAfford && onBuy(item) }) }}
+                    onPress={() => { showAlert2({ type: 'confirm', title: `Purchasing ${item?.name}`, message: "Are you sure, you want to purchase? ", onConfirm: () => canAfford && onBuy(item) }) }}
                     disabled={!canAfford}
                 >
                     <Text style={[s.btnTxt, !canAfford && s.btnCantTxt]}>
-                        🪙 {item.price}
+                        🪙 {item?.price}
                     </Text>
                 </TouchableOpacity>
             )}
@@ -101,59 +107,56 @@ const SkinCard = ({ item, coins, owned, onBuy, isBoard }) => {
     );
 };
 
-// ─── Real money card ──────────────────────────────────────────────────────────
-const RealCard = ({ item, onBuy, onWatchAd, onWatchXpAd, adLoaded, xpAdLoaded, isLoading }) => {
-    const isAdItem = item.price === "Ad";
-    const isXpAdItem = item.price === "AdXP";
-    const isRazorpayItem = item.razorpayEnabled === true;
-
-    if (isLoading) {
-        return (
-            <View style={s.realCard}>
-                <ActivityIndicator size="small" color="#F8B55F" />
-            </View>
-        );
-    }
+// ─── Premium card (Razorpay) ──────────────────────────────────────────────────
+const PremiumCard = ({ item, onBuy, isLoading }) => {
+    const typeEmoji = item.type === 'coins' ? '💰' : item.type === 'xp' ? '⭐' : '🎲';
 
     return (
-        <View style={s.realCard}>
-            <Image source={item.img} style={s.realImg} />
-            <Text style={s.realName}>{item.name}</Text>
-            <Text style={s.realDesc}>{item.desc}</Text>
+        <View style={s.premiumCard}>
+            <View style={s.typeTag}>
+                <Text style={s.typeTagTxt}>{typeEmoji} {item.type.toUpperCase()}</Text>
+            </View>
 
-            {isAdItem ? (
+            <Image source={item.img} style={s.premiumImg} resizeMode="contain" />
+            <Text style={s.premiumName}>{item.name}</Text>
+            <Text style={s.premiumDesc}>{item.desc}</Text>
+
+            <TouchableOpacity
+                style={[s.premiumBtn, isLoading && s.btnLoading]}
+                onPress={() => onBuy(item)}
+                disabled={isLoading}
+            >
+                {isLoading ? (
+                    <ActivityIndicator size="small" color="#3A1A00" />
+                ) : (
+                    <Text style={s.premiumBtnTxt}>₹{item.price}</Text>
+                )}
+            </TouchableOpacity>
+        </View>
+    );
+};
+
+// ─── Free reward card ──────────────────────────────────────────────────────────
+const FreeCard = ({ item, onBuy, onWatchAd, adLoaded, isLoading }) => {
+    const isAd = item.price === "Ad" || item.price === "AdXP";
+
+    return (
+        <View style={s.freeCard}>
+            <Image source={item.img} style={s.freeImg} resizeMode="contain" />
+            <Text style={s.freeName}>{item.name}</Text>
+            <Text style={s.freeDesc}>{item.desc}</Text>
+
+            {isAd ? (
                 <TouchableOpacity
-                    style={[s.rupeeBtn, !adLoaded && s.btnCant]}
-                    onPress={() => adLoaded && onWatchAd(item)}
+                    style={[s.freeBtn, !adLoaded && s.btnCant]}
+                    onPress={() => adLoaded && onBuy(item)}
                     disabled={!adLoaded}
                 >
-                    <Text style={[s.rupeeBtnTxt, !adLoaded && s.btnCantTxt]}>
+                    <Text style={[s.freeBtnTxt, !adLoaded && s.btnCantTxt]}>
                         {adLoaded ? '🎬 Watch Ad' : 'Loading...'}
                     </Text>
                 </TouchableOpacity>
-            ) : isXpAdItem ? (
-                <TouchableOpacity
-                    style={[s.rupeeBtn, !xpAdLoaded && s.btnCant]}
-                    onPress={() => xpAdLoaded && onWatchXpAd(item)}
-                    disabled={!xpAdLoaded}
-                >
-                    <Text style={[s.rupeeBtnTxt, !xpAdLoaded && s.btnCantTxt]}>
-                        {xpAdLoaded ? '🎬 Watch Ad' : 'Loading...'}
-                    </Text>
-                </TouchableOpacity>
-            ) : isRazorpayItem ? (
-                <TouchableOpacity
-                    style={s.rupeeBtn}
-                    onPress={() => onBuy(item)}
-                    disabled={isLoading}
-                >
-                    <Text style={s.rupeeBtnTxt}>₹{item.price}</Text>
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity style={s.rupeeBtn} onPress={() => { showAlert2({ type: 'confirm', title: `Purchasing ${s.itemName}`, message: "Are you sure, you want to purchase? ", onConfirm: () => onBuy(item) }) }}>
-                    <Text style={s.rupeeBtnTxt}>₹{item.price}</Text>
-                </TouchableOpacity>
-            )}
+            ) : null}
         </View>
     );
 };
@@ -167,7 +170,7 @@ const SectionHeader = ({ title, sub }) => (
 );
 
 const AdCard = ({ style }) => (
-    <View style={[style ?? s.realCard, { justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: 0, minHeight: 50, maxHeight: 180 }]}>
+    <View style={[style ?? s.premiumCard, { justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: 0, minHeight: 50, maxHeight: 180 }]}>
         <BannerAd
             unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-2234703611718718/6246590554'}
             size={BannerAdSize.MEDIUM_RECTANGLE}
@@ -177,16 +180,16 @@ const AdCard = ({ style }) => (
 
 // ─── Main Shop ────────────────────────────────────────────────────────────────
 const Shop = () => {
-    //const [user, setUser] = React.useState(null);
-    const { user , setUser } = useAuth();
+    const { user, setUser, fetchUser } = useAuth();
     const [skinTab, setSkinTab] = React.useState('boards');
-    const [ownedBoards, setOwnedBoards] = React.useState(user.ownedBoards||['classic']);
-    const [ownedDaubs, setOwnedDaubs] = React.useState(user.ownedDaubs||['star']);
+    const [ownedBoards, setOwnedBoards] = React.useState(user.ownedBoards || ['classic']);
+    const [ownedDaubs, setOwnedDaubs] = React.useState(user.ownedDaubs || ['daub']);
     const [loadingItemId, setLoadingItemId] = React.useState(null);
 
     // ── Rewarded ad: 100 coins for item id 1 ───────────────────────────────────
+    // ✅ FIXED: Now uses TestIds in dev mode (consistent with XP ad)
     const { isLoaded: coinsAdLoaded, isEarnedReward, load: loadCoinsAd, show: showCoinsAd } = useRewardedAd(
-        AD_UNIT_IDS.rewardedCoins,
+        __DEV__ ? TestIds.REWARDED : AD_UNIT_IDS.rewardedCoins,
         { requestNonPersonalizedAdsOnly: false }
     );
 
@@ -220,7 +223,7 @@ const Shop = () => {
     };
 
     const { isLoaded: xpAdLoaded, isEarnedReward: isEarnedXP, load: loadXpAd, show: showXpAd } = useRewardedAd(
-        AD_UNIT_IDS.rewardedXp,
+        __DEV__ ? TestIds.REWARDED : AD_UNIT_IDS.rewardedXp,
         { requestNonPersonalizedAdsOnly: false }
     );
 
@@ -240,7 +243,7 @@ const Shop = () => {
             const json = await res.json();
             if (!res.ok) { showAlert2({ type: 'error', title: json.message || 'Failed to grant XP' }); return; }
 
-            setUser(prev => ({ ...prev, xp: json.xp }));
+            setUser(prev => ({ ...prev, levelXp: json.levelXp , totalXp: json.totalXp}));
             showAlert2({ type: 'success', title: '+50 XP added!' });
         } catch (e) {
             console.log(e);
@@ -252,24 +255,6 @@ const Shop = () => {
     const handleWatchXpAd = () => {
         if (xpAdLoaded) showXpAd();
     };
-
-    // ── Load user ─────────────────────────────────────────────────────────────
-    // React.useEffect(() => {
-    //     const init = async () => {
-    //         try {
-    //             const token = await AsyncStorage.getItem('authToken');
-    //             const res = await fetch(`${BACKEND_URL}/api/auth/getuser`, {
-    //                 method: 'POST',
-    //                 headers: { 'Content-Type': 'application/json', 'auth-token': token },
-    //             });
-    //             const data = await res.json();
-    //             setUser(data);
-    //             if (data.ownedBoards?.length) setOwnedBoards(data.ownedBoards);
-    //             if (data.ownedDaubs?.length) setOwnedDaubs(data.ownedDaubs);
-    //         } catch (e) { console.log(e); }
-    //     };
-    //     init();
-    // }, []);
 
     // ── Razorpay payment handler ───────────────────────────────────────────────
     const handleRazorpayPayment = async (item) => {
@@ -287,7 +272,6 @@ const Shop = () => {
                     amount: item.price,
                 }),
             });
-            
 
             const orderData = await orderRes.json();
             if (!orderRes.ok) {
@@ -361,16 +345,6 @@ const Shop = () => {
         }
     };
 
-    // ── Real money purchase (unified) ──────────────────────────────────────────
-    const handleRealBuy = (item) => {
-        if (item.razorpayEnabled) {
-            handleRazorpayPayment(item);
-        } else {
-            // TODO: Handle other payment methods or future integrations
-            showAlert2({ type: 'info', title: 'This item will be available soon' });
-        }
-    };
-
     // ── Coin skin purchase ────────────────────────────────────────────────────
     const handleSkinBuy = async (item, type) => {
         if (!user || user.money < item.price) {
@@ -385,7 +359,11 @@ const Shop = () => {
                 body: JSON.stringify({ skinId: item.id, skinType: type, price: item.price }),
             });
             const json = await res.json();
-            if (!res.ok) { showAlert2({ type: 'error', title: json.message || 'Failed' }); return; }
+            await fetchUser();
+            if (!res.ok) {
+                showAlert2({ type: 'error', title: json.message || 'Failed' });
+                return;
+            }
 
             setUser(prev => ({ ...prev, money: prev.money - item.price }));
 
@@ -457,25 +435,48 @@ const Shop = () => {
 
                         <View style={s.divider} />
 
-                        {/* ── Premium Store ── */}
-                        {/*<SectionHeader title="Premium Store" sub="Purchase with real money" />
-                        <View style={s.realGrid}>
-
-                            {REAL_ITEMS.map(item => (
-                                <RealCard
+                        {/* ── Free Rewards (Ad-based) ── */}
+                        <SectionHeader title="Free Rewards" sub="Watch ads to earn coins & XP" />
+                        <View style={s.freeGrid}>
+                            {FREE_ITEMS.map(item => (
+                                <FreeCard
                                     key={item.id}
                                     item={item}
-                                    onBuy={handleRealBuy}
+                                    onBuy={item.type === 'coins' ? handleWatchAd : handleWatchXpAd}
                                     onWatchAd={handleWatchAd}
-                                    adLoaded={coinsAdLoaded}
-                                    onWatchXpAd={handleWatchXpAd}
-                                    xpAdLoaded={xpAdLoaded}
+                                    adLoaded={item.type === 'coins' ? coinsAdLoaded : xpAdLoaded}
+                                />
+                            ))}
+                        </View>
+                        {/* Banner Ad - Below Free Rewards */}
+                        <View style={s.bannerAdContainer}>
+                            <BannerAd
+                                unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-2234703611718718/6246590554'}
+                                size={BannerAdSize.BANNER}
+                            />
+                        </View>
+                        <View style={s.divider} />
+
+                        {/* ── Premium Store (Razorpay only) ── */}
+                        <SectionHeader title="Premium Store" sub="Purchase with real money • Sorted by type" />
+                        <View style={s.premiumGrid}>
+                            {PREMIUM_ITEMS.map(item => (
+                                <PremiumCard
+                                    key={item.id}
+                                    item={item}
+                                    onBuy={handleRazorpayPayment}
                                     isLoading={loadingItemId === item.id}
                                 />
                             ))}
-                            {REAL_ITEMS.length % 2 !== 0 && <AdCard />} 
-
-                        </View>*/}
+                            {PREMIUM_ITEMS.length % 2 !== 0 && <AdCard style={s.premiumCard} />}
+                        </View>
+                        {/* Banner Ad - Below Premium Store */}
+                        <View style={s.bannerAdContainer}>
+                            <BannerAd
+                                unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-2234703611718718/6246590554'}
+                                size={BannerAdSize.BANNER}
+                            />
+                        </View>
                     </>
                 }
             />
@@ -526,14 +527,36 @@ const s = StyleSheet.create({
     btnOwnedTxt: { color: 'rgba(255,255,255,0.35)', fontSize: 11 },
     btnCant: { backgroundColor: 'rgba(255,255,255,0.08)' },
     btnCantTxt: { color: 'rgba(255,255,255,0.3)', fontSize: 12 },
+    btnLoading: { opacity: 0.7 },
 
     divider: { height: 1, backgroundColor: 'rgba(255,214,122,0.2)', marginVertical: 22 },
 
-    realGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
-    realCard: { width: '48%', margin: '1%', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, borderWidth: 1, borderColor: '#F8B55F', padding: 10, alignItems: 'center', gap: 4 },
-    realImg: { width: 60, height: 60, marginBottom: 4 },
-    realName: { color: TEXT, fontSize: 15, fontWeight: '700', textAlign: 'center' },
-    realDesc: { color: SUB, fontSize: 12, textAlign: 'center' },
-    rupeeBtn: { backgroundColor: '#F8B55F', borderRadius: 10, paddingHorizontal: 20, paddingVertical: 6, marginTop: 4 },
-    rupeeBtnTxt: { color: '#3A1A00', fontWeight: '700', fontSize: 13 },
+    // FREE REWARDS SECTION
+    freeGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
+    freeCard: { width: '48%', margin: '1%', backgroundColor: 'rgba(100,255,150,0.1)', borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(100,255,150,0.4)', padding: 10, alignItems: 'center', gap: 4 },
+    freeImg: { width: 60, height: 60 },
+    freeName: { color: TEXT, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+    freeDesc: { color: SUB, fontSize: 11, textAlign: 'center' },
+    freeBtn: { backgroundColor: 'rgba(100,255,150,0.3)', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 5, marginTop: 4, borderWidth: 1, borderColor: 'rgba(100,255,150,0.6)' },
+    freeBtnTxt: { color: '#7AFF9A', fontWeight: '700', fontSize: 11 },
+
+    // PREMIUM STORE SECTION
+    premiumGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
+    premiumCard: { width: '48%', margin: '1%', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14, borderWidth: 1.5, borderColor: GOLD, padding: 10, alignItems: 'center', gap: 5 },
+    typeTag: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(248,181,95,0.2)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
+    typeTagTxt: { color: GOLD, fontSize: 9, fontWeight: '700' },
+    premiumImg: { width: 60, height: 60, marginTop: 4 },
+    premiumName: { color: TEXT, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+    premiumDesc: { color: SUB, fontSize: 11, textAlign: 'center' },
+    premiumBtn: { backgroundColor: GOLD, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 6, marginTop: 6, width: '100%', alignItems: 'center' },
+    premiumBtnTxt: { color: '#3A1A00', fontWeight: '700', fontSize: 13 },
+    bannerAdContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 16,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        borderRadius: 12,
+        overflow: 'hidden',
+        minHeight: 60,
+    }
 });

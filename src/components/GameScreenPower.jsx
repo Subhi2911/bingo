@@ -35,6 +35,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import FloatingMessage from './FloatingMessage';
 import { ScrollView } from 'react-native';
 import { useAlertToast } from './AlertToast';
+import { useAuth } from '../context/AuthContext';
 
 
 // ─────────────────────────────────────────────
@@ -358,6 +359,7 @@ const GameScreenPower = (props) => {
     const [readyPlayers, setReadyPlayers] = useState({});
     const [floatingMessages2, setFloatingMessages2] = useState([]);
     const { showToast } = useAlertToast();
+    const { fetchUser } = useAuth();
 
     // Power state
     const [usedPower, setUsedPower] = useState(false);
@@ -1518,7 +1520,10 @@ const GameScreenPower = (props) => {
                         didWin={result === 'win'}
                         currentLevel={xpResult?.level}
                         currentStars={xpResult?.stars}
-                        onClose={() => navigation.navigate('Dashboard')}
+                        onClose={async () => {
+                            await fetchUser();
+                            navigation.navigate('Dashboard');
+                        }}
                     />
                     {!!xpResult && (
                         <XPModal

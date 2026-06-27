@@ -15,13 +15,15 @@ import { useAuth } from "../context/AuthContext";
 
 // ─── Theme data ───────────────────────────────────────────────────────────────
 const BOARD_THEMES = {
-    classic: { id: 'classic', name: 'Classic', price: 0,   coins: 'Free',      glow: '#FFD67A', img: require('../images/boards/classic.png') },
+    classic: { id: 'classic', name: 'Classic', price: 0,   coins: 'Free',      glow: '#FFD67A', img: require('../images/boards/classic.png')   },
     ocean:   { id: 'ocean',   name: 'Ocean',   price: 1500, coins: '1500 coins', glow: '#5DCFFF', img: require('../images/boards/ocean.png')   },
     forest:  { id: 'forest',  name: 'Forest',  price: 3000, coins: '3000 coins', glow: '#7FE891', img: require('../images/boards/forest.png')  },
     galaxy:  { id: 'galaxy',  name: 'Galaxy',  price: 2500, coins: '2500 coins', glow: '#C49BFF', img: require('../images/boards/galaxy.png')  },
     candy:   { id: 'candy',   name: 'Candy',   price: 3500, coins: '3500 coins', glow: '#FFB3D9', img: require('../images/boards/candy.png')   },
     lava:    { id: 'lava',    name: 'Lava',    price: 6000, coins: '6000 coins', glow: '#FF8C42', img: require('../images/boards/lava.png')    },
-    barbie:   { id: 'barbie', name: 'barbie',  price: 9500, coins: '9500 coins', glow: '#d15693', img: require('../images/boards/barbie.png')}
+    barbie:  { id: 'barbie',  name: 'barbie',  price: 9500, coins: '9500 coins', glow: '#d15693', img: require('../images/boards/barbie.png')  },
+    gaming:  { id: 'gaming',  name: 'gaming',  price: 299   , coins: '₹ 299'     , glow: '#5D5DFF', img: require('../images/boards/gaming.png'), razorpayEnabled: true },
+
 };
 
 const DAUB_STYLES = {
@@ -163,7 +165,7 @@ const DaubCard = ({ item, selected, owned, onPress }) => {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 const CustomizeScreen = ({ navigation }) => {
-    const {user}= useAuth();
+    const {user , }= useAuth();
     const [activeTab,   setActiveTab]   = useState('boards');
     const [selBoard,    setSelBoard]    = useState('classic');
     const [selDaub,     setSelDaub]     = useState('daub');

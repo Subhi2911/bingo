@@ -73,7 +73,7 @@ export default function SpinWheelModal({ isOpen, onClose }) {
     const grantExtraSpin = async () => {
         try {
             const token = await AsyncStorage.getItem("authToken");
-            const res = await fetch(`${BACKEND_URL}/api/rewards/grant-extra`, {
+            const res = await fetch(`${BACKEND_URL}/api/spin/grant-extra`, {
                 method: "POST",
                 headers: { "auth-token": token },
             });

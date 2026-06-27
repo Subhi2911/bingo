@@ -37,16 +37,15 @@ const Chat = ({ route }) => {
     const socketRef = useSocket();
     const socket = socketRef?.socket;
     const onlineUsers = socketRef?.onlineUsers;
-    const {user} = useAuth();
+    const { user, setUser } = useAuth();
 
     // ── State ─────────────────────────────────────────────────────────────────
     const [typedMessage, setTypedMessage] = useState('');
     const [inputHeight, setInputHeight] = useState(48);
-    const [userData, setUserData] = useState(user);
     const [otherUser, setOtherUser] = useState(null);
     const [messages, setMessages] = useState([]);
     const [giftModalVisible, setGiftModalVisible] = useState(false);
-    const [myCoins, setMyCoins] = useState(userData.money|| 0);
+    const [myCoins, setMyCoins] = useState(user.money || 0);
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -88,6 +87,7 @@ const Chat = ({ route }) => {
             });
             // Coins are already credited on the backend; refresh balance
             setMyCoins(prev => prev + coins);
+            setUser(prev => ({ ...prev, money: prev.money + coins }))
         };
         socket.on('gift_received', handleGift);
         return () => socket.off('gift_received', handleGift);
@@ -96,17 +96,17 @@ const Chat = ({ route }) => {
 
     // ── Fetch other user from chat participants ───────────────────────────────
     useEffect(() => {
-        if (!userData || !chatId) return;
+        if (!user || !chatId) return;
         const fetchChat = async () => {
             try {
                 const res = await fetch(`${BACKEND_URL}/api/chat/${chatId}`);
                 if (!res.ok) return;
                 const data = await res.json();
-                setOtherUser(data.participants.find(p => p._id !== userData._id));
+                setOtherUser(data.participants.find(p => p._id !== user._id));
             } catch (e) { console.log('fetchChat error:', e); }
         };
         fetchChat();
-    }, [chatId, userData]);
+    }, [chatId, user]);
 
     // ── Initial message load (page 1 = last 8 messages) ──────────────────────
     useEffect(() => {
@@ -187,14 +187,14 @@ const Chat = ({ route }) => {
             setMessages(prev => [...prev, message]);
 
             // Mark as seen immediately if this chat is open
-            if (userData && message.sender?._id !== userData._id) {
+            if (user && message.sender?._id !== user._id) {
                 markSeen(message._id);
             }
         };
 
         socket.on('receiveMessage', handleReceive);
         return () => socket.off('receiveMessage', handleReceive);
-    }, [socket, userData]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [socket, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Socket: seen acknowledgement from other user ──────────────────────────
     useEffect(() => {
@@ -216,16 +216,16 @@ const Chat = ({ route }) => {
 
     // ── Mark messages as seen when chat opens / new message arrives ───────────
     useEffect(() => {
-        if (!userData || !messages.length || !socket) return;
+        if (!user || !messages.length || !socket) return;
 
         const unread = messages.filter(
-            m => m.sender?._id !== userData._id &&
-                !(m.seenBy || []).includes(userData._id)
+            m => m.sender?._id !== user._id &&
+                !(m.seenBy || []).includes(user._id)
         );
 
         unread.forEach(m => markSeen(m._id));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [messages, userData]);
+    }, [messages, user]);
 
     const markSeen = useCallback(async (messageId) => {
         try {
@@ -233,7 +233,7 @@ const Chat = ({ route }) => {
             setMessages(prev =>
                 prev.map(m =>
                     m._id === messageId
-                        ? { ...m, seenBy: [...new Set([...(m.seenBy || []), userData._id])] }
+                        ? { ...m, seenBy: [...new Set([...(m.seenBy || []), user._id])] }
                         : m
                 )
             );
@@ -242,15 +242,15 @@ const Chat = ({ route }) => {
             await fetch(`${BACKEND_URL}/api/messages/seen`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messageId, userId: userData._id, chatId }),
+                body: JSON.stringify({ messageId, userId: user._id, chatId }),
             });
 
             // Broadcast to the other user's socket so their tick updates live
-            socket?.emit('mark_seen', { messageId, chatId, seenBy: userData._id });
+            socket?.emit('mark_seen', { messageId, chatId, seenBy: user._id });
         } catch (e) {
             console.log('markSeen error:', e);
         }
-    }, [userData, chatId, socket]);
+    }, [user, chatId, socket]);
 
     // ── Send message ──────────────────────────────────────────────────────────
     const sendMessage = async () => {
@@ -262,7 +262,7 @@ const Chat = ({ route }) => {
             const res = await fetch(`${BACKEND_URL}/api/messages/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chatId, sender: userData._id, text }),
+                body: JSON.stringify({ chatId, sender: user._id, text }),
             });
 
             const savedMessage = await res.json();
@@ -307,9 +307,9 @@ const Chat = ({ route }) => {
                     <TouchableOpacity style={styles.header} onPress={() =>
                         navigation.navigate("OtherProfile", {
                             userId: otherUser?._id,
-                            myId: userData?._id,
-                            myUsername: userData?.username,
-                            myAvatar: userData?.avatar,
+                            myId: user?._id,
+                            myUsername: user?.username,
+                            myAvatar: user?.avatar,
                         })
                     }>
                         <Icon name="arrow-left" size={20} color="#000" onPress={() => navigation.goBack()} />
@@ -336,9 +336,9 @@ const Chat = ({ route }) => {
                                 renderItem={({ item }) => (
                                     <MessageBubble
                                         message={item?.text || ''}
-                                        isMe={item?.sender?._id === userData?._id}
+                                        isMe={item?.sender?._id === user?._id}
                                         seen={item.seenBy?.includes(otherUser?._id)}
-                                        userData={userData}
+                                        user={user}
                                         type={item?.type}
                                         roomCode={getRoomCode(item?.text)}
                                         timeStamp={item?.updatedAt}
@@ -405,7 +405,10 @@ const Chat = ({ route }) => {
                         receiverId={otherUser?._id}
                         receiverName={otherUser?.username}
                         myCoins={myCoins}
-                        onSuccess={(newBalance) => setMyCoins(newBalance)}
+                        onSuccess={(newBalance) => {
+                            setMyCoins(newBalance);
+                            setUser(prev => ({ ...prev, money: newBalance }))
+                        }}
                     />
 
                 </SafeAreaView>

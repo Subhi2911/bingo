@@ -201,7 +201,7 @@ const HomeScreen = ({ setSelected, setSearchResults }) => {
                             <Text style={styles.rewardDesc}>
                                 {canClaim
                                     ? `Day ${todaySlot} — available now`
-                                    : `Day ${nextDaySlot} up next`}
+                                    : `Day ${user?.streak+1} up next`}
                             </Text>
                         </View>
 
